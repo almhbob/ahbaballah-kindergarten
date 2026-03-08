@@ -274,3 +274,111 @@ export function useAppData() {
   if (!ctx) throw new Error('useAppData must be used within AppDataProvider');
   return ctx;
 }
+
+// ─── Honor scoring utilities ───────────────────────────────────────────────
+
+export function calcStudentScore(student: Student): number {
+  const gradeAvg = student.grades.length > 0
+    ? student.grades.reduce((a, g) => a + (g.score / g.total) * 100, 0) / student.grades.length
+    : 0;
+  const behaviorScore =
+    student.behavior === 'ممتاز' ? 100
+    : student.behavior === 'جيد' ? 80
+    : student.behavior === 'مقبول' ? 55
+    : 25;
+  const homeworkScore =
+    student.homework === 'منجز' ? 100
+    : student.homework === 'ناقص' ? 50
+    : 0;
+  return Math.round(
+    gradeAvg * 0.45 +
+    student.attendance * 0.30 +
+    behaviorScore * 0.15 +
+    homeworkScore * 0.10
+  );
+}
+
+export interface HonorEntry {
+  studentId: string;
+  studentName: string;
+  parentName: string;
+  level: string;
+  score: number;
+  gradeAvg: number;
+  attendance: number;
+  behavior: Student['behavior'];
+  badge: 'ذهبي' | 'فضي' | 'برونزي' | null;
+}
+
+export interface ParentHonorEntry {
+  parentName: string;
+  studentName: string;
+  studentId: string;
+  score: number;
+  childScore: number;
+  engagementScore: number;
+  messageCount: number;
+  badge: 'ذهبي' | 'فضي' | 'برونزي' | null;
+}
+
+export function buildHonorBoard(students: Student[], messages: Message[]): {
+  byLevel: Record<string, HonorEntry[]>;
+  parents: ParentHonorEntry[];
+} {
+  // Student boards per level
+  const byLevel: Record<string, HonorEntry[]> = {};
+  for (const s of students) {
+    if (!byLevel[s.level]) byLevel[s.level] = [];
+    const gradeAvg = s.grades.length > 0
+      ? Math.round(s.grades.reduce((a, g) => a + (g.score / g.total) * 100, 0) / s.grades.length)
+      : 0;
+    byLevel[s.level].push({
+      studentId: s.id,
+      studentName: s.name,
+      parentName: s.parentName,
+      level: s.level,
+      score: calcStudentScore(s),
+      gradeAvg,
+      attendance: s.attendance,
+      behavior: s.behavior,
+      badge: null,
+    });
+  }
+  for (const lvl of Object.keys(byLevel)) {
+    byLevel[lvl].sort((a, b) => b.score - a.score);
+    byLevel[lvl].forEach((e, i) => {
+      e.badge = i === 0 ? 'ذهبي' : i === 1 ? 'فضي' : i === 2 ? 'برونزي' : null;
+    });
+  }
+
+  // Parent engagement: count outgoing messages per parent-student pairing
+  const msgCountBySender: Record<string, number> = {};
+  for (const m of messages) {
+    if (m.senderId !== 'admin') {
+      msgCountBySender[m.senderId] = (msgCountBySender[m.senderId] ?? 0) + 1;
+    }
+  }
+
+  const parents: ParentHonorEntry[] = students.map(s => {
+    const childScore = calcStudentScore(s);
+    const msgCount = msgCountBySender[`parent_${s.id}`] ?? 0;
+    const engagementScore = Math.min(msgCount * 12, 100);
+    const score = Math.round(childScore * 0.80 + engagementScore * 0.20);
+    return {
+      parentName: s.parentName,
+      studentName: s.name,
+      studentId: s.id,
+      score,
+      childScore,
+      engagementScore,
+      messageCount: msgCount,
+      badge: null,
+    };
+  });
+  parents.sort((a, b) => b.score - a.score);
+  parents.forEach((e, i) => {
+    e.badge = i === 0 ? 'ذهبي' : i === 1 ? 'فضي' : i === 2 ? 'برونزي' : null;
+  });
+
+  return { byLevel, parents };
+}

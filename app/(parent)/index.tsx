@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Pressable, Platform,
 } from 'react-native';
@@ -7,7 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Colors } from '@/constants/colors';
 import { useAuth } from '@/contexts/AuthContext';
-import { useAppData } from '@/contexts/AppDataContext';
+import { useAppData, buildHonorBoard } from '@/contexts/AppDataContext';
 import * as Haptics from 'expo-haptics';
 
 const PARENT_COLOR = '#7B3FA0';
@@ -15,10 +15,21 @@ const PARENT_COLOR = '#7B3FA0';
 export default function ParentHomeScreen() {
   const insets = useSafeAreaInsets();
   const { user, logout } = useAuth();
-  const { students } = useAppData();
+  const { students, messages } = useAppData();
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
 
   const child = students.find(s => s.id === user?.studentId) || students[0];
+
+  const honorData = useMemo(() => buildHonorBoard(students, messages), [students, messages]);
+  const myParentEntry = useMemo(() => {
+    if (!child) return null;
+    return honorData.parents.find(p => p.studentId === child.id) ?? null;
+  }, [honorData, child]);
+  const myParentRank = useMemo(() => {
+    if (!myParentEntry) return null;
+    return honorData.parents.findIndex(p => p.studentId === child?.id) + 1;
+  }, [honorData, myParentEntry, child]);
+
   if (!child) return null;
 
   const latestReport = child.dailyReports[0];
@@ -86,6 +97,63 @@ export default function ParentHomeScreen() {
               <Text style={styles.statBoxLabel}>الواجبات</Text>
             </View>
           </View>
+
+          {/* Honor rank card */}
+          {myParentEntry && myParentRank && (
+            <Pressable
+              style={({ pressed }) => [styles.honorCard, { opacity: pressed ? 0.9 : 1 }]}
+              onPress={() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)}
+            >
+              <LinearGradient
+                colors={myParentEntry.badge === 'ذهبي' ? ['#7a4f00', '#ca9928'] : myParentEntry.badge === 'فضي' ? ['#4a5568', '#718096'] : myParentEntry.badge === 'برونزي' ? ['#6b3e1f', '#CD7F32'] : ['#3b1660', '#7B3FA0']}
+                style={styles.honorGrad}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+              >
+                <View style={styles.honorLeft}>
+                  <Text style={styles.honorRankNum}>
+                    {myParentRank <= 3 ? ['🥇', '🥈', '🥉'][myParentRank - 1] : `#${myParentRank}`}
+                  </Text>
+                  <View>
+                    <Text style={styles.honorTitle}>
+                      {myParentEntry.badge ? `وسام ${myParentEntry.badge}` : 'مرتبتك الحالية'}
+                    </Text>
+                    <Text style={styles.honorSub}>لوحة الأم المثالية</Text>
+                  </View>
+                </View>
+                <View style={styles.honorRight}>
+                  <Text style={styles.honorScore}>{myParentEntry.score}</Text>
+                  <Text style={styles.honorScoreLabel}>نقطة</Text>
+                </View>
+                <View style={styles.honorTrophyBg}>
+                  <MaterialCommunityIcons name="trophy" size={44} color="rgba(255,255,255,0.12)" />
+                </View>
+              </LinearGradient>
+              <View style={styles.honorMeta}>
+                <View style={styles.honorMetaItem}>
+                  <Text style={styles.honorMetaValue}>{myParentEntry.childScore}</Text>
+                  <Text style={styles.honorMetaLabel}>أداء طفلك</Text>
+                </View>
+                <View style={styles.honorMetaSep} />
+                <View style={styles.honorMetaItem}>
+                  <Text style={styles.honorMetaValue}>{myParentEntry.engagementScore}</Text>
+                  <Text style={styles.honorMetaLabel}>المتابعة</Text>
+                </View>
+                <View style={styles.honorMetaSep} />
+                <View style={styles.honorMetaItem}>
+                  <Text style={styles.honorMetaValue}>{myParentEntry.messageCount}</Text>
+                  <Text style={styles.honorMetaLabel}>رسائل</Text>
+                </View>
+                <View style={styles.honorMetaSep} />
+                <View style={styles.honorMetaItem}>
+                  <Text style={[styles.honorMetaValue, { color: '#9C27B0' }]}>
+                    {myParentRank}/{honorData.parents.length}
+                  </Text>
+                  <Text style={styles.honorMetaLabel}>الترتيب</Text>
+                </View>
+              </View>
+            </Pressable>
+          )}
 
           {latestReport && (
             <>
@@ -202,4 +270,29 @@ const styles = StyleSheet.create({
   notesText: { fontSize: 13, fontFamily: 'Inter_400Regular', color: Colors.textSecondary, textAlign: 'right', lineHeight: 20 },
   noData: { alignItems: 'center', paddingVertical: 20 },
   noDataText: { fontSize: 13, fontFamily: 'Inter_400Regular', color: Colors.textLight },
+
+  // Honor card
+  honorCard: {
+    borderRadius: 20, overflow: 'hidden', marginBottom: 20,
+    ...(Platform.OS === 'web'
+      ? { boxShadow: '0px 4px 20px rgba(123,63,160,0.25)' }
+      : { shadowColor: '#7B3FA0', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 16, elevation: 6 }),
+  },
+  honorGrad: { padding: 16, flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 82, overflow: 'hidden' },
+  honorLeft: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  honorRankNum: { fontSize: 30 },
+  honorTitle: { fontSize: 15, fontFamily: 'Inter_700Bold', color: '#FFFFFF' },
+  honorSub: { fontSize: 10, fontFamily: 'Inter_400Regular', color: 'rgba(255,255,255,0.65)', marginTop: 2 },
+  honorRight: { alignItems: 'center' },
+  honorScore: { fontSize: 28, fontFamily: 'Inter_700Bold', color: '#FFD700' },
+  honorScoreLabel: { fontSize: 9, fontFamily: 'Inter_400Regular', color: 'rgba(255,255,255,0.65)' },
+  honorTrophyBg: { position: 'absolute', right: 80, bottom: -8 },
+  honorMeta: {
+    flexDirection: 'row', backgroundColor: Colors.surface,
+    paddingVertical: 10, paddingHorizontal: 16,
+  },
+  honorMetaItem: { flex: 1, alignItems: 'center', gap: 2 },
+  honorMetaValue: { fontSize: 15, fontFamily: 'Inter_700Bold', color: Colors.text },
+  honorMetaLabel: { fontSize: 9, fontFamily: 'Inter_400Regular', color: Colors.textSecondary },
+  honorMetaSep: { width: 1, backgroundColor: Colors.borderLight, marginVertical: 2 },
 });

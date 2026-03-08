@@ -20,9 +20,9 @@ function NativeAdminTabs() {
         <Icon sf={{ default: "person.badge.plus", selected: "person.badge.plus.fill" }} />
         <Label>الإدارة</Label>
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="news">
-        <Icon sf={{ default: "megaphone", selected: "megaphone.fill" }} />
-        <Label>الأخبار</Label>
+      <NativeTabs.Trigger name="honor">
+        <Icon sf={{ default: "trophy", selected: "trophy.fill" }} />
+        <Label>لوحة الشرف</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="inbox">
         <Icon sf={{ default: "tray", selected: "tray.fill" }} />
@@ -69,12 +69,13 @@ function ClassicAdminTabs() {
         },
       }}
     >
-      <Tabs.Screen name="index" options={{ title: 'الرئيسية', tabBarIcon: ({ color }) => <Ionicons name="bar-chart" size={22} color={color} /> }} />
-      <Tabs.Screen name="management" options={{ title: 'الإدارة', tabBarIcon: ({ color }) => <Ionicons name="people-circle" size={22} color={color} /> }} />
-      <Tabs.Screen name="news" options={{ title: 'الأخبار', tabBarIcon: ({ color }) => <Ionicons name="megaphone" size={22} color={color} /> }} />
-      <Tabs.Screen name="inbox" options={{ title: 'الوارد', tabBarIcon: ({ color }) => <Ionicons name="mail" size={22} color={color} />, tabBarBadge: unread > 0 ? unread : undefined }} />
-      <Tabs.Screen name="finance" options={{ title: 'المالية', tabBarIcon: ({ color }) => <Ionicons name="wallet" size={22} color={color} /> }} />
-      <Tabs.Screen name="employees" options={{ href: null }} />
+      <Tabs.Screen name="index"      options={{ title: 'الرئيسية',    tabBarIcon: ({ color }) => <Ionicons name="bar-chart"     size={22} color={color} /> }} />
+      <Tabs.Screen name="management" options={{ title: 'الإدارة',      tabBarIcon: ({ color }) => <Ionicons name="people-circle" size={22} color={color} /> }} />
+      <Tabs.Screen name="honor"      options={{ title: 'لوحة الشرف',  tabBarIcon: ({ color }) => <Ionicons name="trophy"        size={22} color={color} /> }} />
+      <Tabs.Screen name="inbox"      options={{ title: 'الوارد',       tabBarIcon: ({ color }) => <Ionicons name="mail"          size={22} color={color} />, tabBarBadge: unread > 0 ? unread : undefined }} />
+      <Tabs.Screen name="finance"    options={{ title: 'المالية',      tabBarIcon: ({ color }) => <Ionicons name="wallet"        size={22} color={color} /> }} />
+      <Tabs.Screen name="employees"  options={{ href: null }} />
+      <Tabs.Screen name="news"       options={{ href: null }} />
     </Tabs>
   );
 }
