@@ -8,12 +8,12 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { Colors } from '@/constants/colors';
-import { useAppData, Employee, Student } from '@/contexts/AppDataContext';
+import { useAppData, Employee, Student, AttendanceRecord, EmployeeWarning } from '@/contexts/AppDataContext';
 import HexFrame from '@/components/HexFrame';
 import * as Haptics from 'expo-haptics';
 
 const LEVELS = ['براعم', 'مستوى أول', 'مستوى ثاني'];
-const ROLES_LIST = ['معلمة', 'مساعدة معلمة', 'مستقبلة', 'إداري', 'أخصائي'];
+const ROLES_LIST = ['معلمة', 'معلم', 'مساعدة معلمة', 'إشراف', 'إدارة', 'مستقبلة', 'أخصائي'];
 const LEVEL_COLORS: Record<string, string> = {
   'مستوى ثاني': '#3B82F6',
   'مستوى أول': '#10B981',
@@ -85,6 +85,22 @@ export default function ManagementScreen() {
           <View style={styles.headerTitle}>
             <Text style={styles.titleText}>لوحة الإدارة</Text>
             <Text style={styles.titleSub}>روضة أحباب الله — الخاصة</Text>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              <Pressable
+                style={styles.certBtn}
+                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/(admin)/certificates'); }}
+              >
+                <MaterialCommunityIcons name="certificate" size={14} color="#fcd34d" />
+                <Text style={styles.certBtnText}>الشهادات</Text>
+              </Pressable>
+              <Pressable
+                style={[styles.certBtn, { backgroundColor: 'rgba(200,160,40,0.2)', borderColor: 'rgba(200,160,40,0.5)' }]}
+                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/(admin)/id-cards'); }}
+              >
+                <MaterialCommunityIcons name="card-account-details" size={14} color="#f0d060" />
+                <Text style={[styles.certBtnText, { color: '#f0d060' }]}>البطاقات</Text>
+              </Pressable>
+            </View>
           </View>
         </View>
 
@@ -629,6 +645,7 @@ const PROFILE_TABS = ['نظرة عامة', 'الدرجات', 'التقارير',
 
 function StudentProfileSheet({ student, onClose }: { student: Student | null; onClose: () => void }) {
   const insets = useSafeAreaInsets();
+  const { updateStudent } = useAppData();
   const [activeTab, setActiveTab] = useState<typeof PROFILE_TABS[number]>('نظرة عامة');
 
   React.useEffect(() => {
@@ -787,6 +804,85 @@ function StudentProfileSheet({ student, onClose }: { student: Student | null; on
                   <Text style={pStyles.notesTxt}>{student.notes || 'لا توجد ملاحظات مسجّلة'}</Text>
                 </View>
               </View>
+
+              {/* Parent Account Management */}
+              <View style={pStyles.section}>
+                <Text style={pStyles.sectionTitle}>حساب ولي الأمر</Text>
+                {!student.parentPhone ? (
+                  <View style={pStyles.accountEmptyBox}>
+                    <Ionicons name="person-remove-outline" size={20} color={Colors.textLight} />
+                    <Text style={pStyles.accountEmptyTxt}>لم يُسجَّل حساب لولي الأمر</Text>
+                  </View>
+                ) : (
+                  <View style={pStyles.accountBox}>
+                    <View style={pStyles.accountStatusRow}>
+                      <View style={[pStyles.accountStatusBadge,
+                        { backgroundColor: student.parentDisabled ? '#FEF2F2' : '#ECFDF5' }]}>
+                        <View style={[pStyles.accountStatusDot,
+                          { backgroundColor: student.parentDisabled ? Colors.danger : '#10B981' }]} />
+                        <Text style={[pStyles.accountStatusTxt,
+                          { color: student.parentDisabled ? Colors.danger : '#10B981' }]}>
+                          {student.parentDisabled ? 'موقوف' : 'نشط'}
+                        </Text>
+                      </View>
+                      <Text style={pStyles.accountInfo}>{student.parentPhone}</Text>
+                    </View>
+
+                    <Pressable
+                      style={[pStyles.accountActionBtn,
+                        { backgroundColor: student.parentDisabled ? '#ECFDF5' : '#FEF2F2',
+                          borderColor: student.parentDisabled ? '#10B981' : Colors.danger }]}
+                      onPress={() => {
+                        const action = student.parentDisabled ? 'تفعيل' : 'إيقاف';
+                        const msg = student.parentDisabled
+                          ? `هل تريد تفعيل دخول ولي أمر ${student.name}؟`
+                          : `هل تريد إيقاف دخول ولي أمر ${student.name}؟ لن يتمكن من تسجيل الدخول.`;
+                        Alert.alert(`${action} الحساب`, msg, [
+                          { text: 'إلغاء', style: 'cancel' },
+                          { text: action, style: student.parentDisabled ? 'default' : 'destructive',
+                            onPress: () => {
+                              updateStudent(student.id, { parentDisabled: !student.parentDisabled });
+                              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                            }},
+                        ]);
+                      }}
+                    >
+                      <Ionicons
+                        name={student.parentDisabled ? 'lock-open-outline' : 'lock-closed-outline'}
+                        size={16}
+                        color={student.parentDisabled ? '#10B981' : Colors.danger}
+                      />
+                      <Text style={[pStyles.accountActionTxt,
+                        { color: student.parentDisabled ? '#10B981' : Colors.danger }]}>
+                        {student.parentDisabled ? 'تفعيل تسجيل الدخول' : 'إيقاف تسجيل الدخول'}
+                      </Text>
+                    </Pressable>
+
+                    <Pressable
+                      style={[pStyles.accountActionBtn,
+                        { backgroundColor: '#FFF7ED', borderColor: '#F59E0B', marginTop: 8 }]}
+                      onPress={() => {
+                        Alert.alert('حذف بيانات الحساب', `سيتم حذف رقم هاتف ولي أمر ${student.name} وبياناته بالكامل. لن يتمكن من الدخول مجدداً حتى يُعاد تسجيله.`, [
+                          { text: 'إلغاء', style: 'cancel' },
+                          { text: 'حذف البيانات', style: 'destructive',
+                            onPress: () => {
+                              updateStudent(student.id, {
+                                parentPhone: '',
+                                parentName: student.parentName,
+                                parentPassword: '',
+                                parentDisabled: false,
+                              });
+                              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+                            }},
+                        ]);
+                      }}
+                    >
+                      <Ionicons name="trash-outline" size={16} color="#F59E0B" />
+                      <Text style={[pStyles.accountActionTxt, { color: '#D97706' }]}>حذف بيانات الحساب</Text>
+                    </Pressable>
+                  </View>
+                )}
+              </View>
             </>
           )}
 
@@ -942,17 +1038,91 @@ function StudentProfileSheet({ student, onClose }: { student: Student | null; on
   );
 }
 
-function TeacherProfileSheet({ teacher, onClose }: { teacher: Employee | null; onClose: () => void }) {
+const ATT_STATUS_META = {
+  'حاضر':  { color: '#10B981', bg: '#ECFDF5', icon: 'checkmark-circle' as const },
+  'غائب':  { color: '#EF4444', bg: '#FEF2F2', icon: 'close-circle' as const },
+  'متأخر': { color: '#F59E0B', bg: '#FFFBEB', icon: 'time' as const },
+  'إجازة': { color: '#3B82F6', bg: '#EFF6FF', icon: 'calendar' as const },
+};
+const WARN_META = {
+  'تنبيه': { color: '#F59E0B', bg: '#FFFBEB', icon: 'alert-circle-outline' as const },
+  'إنذار': { color: '#EF4444', bg: '#FEF2F2', icon: 'close-circle-outline' as const },
+  'إيقاف': { color: '#7C3AED', bg: '#F5F3FF', icon: 'ban-outline' as const },
+};
+
+function TeacherProfileSheet({ teacher: teacherProp, onClose }: { teacher: Employee | null; onClose: () => void }) {
   const insets = useSafeAreaInsets();
-  if (!teacher) return null;
-  const levelColor = teacher.level ? LEVEL_COLORS[teacher.level] ?? Colors.primary : Colors.primary;
-  const attendanceRate = teacher.daysPresent + teacher.daysAbsent > 0
-    ? Math.round((teacher.daysPresent / (teacher.daysPresent + teacher.daysAbsent)) * 100)
+  const { employees, updateEmployee, removeEmployee } = useAppData();
+  const [activeTab, setActiveTab] = useState<'نظرة عامة' | 'الحضور' | 'الإنذارات' | 'الحساب'>('نظرة عامة');
+  const [showAttForm, setShowAttForm] = useState(false);
+  const [attStatus, setAttStatus] = useState<AttendanceRecord['status']>('حاضر');
+  const [attNote, setAttNote] = useState('');
+  const [showWarnForm, setShowWarnForm] = useState(false);
+  const [warnType, setWarnType] = useState<EmployeeWarning['type']>('تنبيه');
+  const [warnReason, setWarnReason] = useState('');
+  const [warnDuration, setWarnDuration] = useState('');
+
+  React.useEffect(() => {
+    if (teacherProp) { setActiveTab('نظرة عامة'); setShowAttForm(false); setShowWarnForm(false); }
+  }, [teacherProp?.id]);
+
+  if (!teacherProp) return null;
+  const teacher = employees.find(e => e.id === teacherProp.id) ?? teacherProp;
+  const records = teacher.attendanceRecords ?? [];
+  const warnings = teacher.warnings ?? [];
+  const today = new Date().toISOString().split('T')[0];
+  const todayRecord = records.find(r => r.date === today);
+  const presentCount = records.length > 0 ? records.filter(r => r.status === 'حاضر').length : teacher.daysPresent;
+  const absentCount  = records.length > 0 ? records.filter(r => r.status === 'غائب').length  : teacher.daysAbsent;
+  const lateCount    = records.filter(r => r.status === 'متأخر').length;
+  const leaveCount   = records.filter(r => r.status === 'إجازة').length;
+  const totalDays    = records.length > 0 ? records.length : teacher.daysPresent + teacher.daysAbsent;
+  const attendanceRate = totalDays > 0
+    ? Math.round(((presentCount + lateCount * 0.5) / totalDays) * 100)
     : 100;
+  const levelColor = teacher.level ? LEVEL_COLORS[teacher.level] ?? Colors.primary : Colors.primary;
+
+  const handleMarkAttendance = () => {
+    if (todayRecord) { Alert.alert('تنبيه', 'تم تسجيل الحضور لهذا اليوم مسبقاً'); return; }
+    const rec: AttendanceRecord = {
+      id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
+      date: today, status: attStatus, note: attNote.trim() || undefined,
+    };
+    updateEmployee(teacher.id, {
+      attendanceRecords: [rec, ...records],
+      daysPresent: attStatus === 'حاضر' ? teacher.daysPresent + 1 : teacher.daysPresent,
+      daysAbsent:  attStatus === 'غائب'  ? teacher.daysAbsent  + 1 : teacher.daysAbsent,
+    });
+    setShowAttForm(false); setAttNote(''); setAttStatus('حاضر');
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  };
+
+  const handleAddWarning = () => {
+    if (!warnReason.trim()) { Alert.alert('تنبيه', 'يرجى إدخال سبب الإجراء'); return; }
+    const w: EmployeeWarning = {
+      id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
+      type: warnType, reason: warnReason.trim(), date: today,
+      duration: warnDuration.trim() || undefined,
+    };
+    const updates: Partial<Employee> = { warnings: [w, ...warnings] };
+    if (warnType === 'إيقاف') updates.disabled = true;
+    updateEmployee(teacher.id, updates);
+    setShowWarnForm(false); setWarnReason(''); setWarnDuration(''); setWarnType('تنبيه');
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  };
+
+  const TABS = [
+    { key: 'نظرة عامة' as const, icon: 'person-outline' as const, badge: 0 },
+    { key: 'الحضور'    as const, icon: 'calendar-outline' as const, badge: records.length },
+    { key: 'الإنذارات' as const, icon: 'warning-outline' as const,  badge: warnings.length },
+    { key: 'الحساب'    as const, icon: 'shield-outline' as const,    badge: 0 },
+  ];
 
   return (
-    <Modal visible={!!teacher} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
+    <Modal visible={!!teacherProp} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <View style={[pStyles.container, { paddingTop: insets.top + 8 }]}>
+
+        {/* ── Header ── */}
         <LinearGradient colors={['#040b3c', '#0c1155', levelColor]} style={pStyles.profileHeader}>
           <Pressable onPress={onClose} style={pStyles.closeBtn}>
             <Ionicons name="chevron-down" size={24} color="#fff" />
@@ -970,80 +1140,356 @@ function TeacherProfileSheet({ teacher, onClose }: { teacher: Employee | null; o
                 <Text style={pStyles.profileBadgeText}>فصل {teacher.level}</Text>
               </View>
             )}
+            {teacher.disabled && (
+              <View style={[pStyles.profileBadge, { backgroundColor: '#EF4444' }]}>
+                <Text style={pStyles.profileBadgeText}>موقوف</Text>
+              </View>
+            )}
           </View>
           <View style={pStyles.headerStats}>
-            <View style={pStyles.headerStat}>
-              <Text style={pStyles.headerStatVal}>{teacher.salary.toLocaleString()}</Text>
-              <Text style={pStyles.headerStatLbl}>الراتب ج.س</Text>
-            </View>
-            <View style={pStyles.headerStatDivider} />
-            <View style={pStyles.headerStat}>
-              <Text style={pStyles.headerStatVal}>{teacher.daysPresent}</Text>
-              <Text style={pStyles.headerStatLbl}>أيام الحضور</Text>
-            </View>
-            <View style={pStyles.headerStatDivider} />
             <View style={pStyles.headerStat}>
               <Text style={pStyles.headerStatVal}>{attendanceRate}%</Text>
               <Text style={pStyles.headerStatLbl}>الانتظام</Text>
             </View>
+            <View style={pStyles.headerStatDivider} />
+            <View style={pStyles.headerStat}>
+              <Text style={[pStyles.headerStatVal, warnings.length > 0 && { color: '#FCA5A5' }]}>{warnings.length}</Text>
+              <Text style={pStyles.headerStatLbl}>الإنذارات</Text>
+            </View>
+            <View style={pStyles.headerStatDivider} />
+            <View style={pStyles.headerStat}>
+              <Text style={pStyles.headerStatVal}>{teacher.salary.toLocaleString()}</Text>
+              <Text style={pStyles.headerStatLbl}>الراتب ج.س</Text>
+            </View>
           </View>
         </LinearGradient>
 
-        <ScrollView style={pStyles.body} showsVerticalScrollIndicator={false}>
-          {/* Contact */}
-          <View style={pStyles.section}>
-            <Text style={pStyles.sectionTitle}>معلومات التواصل</Text>
+        {/* ── Tab Bar ── */}
+        <View style={pStyles.tabBar}>
+          {TABS.map(t => (
             <Pressable
-              style={pStyles.contactRow}
-              onPress={() => teacher.phone ? Linking.openURL(`tel:${teacher.phone}`) : null}
+              key={t.key}
+              style={[pStyles.tabBtn, activeTab === t.key && { borderBottomColor: levelColor, borderBottomWidth: 2.5 }]}
+              onPress={() => { setActiveTab(t.key); setShowAttForm(false); setShowWarnForm(false); }}
             >
-              <View style={[pStyles.contactIcon, { backgroundColor: '#10B98120' }]}>
-                <Ionicons name="call" size={20} color="#10B981" />
-              </View>
-              <View style={pStyles.contactInfo}>
-                <Text style={pStyles.contactLabel}>رقم الهاتف</Text>
-                <Text style={pStyles.contactVal}>{teacher.phone || 'غير مسجل'}</Text>
-              </View>
-              {teacher.phone && <Ionicons name="chevron-forward" size={16} color={Colors.textLight} />}
+              <Ionicons name={t.icon} size={13} color={activeTab === t.key ? levelColor : Colors.textSecondary} />
+              <Text style={[pStyles.tabBtnTxt, activeTab === t.key && { color: levelColor, fontFamily: 'Inter_700Bold' }]}>{t.key}</Text>
+              {t.badge > 0 && (
+                <View style={[pStyles.tabBadge, { backgroundColor: t.key === 'الإنذارات' ? Colors.danger : levelColor }]}>
+                  <Text style={pStyles.tabBadgeTxt}>{t.badge}</Text>
+                </View>
+              )}
             </Pressable>
-          </View>
+          ))}
+        </View>
 
-          {/* Attendance */}
-          <View style={pStyles.section}>
-            <Text style={pStyles.sectionTitle}>سجل الحضور والانصراف</Text>
-            <View style={pStyles.attendanceGrid}>
-              <View style={[pStyles.attendanceGridCard, { backgroundColor: '#ECFDF5', borderColor: '#10B98130' }]}>
-                <Text style={[pStyles.attendanceGridVal, { color: '#10B981' }]}>{teacher.daysPresent}</Text>
-                <Text style={pStyles.attendanceGridLbl}>يوم حضور</Text>
-              </View>
-              <View style={[pStyles.attendanceGridCard, { backgroundColor: '#FEF2F2', borderColor: '#EF444430' }]}>
-                <Text style={[pStyles.attendanceGridVal, { color: Colors.danger }]}>{teacher.daysAbsent}</Text>
-                <Text style={pStyles.attendanceGridLbl}>يوم غياب</Text>
-              </View>
-            </View>
-            <View style={pStyles.attendanceRow}>
-              <Text style={[pStyles.attendancePct, { color: attendanceRate >= 90 ? '#10B981' : '#F59E0B' }]}>
-                {attendanceRate}%
-              </Text>
-              <View style={pStyles.attendanceBarBg}>
-                <View style={[pStyles.attendanceBarFill, {
-                  width: `${attendanceRate}%` as any,
-                  backgroundColor: attendanceRate >= 90 ? '#10B981' : '#F59E0B',
-                }]} />
-              </View>
-            </View>
-          </View>
+        <ScrollView style={pStyles.body} showsVerticalScrollIndicator={false} key={activeTab}>
 
-          {/* Salary */}
-          <View style={pStyles.section}>
-            <Text style={pStyles.sectionTitle}>المرتب الشهري</Text>
-            <View style={pStyles.salaryCard}>
-              <LinearGradient colors={['#040b3c', '#0c1155']} style={pStyles.salaryGrad}>
-                <Text style={pStyles.salaryLabel}>إجمالي المرتب</Text>
-                <Text style={pStyles.salaryVal}>{teacher.salary.toLocaleString()} <Text style={pStyles.salaryCurrency}>ج.س</Text></Text>
-              </LinearGradient>
+          {/* ══ TAB: نظرة عامة ══ */}
+          {activeTab === 'نظرة عامة' && (
+            <>
+              <View style={pStyles.section}>
+                <Text style={pStyles.sectionTitle}>معلومات التواصل</Text>
+                <Pressable style={pStyles.contactRow} onPress={() => teacher.phone ? Linking.openURL(`tel:${teacher.phone}`) : null}>
+                  <View style={[pStyles.contactIcon, { backgroundColor: '#10B98120' }]}>
+                    <Ionicons name="call" size={20} color="#10B981" />
+                  </View>
+                  <View style={pStyles.contactInfo}>
+                    <Text style={pStyles.contactLabel}>رقم الهاتف</Text>
+                    <Text style={pStyles.contactVal}>{teacher.phone || 'غير مسجل'}</Text>
+                  </View>
+                  {teacher.phone && <Ionicons name="chevron-forward" size={16} color={Colors.textLight} />}
+                </Pressable>
+                <View style={[pStyles.contactRow, { marginTop: 8 }]}>
+                  <View style={[pStyles.contactIcon, { backgroundColor: Colors.primary + '20' }]}>
+                    <Ionicons name="mail-outline" size={20} color={Colors.primary} />
+                  </View>
+                  <View style={pStyles.contactInfo}>
+                    <Text style={pStyles.contactLabel}>البريد الإلكتروني</Text>
+                    <Text style={pStyles.contactVal}>{teacher.email || 'غير مسجل'}</Text>
+                  </View>
+                </View>
+              </View>
+              <View style={pStyles.section}>
+                <Text style={pStyles.sectionTitle}>المرتب الشهري</Text>
+                <View style={pStyles.salaryCard}>
+                  <LinearGradient colors={['#040b3c', '#0c1155']} style={pStyles.salaryGrad}>
+                    <Text style={pStyles.salaryLabel}>إجمالي المرتب</Text>
+                    <Text style={pStyles.salaryVal}>{teacher.salary.toLocaleString()} <Text style={pStyles.salaryCurrency}>ج.س</Text></Text>
+                  </LinearGradient>
+                </View>
+              </View>
+            </>
+          )}
+
+          {/* ══ TAB: الحضور ══ */}
+          {activeTab === 'الحضور' && (
+            <>
+              <View style={pStyles.section}>
+                <View style={pStyles.sectionHeaderRow}>
+                  <Pressable
+                    style={[pStyles.addBtn, { backgroundColor: todayRecord ? Colors.surfaceAlt : levelColor }]}
+                    onPress={() => { if (!todayRecord) setShowAttForm(!showAttForm); }}
+                  >
+                    <Ionicons name={todayRecord ? 'checkmark-circle' : 'add'} size={14} color={todayRecord ? levelColor : '#fff'} />
+                    <Text style={[pStyles.addBtnTxt, { color: todayRecord ? levelColor : '#fff' }]}>
+                      {todayRecord ? `مسجَّل: ${todayRecord.status}` : 'تسجيل حضور اليوم'}
+                    </Text>
+                  </Pressable>
+                  <Text style={pStyles.sectionTitle}>الإحصائيات</Text>
+                </View>
+
+                {/* Inline attendance form */}
+                {showAttForm && !todayRecord && (
+                  <View style={pStyles.inlineForm}>
+                    <Text style={pStyles.inlineFormTitle}>تسجيل يوم {today}</Text>
+                    <View style={pStyles.attStatusRow}>
+                      {(['حاضر', 'غائب', 'متأخر', 'إجازة'] as const).map(s => (
+                        <Pressable
+                          key={s}
+                          style={[pStyles.attStatusBtn, attStatus === s && { backgroundColor: ATT_STATUS_META[s].bg, borderColor: ATT_STATUS_META[s].color }]}
+                          onPress={() => setAttStatus(s)}
+                        >
+                          <Ionicons name={ATT_STATUS_META[s].icon} size={14} color={attStatus === s ? ATT_STATUS_META[s].color : Colors.textSecondary} />
+                          <Text style={[pStyles.attStatusTxt, attStatus === s && { color: ATT_STATUS_META[s].color }]}>{s}</Text>
+                        </Pressable>
+                      ))}
+                    </View>
+                    <TextInput
+                      style={pStyles.inlineInput}
+                      placeholder="ملاحظة (اختياري)"
+                      value={attNote}
+                      onChangeText={setAttNote}
+                      textAlign="right"
+                      placeholderTextColor={Colors.textLight}
+                    />
+                    <View style={{ flexDirection: 'row', gap: 8 }}>
+                      <Pressable style={[pStyles.formBtn, { flex: 1, backgroundColor: Colors.surfaceAlt }]} onPress={() => setShowAttForm(false)}>
+                        <Text style={pStyles.formBtnCancel}>إلغاء</Text>
+                      </Pressable>
+                      <Pressable style={[pStyles.formBtn, { flex: 2, backgroundColor: levelColor }]} onPress={handleMarkAttendance}>
+                        <Text style={pStyles.formBtnConfirm}>تسجيل</Text>
+                      </Pressable>
+                    </View>
+                  </View>
+                )}
+
+                {/* Stats grid */}
+                <View style={pStyles.attStatsGrid}>
+                  <View style={[pStyles.attStatCard, { backgroundColor: '#ECFDF5', borderColor: '#10B98120' }]}>
+                    <Text style={[pStyles.attStatVal, { color: '#10B981' }]}>{presentCount}</Text>
+                    <Text style={pStyles.attStatLbl}>حاضر</Text>
+                  </View>
+                  <View style={[pStyles.attStatCard, { backgroundColor: '#FEF2F2', borderColor: '#EF444420' }]}>
+                    <Text style={[pStyles.attStatVal, { color: '#EF4444' }]}>{absentCount}</Text>
+                    <Text style={pStyles.attStatLbl}>غائب</Text>
+                  </View>
+                  <View style={[pStyles.attStatCard, { backgroundColor: '#FFFBEB', borderColor: '#F59E0B20' }]}>
+                    <Text style={[pStyles.attStatVal, { color: '#F59E0B' }]}>{lateCount}</Text>
+                    <Text style={pStyles.attStatLbl}>متأخر</Text>
+                  </View>
+                  <View style={[pStyles.attStatCard, { backgroundColor: '#EFF6FF', borderColor: '#3B82F620' }]}>
+                    <Text style={[pStyles.attStatVal, { color: '#3B82F6' }]}>{leaveCount}</Text>
+                    <Text style={pStyles.attStatLbl}>إجازة</Text>
+                  </View>
+                </View>
+                <View style={pStyles.attendanceRow}>
+                  <Text style={[pStyles.attendancePct, { color: attendanceRate >= 90 ? '#10B981' : '#F59E0B' }]}>{attendanceRate}%</Text>
+                  <View style={{ flex: 1 }}>
+                    <View style={pStyles.attendanceBarBg}>
+                      <View style={[pStyles.attendanceBarFill, { width: `${attendanceRate}%` as any, backgroundColor: attendanceRate >= 90 ? '#10B981' : '#F59E0B' }]} />
+                    </View>
+                    <Text style={pStyles.attendanceHint}>{attendanceRate >= 90 ? 'انتظام ممتاز' : attendanceRate >= 75 ? 'انتظام جيد' : 'يحتاج متابعة'}</Text>
+                  </View>
+                </View>
+              </View>
+
+              {/* Records list */}
+              {records.length > 0 ? (
+                <View style={pStyles.section}>
+                  <Text style={pStyles.sectionTitle}>سجل الحضور التفصيلي</Text>
+                  {records.slice(0, 30).map(r => {
+                    const meta = ATT_STATUS_META[r.status];
+                    return (
+                      <View key={r.id} style={pStyles.attRecord}>
+                        <View style={[pStyles.attRecordBadge, { backgroundColor: meta.bg }]}>
+                          <Ionicons name={meta.icon} size={13} color={meta.color} />
+                          <Text style={[pStyles.attRecordStatus, { color: meta.color }]}>{r.status}</Text>
+                        </View>
+                        <Text style={pStyles.attRecordNote} numberOfLines={1}>{r.note || ''}</Text>
+                        <Text style={pStyles.attRecordDate}>{r.date}</Text>
+                      </View>
+                    );
+                  })}
+                </View>
+              ) : (
+                <View style={pStyles.emptyTab}>
+                  <Ionicons name="calendar-outline" size={48} color={Colors.textLight} />
+                  <Text style={pStyles.emptyTabTxt}>لم يُسجَّل أي سجل حضور بعد</Text>
+                  <Text style={pStyles.emptyTabSub}>اضغط على "تسجيل حضور اليوم" للبدء</Text>
+                </View>
+              )}
+            </>
+          )}
+
+          {/* ══ TAB: الإنذارات ══ */}
+          {activeTab === 'الإنذارات' && (
+            <>
+              <View style={pStyles.section}>
+                <View style={pStyles.sectionHeaderRow}>
+                  <Pressable
+                    style={[pStyles.addBtn, { backgroundColor: Colors.danger }]}
+                    onPress={() => setShowWarnForm(!showWarnForm)}
+                  >
+                    <Ionicons name="add" size={14} color="#fff" />
+                    <Text style={[pStyles.addBtnTxt, { color: '#fff' }]}>إضافة إجراء</Text>
+                  </Pressable>
+                  <Text style={pStyles.sectionTitle}>ملخص الإجراءات</Text>
+                </View>
+
+                {/* Inline warning form */}
+                {showWarnForm && (
+                  <View style={pStyles.inlineForm}>
+                    <Text style={pStyles.inlineFormTitle}>إجراء تأديبي لـ {teacher.name}</Text>
+                    <View style={pStyles.warnTypeRow}>
+                      {(['تنبيه', 'إنذار', 'إيقاف'] as const).map(t => {
+                        const m = WARN_META[t];
+                        return (
+                          <Pressable
+                            key={t}
+                            style={[pStyles.warnTypeBtn, warnType === t && { backgroundColor: m.bg, borderColor: m.color }]}
+                            onPress={() => setWarnType(t)}
+                          >
+                            <Ionicons name={m.icon} size={15} color={warnType === t ? m.color : Colors.textSecondary} />
+                            <Text style={[pStyles.warnTypeTxt, warnType === t && { color: m.color, fontFamily: 'Inter_700Bold' }]}>{t}</Text>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                    <TextInput
+                      style={[pStyles.inlineInput, { minHeight: 72, textAlignVertical: 'top' }]}
+                      placeholder="سبب الإجراء (مطلوب)"
+                      value={warnReason}
+                      onChangeText={setWarnReason}
+                      multiline
+                      textAlign="right"
+                      placeholderTextColor={Colors.textLight}
+                    />
+                    {warnType === 'إيقاف' && (
+                      <>
+                        <TextInput
+                          style={pStyles.inlineInput}
+                          placeholder="مدة الإيقاف — مثال: 3 أيام"
+                          value={warnDuration}
+                          onChangeText={setWarnDuration}
+                          textAlign="right"
+                          placeholderTextColor={Colors.textLight}
+                        />
+                        <View style={pStyles.warnNotice}>
+                          <Ionicons name="information-circle-outline" size={13} color={Colors.danger} />
+                          <Text style={pStyles.warnNoticeTxt}>سيتم تعطيل حساب الموظف تلقائياً عند الإيقاف</Text>
+                        </View>
+                      </>
+                    )}
+                    <View style={{ flexDirection: 'row', gap: 8 }}>
+                      <Pressable style={[pStyles.formBtn, { flex: 1, backgroundColor: Colors.surfaceAlt }]} onPress={() => { setShowWarnForm(false); setWarnReason(''); setWarnDuration(''); }}>
+                        <Text style={pStyles.formBtnCancel}>إلغاء</Text>
+                      </Pressable>
+                      <Pressable style={[pStyles.formBtn, { flex: 2, backgroundColor: WARN_META[warnType].color }]} onPress={handleAddWarning}>
+                        <Text style={pStyles.formBtnConfirm}>إصدار {warnType}</Text>
+                      </Pressable>
+                    </View>
+                  </View>
+                )}
+
+                {/* Summary stats */}
+                <View style={pStyles.warnSummaryRow}>
+                  {(['تنبيه', 'إنذار', 'إيقاف'] as const).map(t => {
+                    const m = WARN_META[t];
+                    const count = warnings.filter(w => w.type === t).length;
+                    return (
+                      <View key={t} style={[pStyles.warnSummaryCard, { backgroundColor: m.bg, borderColor: m.color + '30' }]}>
+                        <Text style={[pStyles.warnSummaryVal, { color: m.color }]}>{count}</Text>
+                        <Text style={pStyles.warnSummaryLbl}>{t}</Text>
+                      </View>
+                    );
+                  })}
+                </View>
+              </View>
+
+              {/* Warnings list */}
+              {warnings.length === 0 ? (
+                <View style={pStyles.emptyTab}>
+                  <Ionicons name="shield-checkmark-outline" size={48} color={Colors.textLight} />
+                  <Text style={pStyles.emptyTabTxt}>لا توجد إجراءات تأديبية</Text>
+                  <Text style={pStyles.emptyTabSub}>سجل نظيف للموظف</Text>
+                </View>
+              ) : (
+                <View style={pStyles.section}>
+                  <Text style={pStyles.sectionTitle}>سجل الإجراءات التأديبية</Text>
+                  {warnings.map(w => {
+                    const m = WARN_META[w.type];
+                    return (
+                      <View key={w.id} style={[pStyles.warnCard, { borderColor: m.color + '30', borderLeftColor: m.color }]}>
+                        <View style={pStyles.warnCardHeader}>
+                          <Text style={pStyles.warnCardDate}>{w.date}</Text>
+                          <View style={[pStyles.warnBadge, { backgroundColor: m.bg }]}>
+                            <Ionicons name={m.icon} size={11} color={m.color} />
+                            <Text style={[pStyles.warnBadgeTxt, { color: m.color }]}>{w.type}</Text>
+                          </View>
+                        </View>
+                        <Text style={pStyles.warnCardReason}>{w.reason}</Text>
+                        {w.duration && <Text style={[pStyles.warnCardDuration, { color: m.color }]}>المدة: {w.duration}</Text>}
+                      </View>
+                    );
+                  })}
+                </View>
+              )}
+            </>
+          )}
+
+          {/* ══ TAB: الحساب ══ */}
+          {activeTab === 'الحساب' && (
+            <View style={pStyles.section}>
+              <Text style={pStyles.sectionTitle}>إدارة الحساب</Text>
+              <View style={pStyles.accountBox}>
+                <View style={pStyles.accountStatusRow}>
+                  <View style={[pStyles.accountStatusBadge, { backgroundColor: teacher.disabled ? '#FEF2F2' : '#ECFDF5' }]}>
+                    <View style={[pStyles.accountStatusDot, { backgroundColor: teacher.disabled ? '#EF4444' : '#10B981' }]} />
+                    <Text style={[pStyles.accountStatusTxt, { color: teacher.disabled ? '#EF4444' : '#10B981' }]}>
+                      {teacher.disabled ? 'موقوف' : 'نشط'}
+                    </Text>
+                  </View>
+                  <Text style={pStyles.accountInfo}>{teacher.email || teacher.role}</Text>
+                </View>
+                <Pressable
+                  style={[pStyles.accountActionBtn, { backgroundColor: teacher.disabled ? '#ECFDF5' : '#FEF2F2', borderColor: teacher.disabled ? '#10B981' : '#EF4444' }]}
+                  onPress={() => {
+                    const action = teacher.disabled ? 'تفعيل' : 'إيقاف';
+                    Alert.alert(`${action} الحساب`,
+                      teacher.disabled ? `هل تريد تفعيل دخول ${teacher.name}؟` : `هل تريد إيقاف دخول ${teacher.name}؟`,
+                      [{ text: 'إلغاء', style: 'cancel' },
+                       { text: action, style: teacher.disabled ? 'default' : 'destructive',
+                         onPress: () => { updateEmployee(teacher.id, { disabled: !teacher.disabled }); Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); }}]);
+                  }}
+                >
+                  <Ionicons name={teacher.disabled ? 'lock-open-outline' : 'lock-closed-outline'} size={16} color={teacher.disabled ? '#10B981' : '#EF4444'} />
+                  <Text style={[pStyles.accountActionTxt, { color: teacher.disabled ? '#10B981' : '#EF4444' }]}>
+                    {teacher.disabled ? 'تفعيل تسجيل الدخول' : 'إيقاف تسجيل الدخول'}
+                  </Text>
+                </Pressable>
+                <Pressable
+                  style={[pStyles.accountActionBtn, { backgroundColor: '#FEF2F2', borderColor: '#EF4444', marginTop: 8 }]}
+                  onPress={() => Alert.alert('حذف الحساب', `سيتم حذف حساب ${teacher.name} بالكامل من النظام.`,
+                    [{ text: 'إلغاء', style: 'cancel' },
+                     { text: 'حذف', style: 'destructive', onPress: () => { removeEmployee(teacher.id); Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning); onClose(); }}])}
+                >
+                  <Ionicons name="trash-outline" size={16} color="#EF4444" />
+                  <Text style={[pStyles.accountActionTxt, { color: '#EF4444' }]}>حذف الحساب من النظام</Text>
+                </Pressable>
+              </View>
             </View>
-          </View>
+          )}
 
           <View style={{ height: insets.bottom + 32 }} />
         </ScrollView>
@@ -1148,6 +1594,63 @@ const pStyles = StyleSheet.create({
   assessSubject: { flex: 1, backgroundColor: Colors.surfaceAlt, borderRadius: 10, padding: 10, alignItems: 'center' },
   assessSubLbl: { fontSize: 10, fontFamily: 'Inter_400Regular', color: Colors.textSecondary, marginBottom: 3 },
   assessSubVal: { fontSize: 13, fontFamily: 'Inter_700Bold', color: Colors.text },
+
+  accountBox: { backgroundColor: Colors.surface, borderRadius: 14, padding: 14, borderWidth: 1, borderColor: Colors.borderLight, gap: 0 },
+  accountEmptyBox: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: Colors.surfaceAlt, borderRadius: 12, padding: 14 },
+  accountEmptyTxt: { fontSize: 13, fontFamily: 'Inter_400Regular', color: Colors.textLight },
+  accountStatusRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
+  accountStatusBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20 },
+  accountStatusDot: { width: 7, height: 7, borderRadius: 4 },
+  accountStatusTxt: { fontSize: 12, fontFamily: 'Inter_600SemiBold' },
+  accountInfo: { fontSize: 12, fontFamily: 'Inter_400Regular', color: Colors.textSecondary, flex: 1, textAlign: 'right' },
+  accountActionBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 10, paddingVertical: 11, borderWidth: 1 },
+  accountActionTxt: { fontSize: 13, fontFamily: 'Inter_600SemiBold' },
+
+  sectionHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
+  addBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20 },
+  addBtnTxt: { fontSize: 12, fontFamily: 'Inter_600SemiBold' },
+
+  inlineForm: { backgroundColor: Colors.surfaceAlt, borderRadius: 14, padding: 14, marginBottom: 14, gap: 10, borderWidth: 1, borderColor: Colors.borderLight },
+  inlineFormTitle: { fontSize: 13, fontFamily: 'Inter_700Bold', color: Colors.text, textAlign: 'right', marginBottom: 2 },
+  inlineInput: { backgroundColor: Colors.surface, borderRadius: 10, borderWidth: 1, borderColor: Colors.borderLight, paddingHorizontal: 12, paddingVertical: 10, fontSize: 13, fontFamily: 'Inter_400Regular', color: Colors.text },
+  formBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 11, borderRadius: 10 },
+  formBtnCancel: { fontSize: 13, fontFamily: 'Inter_500Medium', color: Colors.textSecondary },
+  formBtnConfirm: { fontSize: 13, fontFamily: 'Inter_700Bold', color: '#fff' },
+
+  attStatusRow: { flexDirection: 'row', gap: 8 },
+  attStatusBtn: { flex: 1, flexDirection: 'column', alignItems: 'center', gap: 3, paddingVertical: 10, borderRadius: 10, backgroundColor: Colors.surface, borderWidth: 1.5, borderColor: Colors.borderLight },
+  attStatusTxt: { fontSize: 11, fontFamily: 'Inter_500Medium', color: Colors.textSecondary },
+
+  attStatsGrid: { flexDirection: 'row', gap: 8, marginBottom: 12 },
+  attStatCard: { flex: 1, borderRadius: 12, padding: 12, alignItems: 'center', borderWidth: 1 },
+  attStatVal: { fontSize: 22, fontFamily: 'Inter_700Bold', marginBottom: 2 },
+  attStatLbl: { fontSize: 10, fontFamily: 'Inter_400Regular', color: Colors.textSecondary },
+
+  attRecord: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: Colors.borderLight + '60' },
+  attRecordBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
+  attRecordStatus: { fontSize: 12, fontFamily: 'Inter_600SemiBold' },
+  attRecordNote: { flex: 1, fontSize: 11, fontFamily: 'Inter_400Regular', color: Colors.textSecondary, textAlign: 'right' },
+  attRecordDate: { fontSize: 11, fontFamily: 'Inter_400Regular', color: Colors.textLight, minWidth: 80, textAlign: 'right' },
+
+  warnSummaryRow: { flexDirection: 'row', gap: 10 },
+  warnSummaryCard: { flex: 1, borderRadius: 12, padding: 12, alignItems: 'center', borderWidth: 1 },
+  warnSummaryVal: { fontSize: 24, fontFamily: 'Inter_700Bold', marginBottom: 2 },
+  warnSummaryLbl: { fontSize: 11, fontFamily: 'Inter_500Medium', color: Colors.textSecondary },
+
+  warnTypeRow: { flexDirection: 'row', gap: 8 },
+  warnTypeBtn: { flex: 1, flexDirection: 'column', alignItems: 'center', gap: 4, paddingVertical: 10, borderRadius: 10, backgroundColor: Colors.surface, borderWidth: 1.5, borderColor: Colors.borderLight },
+  warnTypeTxt: { fontSize: 12, fontFamily: 'Inter_500Medium', color: Colors.textSecondary },
+
+  warnNotice: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#FEF2F2', borderRadius: 8, padding: 8 },
+  warnNoticeTxt: { flex: 1, fontSize: 11, fontFamily: 'Inter_400Regular', color: Colors.danger, textAlign: 'right' },
+
+  warnCard: { backgroundColor: Colors.surface, borderRadius: 12, padding: 12, marginBottom: 10, borderWidth: 1, borderLeftWidth: 3 },
+  warnCardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
+  warnCardDate: { fontSize: 11, fontFamily: 'Inter_400Regular', color: Colors.textLight },
+  warnBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
+  warnBadgeTxt: { fontSize: 11, fontFamily: 'Inter_700Bold' },
+  warnCardReason: { fontSize: 13, fontFamily: 'Inter_400Regular', color: Colors.text, textAlign: 'right', lineHeight: 20 },
+  warnCardDuration: { fontSize: 11, fontFamily: 'Inter_600SemiBold', marginTop: 4, textAlign: 'right' },
 });
 
 const styles = StyleSheet.create({
@@ -1156,6 +1659,8 @@ const styles = StyleSheet.create({
   headerTitle: { flex: 1, alignItems: 'flex-end' },
   titleText: { fontSize: 20, fontFamily: 'Inter_700Bold', color: '#fff' },
   titleSub: { fontSize: 10, fontFamily: 'Inter_400Regular', color: 'rgba(255,255,255,0.55)', marginTop: 2 },
+  certBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(252,211,77,0.15)', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4, marginTop: 6, borderWidth: 1, borderColor: 'rgba(252,211,77,0.3)' },
+  certBtnText: { fontSize: 11, fontFamily: 'Inter_600SemiBold', color: '#fcd34d' },
   headerStats: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: 12, paddingHorizontal: 12, paddingVertical: 8, gap: 8 },
   miniStat: { alignItems: 'center' },
   miniStatVal: { fontSize: 18, fontFamily: 'Inter_700Bold', color: '#ca9928' },

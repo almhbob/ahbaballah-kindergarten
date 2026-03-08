@@ -272,6 +272,7 @@ export default function SettingsScreen() {
                 { key: 'name',           label: 'اسم الروضة',       multi: false },
                 { key: 'principalName',  label: 'اسم المديرة',       multi: false },
                 { key: 'phone',          label: 'رقم الواتساب',      multi: false },
+                { key: 'email',          label: 'البريد الإلكتروني', multi: false },
                 { key: 'location',       label: 'الموقع',            multi: false },
                 { key: 'motto',          label: 'شعار الروضة',       multi: true },
               ] as { key: keyof SchoolInfo; label: string; multi: boolean }[]).map(f => (

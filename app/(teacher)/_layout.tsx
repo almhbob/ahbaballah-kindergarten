@@ -1,12 +1,18 @@
 import { isLiquidGlassAvailable } from "expo-glass-effect";
 import { Tabs } from "expo-router";
-import { NativeTabs, Icon, Label } from "expo-router/unstable-native-tabs";
+import { NativeTabs, Icon, Label, Badge } from "expo-router/unstable-native-tabs";
 import { BlurView } from "expo-blur";
 import { Platform, StyleSheet, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "@/constants/colors";
+import { useAppData } from "@/contexts/AppDataContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 function NativeTeacherTabs() {
+  const { news, messages } = useAppData();
+  const { user } = useAuth();
+  const unread = messages.filter(m => m.senderId === 'admin' && m.receiverId === user?.id && !m.read).length + news.length;
+
   return (
     <NativeTabs>
       <NativeTabs.Trigger name="index">
@@ -25,6 +31,11 @@ function NativeTeacherTabs() {
         <Icon sf={{ default: "book", selected: "book.fill" }} />
         <Label>المنهج</Label>
       </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="notifications">
+        <Icon sf={{ default: "bell", selected: "bell.fill" }} />
+        <Label>الإشعارات</Label>
+        {unread > 0 && <Badge>{unread}</Badge>}
+      </NativeTabs.Trigger>
     </NativeTabs>
   );
 }
@@ -32,6 +43,10 @@ function NativeTeacherTabs() {
 function ClassicTeacherTabs() {
   const isWeb = Platform.OS === "web";
   const isIOS = Platform.OS === "ios";
+  const { news, messages } = useAppData();
+  const { user } = useAuth();
+  const unread = messages.filter(m => m.senderId === 'admin' && m.receiverId === user?.id && !m.read).length + news.length;
+
   return (
     <Tabs
       screenOptions={{
@@ -55,10 +70,12 @@ function ClassicTeacherTabs() {
         tabBarLabelStyle: { fontFamily: "Inter_500Medium", fontSize: 10 },
       }}
     >
-      <Tabs.Screen name="index" options={{ title: 'جدولي', tabBarIcon: ({ color }) => <Ionicons name="calendar" size={22} color={color} /> }} />
-      <Tabs.Screen name="students" options={{ title: 'الطلاب', tabBarIcon: ({ color }) => <Ionicons name="people" size={22} color={color} /> }} />
-      <Tabs.Screen name="grades" options={{ title: 'الدرجات', tabBarIcon: ({ color }) => <Ionicons name="school" size={22} color={color} /> }} />
-      <Tabs.Screen name="curriculum" options={{ title: 'المنهج', tabBarIcon: ({ color }) => <Ionicons name="book" size={22} color={color} /> }} />
+      <Tabs.Screen name="index"         options={{ title: 'جدولي',     tabBarIcon: ({ color }) => <Ionicons name="calendar"          size={22} color={color} /> }} />
+      <Tabs.Screen name="students"      options={{ title: 'الطلاب',    tabBarIcon: ({ color }) => <Ionicons name="people"            size={22} color={color} /> }} />
+      <Tabs.Screen name="grades"        options={{ title: 'الدرجات',   tabBarIcon: ({ color }) => <Ionicons name="school"            size={22} color={color} /> }} />
+      <Tabs.Screen name="curriculum"    options={{ title: 'المنهج',    tabBarIcon: ({ color }) => <Ionicons name="book"              size={22} color={color} /> }} />
+      <Tabs.Screen name="notifications" options={{ title: 'الإشعارات', tabBarIcon: ({ color }) => <Ionicons name="notifications"    size={22} color={color} />, tabBarBadge: unread > 0 ? unread : undefined }} />
+      <Tabs.Screen name="certificates" options={{ href: null }} />
     </Tabs>
   );
 }

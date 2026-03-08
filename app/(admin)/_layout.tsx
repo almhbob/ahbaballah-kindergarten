@@ -74,11 +74,13 @@ function ClassicAdminTabs() {
       <Tabs.Screen name="honor"      options={{ title: 'لوحة الشرف',  tabBarIcon: ({ color }) => <Ionicons name="trophy"        size={22} color={color} /> }} />
       <Tabs.Screen name="inbox"      options={{ title: 'الوارد',       tabBarIcon: ({ color }) => <Ionicons name="mail"          size={22} color={color} />, tabBarBadge: unread > 0 ? unread : undefined }} />
       <Tabs.Screen name="finance"    options={{ title: 'المالية',      tabBarIcon: ({ color }) => <Ionicons name="wallet"        size={22} color={color} /> }} />
-      <Tabs.Screen name="employees"  options={{ href: null }} />
-      <Tabs.Screen name="news"       options={{ href: null }} />
-      <Tabs.Screen name="meetings"   options={{ href: null }} />
-      <Tabs.Screen name="settings"   options={{ href: null }} />
-      <Tabs.Screen name="export"     options={{ href: null }} />
+      <Tabs.Screen name="employees"    options={{ href: null }} />
+      <Tabs.Screen name="news"         options={{ href: null }} />
+      <Tabs.Screen name="meetings"     options={{ href: null }} />
+      <Tabs.Screen name="settings"     options={{ href: null }} />
+      <Tabs.Screen name="export"       options={{ href: null }} />
+      <Tabs.Screen name="certificates" options={{ href: null }} />
+      <Tabs.Screen name="id-cards"     options={{ href: null }} />
     </Tabs>
   );
 }

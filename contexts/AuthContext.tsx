@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
+import { Platform } from 'react-native';
 
 export type UserRole = 'admin' | 'teacher' | 'parent';
 
@@ -15,21 +17,56 @@ export interface AuthUser {
 interface AuthContextValue {
   user: AuthUser | null;
   isLoading: boolean;
+  isBiometricEnabled: boolean;
   login: (user: AuthUser) => Promise<void>;
   logout: () => Promise<void>;
+  enableBiometric: (user: AuthUser) => Promise<void>;
+  disableBiometric: () => Promise<void>;
+  getBiometricUser: () => Promise<AuthUser | null>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+const BIOMETRIC_KEY = 'biometric_user';
+const BIOMETRIC_FLAG = 'biometric_enabled';
+
+async function secureSet(key: string, value: string) {
+  if (Platform.OS === 'web') {
+    await AsyncStorage.setItem(key, value);
+  } else {
+    await SecureStore.setItemAsync(key, value);
+  }
+}
+
+async function secureGet(key: string): Promise<string | null> {
+  if (Platform.OS === 'web') {
+    return AsyncStorage.getItem(key);
+  }
+  return SecureStore.getItemAsync(key);
+}
+
+async function secureDel(key: string) {
+  if (Platform.OS === 'web') {
+    await AsyncStorage.removeItem(key);
+  } else {
+    await SecureStore.deleteItemAsync(key);
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isBiometricEnabled, setIsBiometricEnabled] = useState(false);
 
   useEffect(() => {
-    AsyncStorage.getItem('auth_user').then((data) => {
+    const init = async () => {
+      const data = await AsyncStorage.getItem('auth_user');
       if (data) setUser(JSON.parse(data));
+      const flag = await secureGet(BIOMETRIC_FLAG);
+      setIsBiometricEnabled(flag === 'true');
       setIsLoading(false);
-    });
+    };
+    init();
   }, []);
 
   const login = async (userData: AuthUser) => {
@@ -42,7 +79,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   };
 
-  const value = useMemo(() => ({ user, isLoading, login, logout }), [user, isLoading]);
+  const enableBiometric = async (userData: AuthUser) => {
+    await secureSet(BIOMETRIC_KEY, JSON.stringify(userData));
+    await secureSet(BIOMETRIC_FLAG, 'true');
+    setIsBiometricEnabled(true);
+  };
+
+  const disableBiometric = async () => {
+    await secureDel(BIOMETRIC_KEY);
+    await secureSet(BIOMETRIC_FLAG, 'false');
+    setIsBiometricEnabled(false);
+  };
+
+  const getBiometricUser = async (): Promise<AuthUser | null> => {
+    const data = await secureGet(BIOMETRIC_KEY);
+    if (!data) return null;
+    try { return JSON.parse(data); } catch { return null; }
+  };
+
+  const value = useMemo(() => ({
+    user, isLoading, isBiometricEnabled,
+    login, logout, enableBiometric, disableBiometric, getBiometricUser,
+  }), [user, isLoading, isBiometricEnabled]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

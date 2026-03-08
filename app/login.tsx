@@ -128,6 +128,12 @@ export default function LoginScreen() {
     } else if (selectedRole === 'teacher') {
       const emp = employees.find(e => e.email && e.email.toLowerCase() === trimCred);
       if (emp && (emp.password || '1234') === trimPass) {
+        if (emp.disabled) {
+          setIsLoading(false);
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+          Alert.alert('الحساب موقوف', 'تم إيقاف هذا الحساب من قِبل الإدارة. يرجى التواصل مع الإدارة.');
+          return;
+        }
         authUser = {
           id: emp.id,
           name: emp.name,
@@ -139,6 +145,12 @@ export default function LoginScreen() {
       const rawCred = credential.trim();
       const stu = students.find(s => s.parentPhone && s.parentPhone.replace(/\s/g, '') === rawCred.replace(/\s/g, ''));
       if (stu && trimPass === '1234') {
+        if (stu.parentDisabled) {
+          setIsLoading(false);
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+          Alert.alert('الحساب موقوف', 'تم إيقاف هذا الحساب من قِبل الإدارة. يرجى التواصل مع الإدارة.');
+          return;
+        }
         authUser = {
           id: `parent_${stu.id}`,
           name: stu.parentName,

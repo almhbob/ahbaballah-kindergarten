@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import { Colors } from '@/constants/colors';
 import { useAppData, Student } from '@/contexts/AppDataContext';
 import HexFrame from '@/components/HexFrame';
@@ -110,7 +111,16 @@ export default function StudentsScreen() {
   return (
     <View style={styles.container}>
       <View style={[styles.header, { paddingTop: topPadding + 12 }]}>
-        <Text style={styles.headerTitle}>دفتر المتابعة</Text>
+        <View style={styles.headerTopRow}>
+          <Pressable
+            style={styles.certBtn}
+            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/(teacher)/certificates'); }}
+          >
+            <MaterialCommunityIcons name="certificate" size={14} color="#6EE7B7" />
+            <Text style={styles.certBtnText}>الشهادات</Text>
+          </Pressable>
+          <Text style={styles.headerTitle}>دفتر المتابعة</Text>
+        </View>
         <View style={styles.searchBox}>
           <Ionicons name="search" size={18} color="rgba(255,255,255,0.5)" />
           <TextInput
@@ -222,7 +232,10 @@ export default function StudentsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   header: { backgroundColor: '#1A6B5C', paddingHorizontal: 20, paddingBottom: 20 },
-  headerTitle: { fontSize: 20, fontFamily: 'Inter_700Bold', color: '#FFFFFF', textAlign: 'right', marginBottom: 12 },
+  headerTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 },
+  headerTitle: { fontSize: 20, fontFamily: 'Inter_700Bold', color: '#FFFFFF', textAlign: 'right' },
+  certBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(110,231,183,0.15)', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 5, borderWidth: 1, borderColor: 'rgba(110,231,183,0.3)' },
+  certBtnText: { fontSize: 11, fontFamily: 'Inter_600SemiBold', color: '#6EE7B7' },
   searchBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: 12, paddingHorizontal: 12, height: 42, gap: 8 },
   searchInput: { flex: 1, fontSize: 14, fontFamily: 'Inter_400Regular', color: '#FFFFFF' },
   list: { padding: 16, gap: 12 },

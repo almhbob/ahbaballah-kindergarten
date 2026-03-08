@@ -21,6 +21,8 @@ export interface Student {
   level: string;
   parentName: string;
   parentPhone: string;
+  parentPassword?: string;
+  parentDisabled?: boolean;
   attendance: number;
   behavior: 'ممتاز' | 'جيد' | 'مقبول' | 'يحتاج متابعة';
   homework: 'منجز' | 'ناقص' | 'لم ينجز';
@@ -28,6 +30,21 @@ export interface Student {
   grades: { subject: string; score: number; total: number; date: string }[];
   dailyReports: { date: string; ate: string; learned: string; behaviorNote: string; mood: string }[];
   assessments: AssessmentResult[];
+}
+
+export interface AttendanceRecord {
+  id: string;
+  date: string;
+  status: 'حاضر' | 'غائب' | 'متأخر' | 'إجازة';
+  note?: string;
+}
+
+export interface EmployeeWarning {
+  id: string;
+  type: 'تنبيه' | 'إنذار' | 'إيقاف';
+  reason: string;
+  date: string;
+  duration?: string;
 }
 
 export interface Employee {
@@ -41,12 +58,16 @@ export interface Employee {
   phone: string;
   email: string;
   password: string;
+  disabled?: boolean;
+  attendanceRecords?: AttendanceRecord[];
+  warnings?: EmployeeWarning[];
 }
 
 export interface SchoolInfo {
   name: string;
   principalName: string;
   phone: string;
+  email: string;
   motto: string;
   location: string;
 }
@@ -98,6 +119,25 @@ export interface GraduationTask {
   done: boolean;
   targetDate: string;
   note: string;
+}
+
+export type CertificateTemplate = 'excellence' | 'participation' | 'behavior' | 'attendance' | 'creativity';
+export type CertificateRecipientType = 'teacher' | 'parent' | 'student';
+export type CertificateStatus = 'pending' | 'approved' | 'rejected';
+
+export interface Certificate {
+  id: string;
+  title: string;
+  template: CertificateTemplate;
+  recipientId: string;
+  recipientName: string;
+  recipientType: CertificateRecipientType;
+  issuedBy: string;
+  issuedById: string;
+  issuedByRole: 'admin' | 'teacher';
+  message: string;
+  date: string;
+  status: CertificateStatus;
 }
 
 export const ACADEMIC_MONTHS: { num: number; ar: string }[] = [
@@ -154,6 +194,7 @@ export const DEFAULT_SCHOOL_INFO: SchoolInfo = {
   name: 'روضة أحباب الله — الخاصة',
   principalName: 'أ. سلوى أحمد داموس',
   phone: '+249917545129',
+  email: 'info@ahbaballah.edu',
   motto: 'جودة • التزام • تميز',
   location: 'صفيتة الغنوماب',
 };
@@ -383,6 +424,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const [honorWeights, setHonorWeightsState] = useState<HonorWeights>(DEFAULT_HONOR_WEIGHTS);
   const [annualPlan, setAnnualPlan] = useState<AnnualPlanEvent[]>(DEFAULT_ANNUAL_PLAN);
   const [graduationTasks, setGraduationTasks] = useState<GraduationTask[]>(DEFAULT_GRADUATION_TASKS);
+  const [certificates, setCertificates] = useState<Certificate[]>([]);
   const welcomeRef = useRef<string>(DEFAULT_WELCOME_MSG);
 
   useEffect(() => {
@@ -408,12 +450,14 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         setWelcomeMessageState(savedWelcome);
         welcomeRef.current = savedWelcome;
       }
-      if (savedSchoolInfo) setSchoolInfoState(JSON.parse(savedSchoolInfo));
+      if (savedSchoolInfo) setSchoolInfoState({ email: 'info@ahbaballah.edu', ...JSON.parse(savedSchoolInfo) });
       if (savedHonorWeights) setHonorWeightsState(JSON.parse(savedHonorWeights));
       const savedAnnualPlan = await AsyncStorage.getItem('app_annual_plan');
       const savedGradTasks  = await AsyncStorage.getItem('app_grad_tasks');
+      const savedCerts      = await AsyncStorage.getItem('app_certificates');
       if (savedAnnualPlan) setAnnualPlan(JSON.parse(savedAnnualPlan));
       if (savedGradTasks)  setGraduationTasks(JSON.parse(savedGradTasks));
+      if (savedCerts)      setCertificates(JSON.parse(savedCerts));
     };
     load();
   }, []);
@@ -496,11 +540,12 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     setHonorWeightsState(DEFAULT_HONOR_WEIGHTS);
     setAnnualPlan(DEFAULT_ANNUAL_PLAN);
     setGraduationTasks(DEFAULT_GRADUATION_TASKS);
+    setCertificates([]);
     AsyncStorage.multiRemove([
       'app_students', 'app_employees', 'app_news', 'app_inbox',
       'app_messages', 'app_meetings', 'app_schedule',
       'app_welcome_msg', 'app_school_info', 'app_honor_weights',
-      'app_annual_plan', 'app_grad_tasks',
+      'app_annual_plan', 'app_grad_tasks', 'app_certificates',
     ]);
   };
 
@@ -654,6 +699,30 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  const addCertificate = (cert: Certificate) => {
+    setCertificates(prev => {
+      const updated = [cert, ...prev];
+      AsyncStorage.setItem('app_certificates', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const updateCertificate = (id: string, data: Partial<Certificate>) => {
+    setCertificates(prev => {
+      const updated = prev.map(c => c.id === id ? { ...c, ...data } : c);
+      AsyncStorage.setItem('app_certificates', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const removeCertificate = (id: string) => {
+    setCertificates(prev => {
+      const updated = prev.filter(c => c.id !== id);
+      AsyncStorage.setItem('app_certificates', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
   const addGraduationYear = (year: string) => {
     const newTasks: GraduationTask[] = DEFAULT_GRADUATION_TASKS.map(t => ({
       ...t,
@@ -671,7 +740,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const value = useMemo(() => ({
     students, employees, news, inbox, messages, meetings, schedule,
     welcomeMessage, schoolInfo, honorWeights,
-    annualPlan, graduationTasks,
+    annualPlan, graduationTasks, certificates,
     setWelcomeMessage, setSchoolInfo, setHonorWeights, resetAllData,
     updateStudent, addStudent, removeStudent,
     addNews, removeNews, replyInbox, markInboxRead, sendMessage,
@@ -680,7 +749,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     addPeriod, updatePeriod, removePeriod,
     addAnnualEvent, removeAnnualEvent,
     addGraduationTask, updateGraduationTask, removeGraduationTask, addGraduationYear,
-  }), [students, employees, news, inbox, messages, meetings, schedule, welcomeMessage, schoolInfo, honorWeights, annualPlan, graduationTasks]);
+    addCertificate, updateCertificate, removeCertificate,
+  }), [students, employees, news, inbox, messages, meetings, schedule, welcomeMessage, schoolInfo, honorWeights, annualPlan, graduationTasks, certificates]);
 
   return <AppDataContext.Provider value={value}>{children}</AppDataContext.Provider>;
 }
