@@ -3,7 +3,7 @@ import { Tabs } from "expo-router";
 import { NativeTabs, Icon, Label, Badge } from "expo-router/unstable-native-tabs";
 import { BlurView } from "expo-blur";
 import { Platform, StyleSheet, View } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { Colors } from "@/constants/colors";
 import { useAppData } from "@/contexts/AppDataContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -25,6 +25,10 @@ function NativeParentTabs() {
       <NativeTabs.Trigger name="report">
         <Icon sf={{ default: "doc.text", selected: "doc.text.fill" }} />
         <Label>التقارير</Label>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="transport">
+        <Icon sf={{ default: "bus", selected: "bus.fill" }} />
+        <Label>الترحيل</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="messages">
         <Icon sf={{ default: "message", selected: "message.fill" }} />
@@ -72,6 +76,7 @@ function ClassicParentTabs() {
     >
       <Tabs.Screen name="index"         options={{ title: 'الطفل',      tabBarIcon: ({ color }) => <Ionicons name="home"          size={22} color={color} /> }} />
       <Tabs.Screen name="report"        options={{ title: 'التقارير',   tabBarIcon: ({ color }) => <Ionicons name="document-text" size={22} color={color} /> }} />
+      <Tabs.Screen name="transport"     options={{ title: 'الترحيل',    tabBarIcon: ({ color }) => <MaterialCommunityIcons name="bus-school" size={22} color={color} /> }} />
       <Tabs.Screen name="messages"      options={{ title: 'التواصل',    tabBarIcon: ({ color }) => <Ionicons name="chatbubble"    size={22} color={color} /> }} />
       <Tabs.Screen name="notifications" options={{ title: 'الإشعارات',  tabBarIcon: ({ color }) => <Ionicons name="notifications" size={22} color={color} />, tabBarBadge: notifBadge > 0 ? notifBadge : undefined }} />
     </Tabs>

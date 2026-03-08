@@ -100,6 +100,13 @@ export default function ManagementScreen() {
                 <MaterialCommunityIcons name="card-account-details" size={14} color="#f0d060" />
                 <Text style={[styles.certBtnText, { color: '#f0d060' }]}>البطاقات</Text>
               </Pressable>
+              <Pressable
+                style={[styles.certBtn, { backgroundColor: 'rgba(13,124,74,0.2)', borderColor: 'rgba(13,124,74,0.5)' }]}
+                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/(admin)/transport'); }}
+              >
+                <MaterialCommunityIcons name="bus-school" size={14} color="#68D89A" />
+                <Text style={[styles.certBtnText, { color: '#68D89A' }]}>الترحيل</Text>
+              </Pressable>
             </View>
           </View>
         </View>

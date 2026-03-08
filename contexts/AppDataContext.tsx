@@ -140,6 +140,55 @@ export interface Certificate {
   status: CertificateStatus;
 }
 
+export interface TransportRoute {
+  id: string;
+  name: string;
+  areas: string[];
+  driverName: string;
+  driverPhone: string;
+  morningTime: string;
+  afternoonTime: string;
+  monthlyFee: number;
+  capacity: number;
+  notes: string;
+  active: boolean;
+}
+
+export interface TransportSubscription {
+  studentId: string;
+  routeId: string;
+  subscribedAt: string;
+}
+
+const DEMO_TRANSPORT_ROUTES: TransportRoute[] = [
+  {
+    id: 'route1',
+    name: 'خط الشمال',
+    areas: ['الحي الشمالي', 'شارع المدارس', 'حي الزهور'],
+    driverName: 'أ. حسن أحمد',
+    driverPhone: '+249912345001',
+    morningTime: '07:00',
+    afternoonTime: '13:30',
+    monthlyFee: 2000,
+    capacity: 15,
+    notes: 'الحافلة لون أبيض — رقم اللوحة KRT-1201',
+    active: true,
+  },
+  {
+    id: 'route2',
+    name: 'خط الجنوب',
+    areas: ['الحي الجنوبي', 'حي الصناعة', 'شارع النيل'],
+    driverName: 'أ. عمر علي',
+    driverPhone: '+249912345002',
+    morningTime: '07:15',
+    afternoonTime: '13:45',
+    monthlyFee: 2000,
+    capacity: 15,
+    notes: 'الحافلة لون أصفر — رقم اللوحة KRT-1202',
+    active: true,
+  },
+];
+
 export const ACADEMIC_MONTHS: { num: number; ar: string }[] = [
   { num: 9,  ar: 'سبتمبر'  },
   { num: 10, ar: 'أكتوبر'  },
@@ -322,6 +371,12 @@ interface AppDataContextValue {
   addCertificate: (cert: Certificate) => void;
   updateCertificate: (id: string, data: Partial<Certificate>) => void;
   removeCertificate: (id: string) => void;
+  transportRoutes: TransportRoute[];
+  transportSubscriptions: TransportSubscription[];
+  addTransportRoute: (route: TransportRoute) => void;
+  updateTransportRoute: (id: string, data: Partial<TransportRoute>) => void;
+  removeTransportRoute: (id: string) => void;
+  setTransportSubscription: (studentId: string, routeId: string | null) => void;
   resetAllData: () => void;
 }
 
@@ -429,6 +484,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const [annualPlan, setAnnualPlan] = useState<AnnualPlanEvent[]>(DEFAULT_ANNUAL_PLAN);
   const [graduationTasks, setGraduationTasks] = useState<GraduationTask[]>(DEFAULT_GRADUATION_TASKS);
   const [certificates, setCertificates] = useState<Certificate[]>([]);
+  const [transportRoutes, setTransportRoutes] = useState<TransportRoute[]>(DEMO_TRANSPORT_ROUTES);
+  const [transportSubscriptions, setTransportSubscriptions] = useState<TransportSubscription[]>([]);
   const welcomeRef = useRef<string>(DEFAULT_WELCOME_MSG);
 
   useEffect(() => {
@@ -462,6 +519,10 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       if (savedAnnualPlan) setAnnualPlan(JSON.parse(savedAnnualPlan));
       if (savedGradTasks)  setGraduationTasks(JSON.parse(savedGradTasks));
       if (savedCerts)      setCertificates(JSON.parse(savedCerts));
+      const savedRoutes = await AsyncStorage.getItem('app_transport_routes');
+      const savedSubs   = await AsyncStorage.getItem('app_transport_subs');
+      if (savedRoutes) setTransportRoutes(JSON.parse(savedRoutes));
+      if (savedSubs)   setTransportSubscriptions(JSON.parse(savedSubs));
     };
     load();
   }, []);
@@ -545,11 +606,14 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     setAnnualPlan(DEFAULT_ANNUAL_PLAN);
     setGraduationTasks(DEFAULT_GRADUATION_TASKS);
     setCertificates([]);
+    setTransportRoutes(DEMO_TRANSPORT_ROUTES);
+    setTransportSubscriptions([]);
     AsyncStorage.multiRemove([
       'app_students', 'app_employees', 'app_news', 'app_inbox',
       'app_messages', 'app_meetings', 'app_schedule',
       'app_welcome_msg', 'app_school_info', 'app_honor_weights',
       'app_annual_plan', 'app_grad_tasks', 'app_certificates',
+      'app_transport_routes', 'app_transport_subs',
     ]);
   };
 
@@ -727,6 +791,53 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  const addTransportRoute = (route: TransportRoute) => {
+    setTransportRoutes(prev => {
+      const updated = [...prev, route];
+      AsyncStorage.setItem('app_transport_routes', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const updateTransportRoute = (id: string, data: Partial<TransportRoute>) => {
+    setTransportRoutes(prev => {
+      const updated = prev.map(r => r.id === id ? { ...r, ...data } : r);
+      AsyncStorage.setItem('app_transport_routes', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const removeTransportRoute = (id: string) => {
+    setTransportRoutes(prev => {
+      const updated = prev.filter(r => r.id !== id);
+      AsyncStorage.setItem('app_transport_routes', JSON.stringify(updated));
+      return updated;
+    });
+    setTransportSubscriptions(prev => {
+      const updated = prev.filter(s => s.routeId !== id);
+      AsyncStorage.setItem('app_transport_subs', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const setTransportSubscription = (studentId: string, routeId: string | null) => {
+    setTransportSubscriptions(prev => {
+      let updated: TransportSubscription[];
+      if (routeId === null) {
+        updated = prev.filter(s => s.studentId !== studentId);
+      } else {
+        const existing = prev.find(s => s.studentId === studentId);
+        if (existing) {
+          updated = prev.map(s => s.studentId === studentId ? { ...s, routeId, subscribedAt: new Date().toISOString().split('T')[0] } : s);
+        } else {
+          updated = [...prev, { studentId, routeId, subscribedAt: new Date().toISOString().split('T')[0] }];
+        }
+      }
+      AsyncStorage.setItem('app_transport_subs', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
   const addGraduationYear = (year: string) => {
     const newTasks: GraduationTask[] = DEFAULT_GRADUATION_TASKS.map(t => ({
       ...t,
@@ -754,7 +865,9 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     addAnnualEvent, removeAnnualEvent,
     addGraduationTask, updateGraduationTask, removeGraduationTask, addGraduationYear,
     addCertificate, updateCertificate, removeCertificate,
-  }), [students, employees, news, inbox, messages, meetings, schedule, welcomeMessage, schoolInfo, honorWeights, annualPlan, graduationTasks, certificates]);
+    transportRoutes, transportSubscriptions,
+    addTransportRoute, updateTransportRoute, removeTransportRoute, setTransportSubscription,
+  }), [students, employees, news, inbox, messages, meetings, schedule, welcomeMessage, schoolInfo, honorWeights, annualPlan, graduationTasks, certificates, transportRoutes, transportSubscriptions]);
 
   return <AppDataContext.Provider value={value}>{children}</AppDataContext.Provider>;
 }

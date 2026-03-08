@@ -81,6 +81,7 @@ function ClassicAdminTabs() {
       <Tabs.Screen name="export"       options={{ href: null }} />
       <Tabs.Screen name="certificates" options={{ href: null }} />
       <Tabs.Screen name="id-cards"     options={{ href: null }} />
+      <Tabs.Screen name="transport"    options={{ href: null }} />
     </Tabs>
   );
 }
