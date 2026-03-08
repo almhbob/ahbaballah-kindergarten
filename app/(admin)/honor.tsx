@@ -9,12 +9,12 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Colors, Shadows } from '@/constants/colors';
 import { useAppData, buildHonorBoard, HonorEntry, ParentHonorEntry } from '@/contexts/AppDataContext';
 
-const LEVELS = ['KG2', 'KG1', 'Nursery'];
+const LEVELS = ['مستوى ثاني', 'مستوى أول', 'براعم'];
 
 const LEVEL_META: Record<string, { label: string; color: string; bg: string; icon: string }> = {
-  KG2:     { label: 'روضة KG2',  color: '#3B82F6', bg: '#EFF6FF', icon: 'star-circle' },
-  KG1:     { label: 'روضة KG1',  color: '#10B981', bg: '#ECFDF5', icon: 'leaf-circle' },
-  Nursery: { label: 'الحضانة',    color: '#F59E0B', bg: '#FFFBEB', icon: 'heart-circle' },
+  'مستوى ثاني': { label: 'مستوى ثاني', color: '#3B82F6', bg: '#EFF6FF', icon: 'star-circle' },
+  'مستوى أول':  { label: 'مستوى أول',  color: '#10B981', bg: '#ECFDF5', icon: 'leaf-circle' },
+  'براعم':      { label: 'براعم',      color: '#F59E0B', bg: '#FFFBEB', icon: 'heart-circle' },
 };
 
 const BADGE_META = {
@@ -23,7 +23,7 @@ const BADGE_META = {
   برونزي: { color: '#CD7F32', bg: '#FDF5EC', icon: 'medal-outline', rank: '🥉' },
 };
 
-type Tab = 'KG2' | 'KG1' | 'Nursery' | 'parents';
+type Tab = 'مستوى ثاني' | 'مستوى أول' | 'براعم' | 'parents';
 
 // ─── Podium component ──────────────────────────────────────────────────────
 function Podium({ entries, isParent = false }: {
@@ -223,7 +223,7 @@ export default function HonorScreen() {
   const { students, messages } = useAppData();
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
   const bottomPadding = Platform.OS === 'web' ? 34 : insets.bottom;
-  const [tab, setTab] = useState<Tab>('KG2');
+  const [tab, setTab] = useState<Tab>('مستوى ثاني');
 
   const { byLevel, parents } = useMemo(
     () => buildHonorBoard(students, messages),
@@ -231,9 +231,9 @@ export default function HonorScreen() {
   );
 
   const tabs: { key: Tab; label: string; icon: string; color: string }[] = [
-    { key: 'KG2',     label: 'KG2',     icon: 'star',        color: '#3B82F6' },
-    { key: 'KG1',     label: 'KG1',     icon: 'leaf',        color: '#10B981' },
-    { key: 'Nursery', label: 'حضانة',   icon: 'heart',       color: '#F59E0B' },
+    { key: 'مستوى ثاني',     label: 'مستوى ثاني',     icon: 'star',        color: '#3B82F6' },
+    { key: 'مستوى أول',     label: 'مستوى أول',     icon: 'leaf',        color: '#10B981' },
+    { key: 'براعم', label: 'براعم',    icon: 'heart',       color: '#F59E0B' },
     { key: 'parents', label: 'الأم المثالية', icon: 'ribbon', color: '#9C27B0' },
   ];
 

@@ -10,10 +10,10 @@ import { useAppData } from '@/contexts/AppDataContext';
 import * as Haptics from 'expo-haptics';
 
 const FEES = [
-  { id: 'f1', studentName: 'أحمد محمد العمري', level: 'KG2', total: 12000, paid: 12000, status: 'مسدد' as const },
-  { id: 'f2', studentName: 'سارة خالد الزهراني', level: 'KG1', total: 10000, paid: 7500, status: 'جزئي' as const },
-  { id: 'f3', studentName: 'عمر سعد القحطاني', level: 'KG2', total: 12000, paid: 12000, status: 'مسدد' as const },
-  { id: 'f4', studentName: 'ليلى عبدالله الحربي', level: 'Nursery', total: 8000, paid: 0, status: 'متأخر' as const },
+  { id: 'f1', studentName: 'أحمد محمد العمري', level: 'مستوى ثاني', total: 12000, paid: 12000, status: 'مسدد' as const },
+  { id: 'f2', studentName: 'سارة خالد الزهراني', level: 'مستوى أول', total: 10000, paid: 7500, status: 'جزئي' as const },
+  { id: 'f3', studentName: 'عمر سعد القحطاني', level: 'مستوى ثاني', total: 12000, paid: 12000, status: 'مسدد' as const },
+  { id: 'f4', studentName: 'ليلى عبدالله الحربي', level: 'براعم', total: 8000, paid: 0, status: 'متأخر' as const },
 ];
 
 export default function FinanceScreen() {

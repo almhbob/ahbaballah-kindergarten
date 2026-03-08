@@ -123,7 +123,7 @@ const AppDataContext = createContext<AppDataContextValue | null>(null);
 
 const DEMO_STUDENTS: Student[] = [
   {
-    id: 's1', name: 'أحمد محمد العمري', level: 'KG2', parentName: 'محمد العمري',
+    id: 's1', name: 'أحمد محمد العمري', level: 'مستوى ثاني', parentName: 'محمد العمري',
     attendance: 92, behavior: 'ممتاز', homework: 'منجز', notes: 'طالب متميز ومنتظم',
     grades: [
       { subject: 'الرياضيات', score: 18, total: 20, date: '2026-02-10' },
@@ -136,7 +136,7 @@ const DEMO_STUDENTS: Student[] = [
     ]
   },
   {
-    id: 's2', name: 'سارة خالد الزهراني', level: 'KG1', parentName: 'خالد الزهراني',
+    id: 's2', name: 'سارة خالد الزهراني', level: 'مستوى أول', parentName: 'خالد الزهراني',
     attendance: 88, behavior: 'جيد', homework: 'ناقص', notes: 'تحتاج تشجيع في القراءة',
     grades: [
       { subject: 'الرياضيات', score: 15, total: 20, date: '2026-02-10' },
@@ -147,7 +147,7 @@ const DEMO_STUDENTS: Student[] = [
     ]
   },
   {
-    id: 's3', name: 'عمر سعد القحطاني', level: 'KG2', parentName: 'سعد القحطاني',
+    id: 's3', name: 'عمر سعد القحطاني', level: 'مستوى ثاني', parentName: 'سعد القحطاني',
     attendance: 95, behavior: 'ممتاز', homework: 'منجز', notes: 'يتفوق في الرياضيات',
     grades: [
       { subject: 'الرياضيات', score: 20, total: 20, date: '2026-02-10' },
@@ -159,7 +159,7 @@ const DEMO_STUDENTS: Student[] = [
     ]
   },
   {
-    id: 's4', name: 'ليلى عبدالله الحربي', level: 'Nursery', parentName: 'عبدالله الحربي',
+    id: 's4', name: 'ليلى عبدالله الحربي', level: 'براعم', parentName: 'عبدالله الحربي',
     attendance: 80, behavior: 'مقبول', homework: 'لم ينجز', notes: 'غيابات متكررة',
     grades: [
       { subject: 'الأنشطة', score: 12, total: 20, date: '2026-02-10' },
@@ -171,9 +171,9 @@ const DEMO_STUDENTS: Student[] = [
 ];
 
 const DEMO_EMPLOYEES: Employee[] = [
-  { id: 'e1', name: 'نورة أحمد السبيعي', role: 'معلمة KG2', level: 'KG2', salary: 6500, daysPresent: 22, daysAbsent: 0, phone: '0501234567' },
-  { id: 'e2', name: 'هيا محمد الدوسري', role: 'معلمة KG1', level: 'KG1', salary: 6000, daysPresent: 20, daysAbsent: 2, phone: '0507654321' },
-  { id: 'e3', name: 'منى خالد العتيبي', role: 'معلمة Nursery', level: 'Nursery', salary: 5800, daysPresent: 21, daysAbsent: 1, phone: '0509876543' },
+  { id: 'e1', name: 'نورة أحمد السبيعي', role: 'معلمة مستوى ثاني', level: 'مستوى ثاني', salary: 6500, daysPresent: 22, daysAbsent: 0, phone: '0501234567' },
+  { id: 'e2', name: 'هيا محمد الدوسري', role: 'معلمة مستوى أول', level: 'مستوى أول', salary: 6000, daysPresent: 20, daysAbsent: 2, phone: '0507654321' },
+  { id: 'e3', name: 'منى خالد العتيبي', role: 'معلمة براعم', level: 'براعم', salary: 5800, daysPresent: 21, daysAbsent: 1, phone: '0509876543' },
   { id: 'e4', name: 'رنا سعد المالكي', role: 'مساعدة معلمة', salary: 4500, daysPresent: 22, daysAbsent: 0, phone: '0503456789' },
   { id: 'e5', name: 'فاطمة علي الشهري', role: 'مستقبلة', salary: 4000, daysPresent: 19, daysAbsent: 3, phone: '0505432198' },
 ];

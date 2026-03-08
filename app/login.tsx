@@ -19,7 +19,7 @@ const ROLES: { id: UserRole; label: string; subtitle: string; icon: string; grad
 
 const DEMO_ACCOUNTS = {
   admin:   { id: 'admin_1',   name: 'أ. سلوى أحمد داموس', role: 'admin'   as UserRole },
-  teacher: { id: 'teacher_1', name: 'أ. نورة السبيعي',     role: 'teacher' as UserRole, teacherClass: 'KG2' },
+  teacher: { id: 'teacher_1', name: 'أ. نورة السبيعي',     role: 'teacher' as UserRole, teacherClass: 'مستوى ثاني' },
   parent:  { id: 'parent_s1', name: 'محمد العمري',         role: 'parent'  as UserRole, studentId: 's1' },
 };
 

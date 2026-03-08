@@ -10,12 +10,12 @@ import { Colors } from '@/constants/colors';
 import { useAppData, Employee, Student } from '@/contexts/AppDataContext';
 import * as Haptics from 'expo-haptics';
 
-const LEVELS = ['Nursery', 'KG1', 'KG2'];
+const LEVELS = ['براعم', 'مستوى أول', 'مستوى ثاني'];
 const ROLES_LIST = ['معلمة', 'مساعدة معلمة', 'مستقبلة', 'إداري', 'أخصائي'];
 const LEVEL_COLORS: Record<string, string> = {
-  'KG2': '#3B82F6',
-  'KG1': '#10B981',
-  'Nursery': '#F59E0B',
+  'مستوى ثاني': '#3B82F6',
+  'مستوى أول': '#10B981',
+  'براعم': '#F59E0B',
 };
 
 function genId() {
@@ -467,7 +467,7 @@ function AddStudentModal({ visible, editing, onClose, onSave }: {
 }) {
   const insets = useSafeAreaInsets();
   const [name, setName] = useState('');
-  const [level, setLevel] = useState('KG1');
+  const [level, setLevel] = useState('مستوى أول');
   const [parentName, setParentName] = useState('');
   const [notes, setNotes] = useState('');
 
@@ -476,7 +476,7 @@ function AddStudentModal({ visible, editing, onClose, onSave }: {
       setName(editing.name); setLevel(editing.level);
       setParentName(editing.parentName); setNotes(editing.notes);
     } else {
-      setName(''); setLevel('KG1'); setParentName(''); setNotes('');
+      setName(''); setLevel('مستوى أول'); setParentName(''); setNotes('');
     }
   }, [editing, visible]);
 
