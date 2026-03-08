@@ -40,17 +40,17 @@ function ClassicTeacherTabs() {
         tabBarInactiveTintColor: "rgba(255,255,255,0.5)",
         tabBarStyle: {
           position: "absolute",
-          backgroundColor: isIOS ? "transparent" : "#1A6B5C",
-          borderTopWidth: isWeb ? 1 : 0,
-          borderTopColor: "rgba(255,255,255,0.1)",
+          backgroundColor: isIOS ? "transparent" : "#061e1a",
+          borderTopWidth: 1,
+          borderTopColor: "rgba(16,185,129,0.15)",
           elevation: 0,
           ...(isWeb ? { height: 84 } : {}),
         },
         tabBarBackground: () =>
           isIOS ? (
-            <BlurView intensity={90} tint="dark" style={StyleSheet.absoluteFill} />
+            <BlurView intensity={95} tint="dark" style={StyleSheet.absoluteFill} />
           ) : isWeb ? (
-            <View style={[StyleSheet.absoluteFill, { backgroundColor: '#1A6B5C' }]} />
+            <View style={[StyleSheet.absoluteFill, { backgroundColor: "#061e1a" }]} />
           ) : null,
         tabBarLabelStyle: { fontFamily: "Inter_500Medium", fontSize: 10 },
       }}

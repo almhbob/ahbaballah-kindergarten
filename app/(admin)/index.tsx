@@ -15,7 +15,7 @@ function StatCard({ label, value, sub, icon, color, bg }: {
   label: string; value: string; sub?: string; icon: string; color: string; bg: string;
 }) {
   return (
-    <View style={[styles.statCard, { backgroundColor: Colors.surface }]}>
+    <View style={[styles.statCard, { backgroundColor: 'rgba(255,255,255,0.09)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)' }]}>
       <View style={[styles.statIcon, { backgroundColor: bg }]}>
         <MaterialCommunityIcons name={icon as any} size={22} color={color} />
       </View>
@@ -61,12 +61,12 @@ export default function AdminDashboard() {
         contentInsetAdjustmentBehavior="automatic"
       >
         <LinearGradient
-          colors={['#040b3c', '#0c1155', '#1e2480']}
+          colors={['#030612', '#050c38', '#0d1463']}
           style={[styles.header, { paddingTop: topPadding + 16 }]}
         >
           {/* Watermark */}
           <Image
-            source={require('@/assets/images/logo_app.png')}
+            source={require('@/assets/images/logo_new.jpg')}
             style={styles.watermark}
             resizeMode="contain"
           />
@@ -82,7 +82,7 @@ export default function AdminDashboard() {
             </View>
             <View style={styles.avatarCircle}>
               <Image
-                source={require('@/assets/images/logo_app.png')}
+                source={require('@/assets/images/logo_new.jpg')}
                 style={styles.logoSmall}
                 resizeMode="contain"
               />
@@ -152,8 +152,8 @@ export default function AdminDashboard() {
           {/* Designer Card */}
           <Text style={styles.sectionTitle}>عن التطبيق</Text>
           <View style={styles.designerCard}>
-            <LinearGradient colors={['#040b3c', '#0c1155', '#1e2480']} style={styles.designerGrad}>
-              <Image source={require('@/assets/images/logo_app.png')} style={styles.designerLogo} resizeMode="contain" />
+            <LinearGradient colors={['#030612', '#050c38', '#0d1463']} style={styles.designerGrad}>
+              <Image source={require('@/assets/images/logo_new.jpg')} style={styles.designerLogo} resizeMode="contain" />
               <View style={styles.designerBadge}>
                 <Text style={styles.designerBadgeText}>روضة أحباب الله — الخاصة</Text>
               </View>
@@ -186,6 +186,13 @@ export default function AdminDashboard() {
                 >
                   <Ionicons name="logo-linkedin" size={16} color="#0A66C2" />
                   <Text style={styles.designerLinkText}>LinkedIn</Text>
+                </Pressable>
+                <Pressable
+                  style={styles.designerLinkBtn}
+                  onPress={() => Linking.openURL('https://www.credly.com/users/asim-abdulrahman')}
+                >
+                  <MaterialCommunityIcons name="certificate-outline" size={16} color="#FF6B00" />
+                  <Text style={styles.designerLinkText}>Credly</Text>
                 </Pressable>
               </View>
               <Text style={styles.designerMotto}>جودة • التزام • تميز</Text>
@@ -229,9 +236,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.06, shadowRadius: 8, elevation: 3,
   },
   statIcon: { width: 38, height: 38, borderRadius: 10, justifyContent: 'center', alignItems: 'center', marginBottom: 8 },
-  statValue: { fontSize: 24, fontFamily: 'Inter_700Bold', color: Colors.text },
-  statLabel: { fontSize: 12, fontFamily: 'Inter_500Medium', color: Colors.textSecondary },
-  statSub: { fontSize: 10, fontFamily: 'Inter_400Regular', color: Colors.textLight },
+  statValue: { fontSize: 24, fontFamily: 'Inter_700Bold', color: '#FFFFFF' },
+  statLabel: { fontSize: 12, fontFamily: 'Inter_500Medium', color: 'rgba(255,255,255,0.80)' },
+  statSub: { fontSize: 10, fontFamily: 'Inter_400Regular', color: 'rgba(255,255,255,0.50)' },
   body: { padding: 20 },
   sectionTitle: {
     fontSize: 16, fontFamily: 'Inter_700Bold', color: Colors.text,

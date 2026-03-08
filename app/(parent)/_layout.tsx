@@ -42,17 +42,17 @@ function ClassicParentTabs() {
         tabBarInactiveTintColor: "rgba(255,255,255,0.5)",
         tabBarStyle: {
           position: "absolute",
-          backgroundColor: isIOS ? "transparent" : PARENT_COLOR,
-          borderTopWidth: isWeb ? 1 : 0,
-          borderTopColor: "rgba(255,255,255,0.1)",
+          backgroundColor: isIOS ? "transparent" : "#1a0830",
+          borderTopWidth: 1,
+          borderTopColor: "rgba(168,85,247,0.15)",
           elevation: 0,
           ...(isWeb ? { height: 84 } : {}),
         },
         tabBarBackground: () =>
           isIOS ? (
-            <BlurView intensity={90} tint="dark" style={StyleSheet.absoluteFill} />
+            <BlurView intensity={95} tint="dark" style={StyleSheet.absoluteFill} />
           ) : isWeb ? (
-            <View style={[StyleSheet.absoluteFill, { backgroundColor: PARENT_COLOR }]} />
+            <View style={[StyleSheet.absoluteFill, { backgroundColor: "#1a0830" }]} />
           ) : null,
         tabBarLabelStyle: { fontFamily: "Inter_500Medium", fontSize: 10 },
       }}

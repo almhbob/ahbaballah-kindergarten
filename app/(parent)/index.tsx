@@ -42,9 +42,9 @@ export default function ParentHomeScreen() {
   return (
     <View style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false} contentInsetAdjustmentBehavior="automatic">
-        <LinearGradient colors={['#3d1a5c', '#7B3FA0']} style={[styles.header, { paddingTop: topPadding + 16 }]}>
+        <LinearGradient colors={['#1a0830', '#3d1a5c', '#7B3FA0']} style={[styles.header, { paddingTop: topPadding + 16 }]}>
           <Image
-            source={require('@/assets/images/logo_app.png')}
+            source={require('@/assets/images/logo_new.jpg')}
             style={styles.watermark}
             resizeMode="contain"
           />

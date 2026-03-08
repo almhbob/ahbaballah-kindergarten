@@ -38,9 +38,9 @@ export default function TeacherScheduleScreen() {
   return (
     <View style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false} contentInsetAdjustmentBehavior="automatic">
-        <LinearGradient colors={['#0d3d35', '#1A6B5C']} style={[styles.header, { paddingTop: topPadding + 16 }]}>
+        <LinearGradient colors={['#061e1a', '#0d3d35', '#1A6B5C']} style={[styles.header, { paddingTop: topPadding + 16 }]}>
           <Image
-            source={require('@/assets/images/logo_app.png')}
+            source={require('@/assets/images/logo_new.jpg')}
             style={styles.watermark}
             resizeMode="contain"
           />
