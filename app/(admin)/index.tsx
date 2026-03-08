@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, Pressable, Platform
+  View, Text, StyleSheet, ScrollView, Pressable, Platform, Image
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -75,7 +75,11 @@ export default function AdminDashboard() {
               <Text style={styles.greeting}>مرحباً، {user?.name}</Text>
             </View>
             <View style={styles.avatarCircle}>
-              <MaterialCommunityIcons name="shield-check" size={24} color={Colors.accent} />
+              <Image
+                source={require('@/assets/images/logo.jpg')}
+                style={styles.logoSmall}
+                resizeMode="contain"
+              />
             </View>
           </View>
 
@@ -120,7 +124,7 @@ export default function AdminDashboard() {
 
           <Text style={styles.sectionTitle}>نظرة مالية سريعة</Text>
           <View style={styles.financeCard}>
-            <LinearGradient colors={['#0F2B4E', '#1A4A6E']} style={styles.financeGradient}>
+            <LinearGradient colors={['#111444', '#1a1f5c']} style={styles.financeGradient}>
               <Text style={styles.financeLabel}>إجمالي الرواتب الشهرية</Text>
               <Text style={styles.financeValue}>{totalPayroll} ر.س</Text>
               <View style={styles.financeDivider} />
@@ -155,11 +159,15 @@ const styles = StyleSheet.create({
   greeting: { fontSize: 12, color: 'rgba(255,255,255,0.6)', fontFamily: 'Inter_400Regular' },
   userName: { fontSize: 20, color: '#FFFFFF', fontFamily: 'Inter_700Bold' },
   avatarCircle: {
-    width: 44, height: 44, borderRadius: 22,
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    width: 52, height: 52, borderRadius: 12,
+    backgroundColor: '#FFFFFF',
     justifyContent: 'center', alignItems: 'center',
     marginRight: 12,
+    overflow: 'hidden',
+    borderWidth: 1.5,
+    borderColor: '#ca9928',
   },
+  logoSmall: { width: 46, height: 46 },
   logoutBtn: { padding: 8 },
   statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   statCard: {

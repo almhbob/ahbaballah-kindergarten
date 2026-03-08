@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, Pressable, TextInput,
-  KeyboardAvoidingView, Platform, ScrollView, Alert, Linking,
+  KeyboardAvoidingView, Platform, ScrollView, Alert, Linking, Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -12,7 +12,7 @@ import { Colors } from '@/constants/colors';
 import * as Haptics from 'expo-haptics';
 
 const ROLES: { id: UserRole; label: string; subtitle: string; icon: string; color: string }[] = [
-  { id: 'admin', label: 'مدير / مشرف', subtitle: 'الوصول الكامل', icon: 'shield-check', color: '#0F2B4E' },
+  { id: 'admin', label: 'مدير / مشرف', subtitle: 'الوصول الكامل', icon: 'shield-check', color: '#1a1f5c' },
   { id: 'teacher', label: 'معلم / معلمة', subtitle: 'إدارة الفصل والطلاب', icon: 'school', color: '#1A6B5C' },
   { id: 'parent', label: 'ولي الأمر', subtitle: 'متابعة الطفل', icon: 'account-heart', color: '#7B3FA0' },
 ];
@@ -64,7 +64,7 @@ export default function LoginScreen() {
   return (
     <View style={StyleSheet.absoluteFill}>
       <LinearGradient
-        colors={['#0F2B4E', '#1A3A5C', '#0D3B6E']}
+        colors={['#111444', '#1a1f5c', '#1e2470']}
         style={StyleSheet.absoluteFill}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
@@ -80,10 +80,15 @@ export default function LoginScreen() {
         >
           <View style={styles.header}>
             <View style={styles.logoContainer}>
-              <MaterialCommunityIcons name="school" size={48} color={Colors.accent} />
+              <Image
+                source={require('@/assets/images/logo.jpg')}
+                style={styles.logoImage}
+                resizeMode="contain"
+              />
             </View>
             <Text style={styles.appName}>روضة أحباب الله</Text>
             <Text style={styles.tagline}>الخاصة — صفيتة الغنوماب</Text>
+            <Text style={styles.motto}>جودة • التزام • تميز</Text>
           </View>
 
           <Text style={styles.sectionLabel}>اختر نوع حسابك</Text>
@@ -202,26 +207,38 @@ const styles = StyleSheet.create({
     marginBottom: 36,
   },
   logoContainer: {
-    width: 90,
-    height: 90,
-    borderRadius: 24,
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    width: 130,
+    height: 130,
+    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(244,160,28,0.3)',
+    borderWidth: 2,
+    borderColor: '#ca9928',
+    overflow: 'hidden',
+  },
+  logoImage: {
+    width: 120,
+    height: 120,
   },
   appName: {
-    fontSize: 34,
+    fontSize: 28,
     fontFamily: 'Inter_700Bold',
     color: '#FFFFFF',
-    marginBottom: 6,
+    marginBottom: 4,
   },
   tagline: {
-    fontSize: 14,
+    fontSize: 13,
     fontFamily: 'Inter_400Regular',
-    color: 'rgba(255,255,255,0.6)',
+    color: 'rgba(255,255,255,0.65)',
+    marginBottom: 4,
+  },
+  motto: {
+    fontSize: 12,
+    fontFamily: 'Inter_500Medium',
+    color: '#ca9928',
+    letterSpacing: 0.5,
   },
   sectionLabel: {
     fontSize: 15,

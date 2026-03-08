@@ -1,15 +1,16 @@
-const PRIMARY = "#0F2B4E";
-const ACCENT = "#F4A01C";
+const PRIMARY = "#1a1f5c";
+const ACCENT = "#ca9928";
 const SUCCESS = "#10B981";
 const DANGER = "#EF4444";
 const WARNING = "#F59E0B";
 
 export const Colors = {
   primary: PRIMARY,
-  primaryLight: "#1A3A5C",
-  primaryDark: "#081A30",
+  primaryLight: "#252b7a",
+  primaryDark: "#111444",
   accent: ACCENT,
-  accentLight: "#FBBF24",
+  accentLight: "#d4af5a",
+  accentMuted: "#c8b46e",
   success: SUCCESS,
   danger: DANGER,
   warning: WARNING,
