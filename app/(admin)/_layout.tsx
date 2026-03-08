@@ -16,9 +16,9 @@ function NativeAdminTabs() {
         <Icon sf={{ default: "chart.bar", selected: "chart.bar.fill" }} />
         <Label>الرئيسية</Label>
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="employees">
-        <Icon sf={{ default: "person.2", selected: "person.2.fill" }} />
-        <Label>الموظفون</Label>
+      <NativeTabs.Trigger name="management">
+        <Icon sf={{ default: "person.badge.plus", selected: "person.badge.plus.fill" }} />
+        <Label>الإدارة</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="news">
         <Icon sf={{ default: "megaphone", selected: "megaphone.fill" }} />
@@ -70,10 +70,11 @@ function ClassicAdminTabs() {
       }}
     >
       <Tabs.Screen name="index" options={{ title: 'الرئيسية', tabBarIcon: ({ color }) => <Ionicons name="bar-chart" size={22} color={color} /> }} />
-      <Tabs.Screen name="employees" options={{ title: 'الموظفون', tabBarIcon: ({ color }) => <Ionicons name="people" size={22} color={color} /> }} />
+      <Tabs.Screen name="management" options={{ title: 'الإدارة', tabBarIcon: ({ color }) => <Ionicons name="people-circle" size={22} color={color} /> }} />
       <Tabs.Screen name="news" options={{ title: 'الأخبار', tabBarIcon: ({ color }) => <Ionicons name="megaphone" size={22} color={color} /> }} />
       <Tabs.Screen name="inbox" options={{ title: 'الوارد', tabBarIcon: ({ color }) => <Ionicons name="mail" size={22} color={color} />, tabBarBadge: unread > 0 ? unread : undefined }} />
       <Tabs.Screen name="finance" options={{ title: 'المالية', tabBarIcon: ({ color }) => <Ionicons name="wallet" size={22} color={color} /> }} />
+      <Tabs.Screen name="employees" options={{ href: null }} />
     </Tabs>
   );
 }

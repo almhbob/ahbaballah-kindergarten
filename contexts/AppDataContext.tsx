@@ -60,12 +60,16 @@ interface AppDataContextValue {
   inbox: InboxMessage[];
   messages: Message[];
   updateStudent: (id: string, data: Partial<Student>) => void;
+  addStudent: (student: Student) => void;
+  removeStudent: (id: string) => void;
   addNews: (item: NewsItem) => void;
   removeNews: (id: string) => void;
   replyInbox: (id: string, reply: string) => void;
   markInboxRead: (id: string) => void;
   sendMessage: (msg: Message) => void;
   addEmployee: (emp: Employee) => void;
+  removeEmployee: (id: string) => void;
+  updateEmployee: (id: string, data: Partial<Employee>) => void;
 }
 
 const AppDataContext = createContext<AppDataContextValue | null>(null);
@@ -154,10 +158,12 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const load = async () => {
       const savedStudents = await AsyncStorage.getItem('app_students');
+      const savedEmployees = await AsyncStorage.getItem('app_employees');
       const savedNews = await AsyncStorage.getItem('app_news');
       const savedInbox = await AsyncStorage.getItem('app_inbox');
       const savedMessages = await AsyncStorage.getItem('app_messages');
       if (savedStudents) setStudents(JSON.parse(savedStudents));
+      if (savedEmployees) setEmployees(JSON.parse(savedEmployees));
       if (savedNews) setNews(JSON.parse(savedNews));
       if (savedInbox) setInbox(JSON.parse(savedInbox));
       if (savedMessages) setMessages(JSON.parse(savedMessages));
@@ -213,13 +219,51 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  const addStudent = (student: Student) => {
+    setStudents(prev => {
+      const updated = [...prev, student];
+      AsyncStorage.setItem('app_students', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const removeStudent = (id: string) => {
+    setStudents(prev => {
+      const updated = prev.filter(s => s.id !== id);
+      AsyncStorage.setItem('app_students', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
   const addEmployee = (emp: Employee) => {
-    setEmployees(prev => [...prev, emp]);
+    setEmployees(prev => {
+      const updated = [...prev, emp];
+      AsyncStorage.setItem('app_employees', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const removeEmployee = (id: string) => {
+    setEmployees(prev => {
+      const updated = prev.filter(e => e.id !== id);
+      AsyncStorage.setItem('app_employees', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const updateEmployee = (id: string, data: Partial<Employee>) => {
+    setEmployees(prev => {
+      const updated = prev.map(e => e.id === id ? { ...e, ...data } : e);
+      AsyncStorage.setItem('app_employees', JSON.stringify(updated));
+      return updated;
+    });
   };
 
   const value = useMemo(() => ({
     students, employees, news, inbox, messages,
-    updateStudent, addNews, removeNews, replyInbox, markInboxRead, sendMessage, addEmployee
+    updateStudent, addStudent, removeStudent,
+    addNews, removeNews, replyInbox, markInboxRead, sendMessage,
+    addEmployee, removeEmployee, updateEmployee,
   }), [students, employees, news, inbox, messages]);
 
   return <AppDataContext.Provider value={value}>{children}</AppDataContext.Provider>;
