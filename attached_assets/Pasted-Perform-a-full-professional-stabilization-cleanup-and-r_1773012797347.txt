@@ -1,0 +1,103 @@
+Perform a full professional stabilization, cleanup, and repair of this entire School Companion System.
+
+I want a complete technical cleanup of all issues, not partial fixes.
+
+Main objective:
+Audit the whole app end-to-end, identify all broken, fake, incomplete, unstable, or non-functional parts, and rebuild/fix them professionally so the system behaves like a real production-ready school platform.
+
+Required actions:
+
+1) Full technical audit
+- inspect all screens, routes, buttons, forms, dashboards, links, menus, and role flows
+- identify dead pages, fake data flows, broken redirects, non-working actions, invalid state transitions, and unfinished logic
+- remove duplicated logic, unstable behavior, and inconsistent navigation
+
+2) Real authentication and accounts
+- replace any fake/demo account system with real account handling
+- support real role-based accounts: Admin, Teacher, Parent
+- ensure each account has its own actual session and data scope
+- persist login state correctly after refresh/reopen
+- prevent unauthorized access to private screens
+- stop accidental redirects into another login/account context
+
+3) Fix logout completely
+- make logout fully functional
+- clear auth state, session, cached user data, role state, and protected navigation history
+- redirect correctly to the intended login page
+- prevent returning to protected pages after logout with back navigation
+
+4) Routing and navigation repair
+- audit and fix all navigation flows
+- fix back button behavior across the app
+- ensure every screen transition is valid and intentional
+- remove navigation loops, broken routes, blank pages, and stuck states
+- keep each user inside the correct role-based experience
+
+5) Data and screen reliability
+- fix broken loading states, frozen views, blank sections, and failed refresh behavior
+- ensure data loads safely with fallback UI
+- handle missing records, empty lists, and network errors gracefully
+- validate all forms before submit
+- ensure create/edit/delete/update actions work reliably
+
+6) Role-based dashboards
+- make Admin dashboard truly functional
+- make Teacher dashboard truly functional
+- make Parent dashboard truly functional
+- ensure each role only sees relevant screens and actions
+- fix permissions and UI visibility based on role
+
+7) Educational modules and games
+- repair all games and interactive lessons
+- make sure each game opens, runs, and exits correctly
+- fix broken game buttons, blank screens, and non-responsive interactions
+- ensure child-friendly performance on mobile devices
+
+8) External links and profile links
+- fix all external links so they open safely
+- specifically ensure this Credly link works correctly:
+  https://www.credly.com/users/asim-abdulrahman
+- if in-app opening is unreliable, open external links in the system browser
+- show a clear fallback error if opening fails
+
+9) UI and UX professional cleanup
+- make the interface polished, modern, and consistent
+- improve Arabic-first experience with proper RTL support
+- unify spacing, typography, button behavior, cards, and forms
+- remove confusing layouts and weak visual hierarchy
+- optimize for mobile phones and tablets
+
+10) Error handling and resilience
+- add proper error boundaries / safe fallbacks where needed
+- avoid app crashes from bad state or failed requests
+- ensure every failure has a clear user-friendly message
+- avoid silent failures and invisible errors
+
+11) Performance and compatibility
+- improve startup performance
+- reduce unnecessary renders or repeated loads
+- optimize for Android/mobile devices
+- ensure responsive behavior on different screen sizes
+- make the app stable during normal real-world use
+
+12) Final cleanup standard
+- no fake login
+- no broken logout
+- no dead buttons
+- no broken links
+- no blank pages
+- no stuck loading
+- no accidental redirect to another account context
+- no unstable games
+- no inconsistent role permissions
+- no unfinished placeholder flows unless clearly marked and safely disabled
+
+Final delivery requirement:
+After repairs, provide a short internal summary of:
+- what was broken
+- what was fixed
+- what was rebuilt
+- any remaining limitations if truly unavoidable
+
+Arabic note:
+المطلوب هو تنظيف كامل واحترافي للمشروع وحل جذري لكل المشكلات التقنية والوظيفية والبصرية، وليس فقط ترقيعات مؤقتة.

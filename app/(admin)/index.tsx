@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, Pressable, Platform, Image, Linking
+  View, Text, StyleSheet, ScrollView, Pressable, Platform, Image, Linking, Alert
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -11,6 +11,19 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useAppData } from '@/contexts/AppDataContext';
 import HexFrame from '@/components/HexFrame';
 import * as Haptics from 'expo-haptics';
+
+async function openLink(url: string, label = 'الرابط') {
+  try {
+    const supported = await Linking.canOpenURL(url);
+    if (supported) {
+      await Linking.openURL(url);
+    } else {
+      Alert.alert('تعذّر الفتح', `تعذّر فتح ${label}.\nيمكنك زيارته يدوياً:\n${url}`);
+    }
+  } catch {
+    Alert.alert('خطأ', `حدث خطأ أثناء فتح ${label}.\n${url}`);
+  }
+}
 
 function StatCard({ label, value, sub, icon, color, bg }: {
   label: string; value: string; sub?: string; icon: string; color: string; bg: string;
@@ -80,7 +93,14 @@ export default function AdminDashboard() {
             </View>
           </View>
           <View style={styles.headerRow}>
-            <Pressable onPress={logout} style={styles.logoutBtn}>
+            <Pressable
+              onPress={async () => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                await logout();
+                router.replace('/login');
+              }}
+              style={styles.logoutBtn}
+            >
               <Ionicons name="log-out-outline" size={22} color="rgba(255,255,255,0.7)" />
             </Pressable>
             <View style={styles.headerText}>
@@ -183,28 +203,28 @@ export default function AdminDashboard() {
               <View style={styles.designerLinks}>
                 <Pressable
                   style={styles.designerLinkBtn}
-                  onPress={() => Linking.openURL('https://wa.me/966530658285')}
+                  onPress={() => openLink('https://wa.me/966530658285', 'واتساب السعودية')}
                 >
                   <Ionicons name="logo-whatsapp" size={16} color="#25D366" />
                   <Text style={styles.designerLinkText}>واتساب السعودية</Text>
                 </Pressable>
                 <Pressable
                   style={styles.designerLinkBtn}
-                  onPress={() => Linking.openURL('https://wa.me/249916897578')}
+                  onPress={() => openLink('https://wa.me/249916897578', 'واتساب السودان')}
                 >
                   <Ionicons name="logo-whatsapp" size={16} color="#25D366" />
                   <Text style={styles.designerLinkText}>واتساب السودان</Text>
                 </Pressable>
                 <Pressable
                   style={styles.designerLinkBtn}
-                  onPress={() => Linking.openURL('https://www.linkedin.com/in/asim-abdulrahman')}
+                  onPress={() => openLink('https://www.linkedin.com/in/asim-abdulrahman', 'LinkedIn')}
                 >
                   <Ionicons name="logo-linkedin" size={16} color="#0A66C2" />
                   <Text style={styles.designerLinkText}>LinkedIn</Text>
                 </Pressable>
                 <Pressable
                   style={styles.designerLinkBtn}
-                  onPress={() => Linking.openURL('https://www.credly.com/users/asim-abdulrahman')}
+                  onPress={() => openLink('https://www.credly.com/users/asim-abdulrahman', 'Credly')}
                 >
                   <MaterialCommunityIcons name="certificate-outline" size={16} color="#FF6B00" />
                   <Text style={styles.designerLinkText}>Credly</Text>

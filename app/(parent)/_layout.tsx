@@ -1,5 +1,5 @@
 import { isLiquidGlassAvailable } from "expo-glass-effect";
-import { Tabs } from "expo-router";
+import { Tabs, Redirect } from "expo-router";
 import { NativeTabs, Icon, Label, Badge } from "expo-router/unstable-native-tabs";
 import { BlurView } from "expo-blur";
 import { Platform, StyleSheet, View } from "react-native";
@@ -84,6 +84,15 @@ function ClassicParentTabs() {
 }
 
 export default function ParentLayout() {
+  const { user, isLoading } = useAuth();
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, backgroundColor: '#1a0830', justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator color="#A855F7" size="large" />
+      </View>
+    );
+  }
+  if (!user || user.role !== 'parent') return <Redirect href="/login" />;
   if (isLiquidGlassAvailable()) return <NativeParentTabs />;
   return <ClassicParentTabs />;
 }

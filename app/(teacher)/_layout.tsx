@@ -1,5 +1,5 @@
 import { isLiquidGlassAvailable } from "expo-glass-effect";
-import { Tabs } from "expo-router";
+import { Tabs, Redirect } from "expo-router";
 import { NativeTabs, Icon, Label, Badge } from "expo-router/unstable-native-tabs";
 import { BlurView } from "expo-blur";
 import { Platform, StyleSheet, View } from "react-native";
@@ -81,6 +81,15 @@ function ClassicTeacherTabs() {
 }
 
 export default function TeacherLayout() {
+  const { user, isLoading } = useAuth();
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, backgroundColor: '#061e1a', justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator color="#10B981" size="large" />
+      </View>
+    );
+  }
+  if (!user || user.role !== 'teacher') return <Redirect href="/login" />;
   if (isLiquidGlassAvailable()) return <NativeTeacherTabs />;
   return <ClassicTeacherTabs />;
 }

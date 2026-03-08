@@ -1,11 +1,12 @@
 import { isLiquidGlassAvailable } from "expo-glass-effect";
-import { Tabs } from "expo-router";
+import { Tabs, Redirect } from "expo-router";
 import { NativeTabs, Icon, Label, Badge } from "expo-router/unstable-native-tabs";
 import { BlurView } from "expo-blur";
-import { Platform, StyleSheet, View } from "react-native";
+import { Platform, StyleSheet, View, ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "@/constants/colors";
 import { useAppData } from "@/contexts/AppDataContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 function NativeAdminTabs() {
   const { inbox } = useAppData();
@@ -87,6 +88,15 @@ function ClassicAdminTabs() {
 }
 
 export default function AdminLayout() {
+  const { user, isLoading } = useAuth();
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, backgroundColor: '#030612', justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator color={Colors.accent} size="large" />
+      </View>
+    );
+  }
+  if (!user || user.role !== 'admin') return <Redirect href="/login" />;
   if (isLiquidGlassAvailable()) return <NativeAdminTabs />;
   return <ClassicAdminTabs />;
 }

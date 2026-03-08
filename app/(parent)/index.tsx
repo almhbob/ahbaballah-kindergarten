@@ -1,10 +1,11 @@
 import React, { useMemo } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, Pressable, Platform, Image,
+  View, Text, StyleSheet, ScrollView, Pressable, Platform, Image, Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import { Colors } from '@/constants/colors';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAppData, buildHonorBoard } from '@/contexts/AppDataContext';
@@ -19,7 +20,7 @@ export default function ParentHomeScreen() {
   const { students, messages } = useAppData();
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
 
-  const child = students.find(s => s.id === user?.studentId) || students[0];
+  const child = students.find(s => s.id === user?.studentId);
 
   const honorData = useMemo(() => buildHonorBoard(students, messages), [students, messages]);
   const myParentEntry = useMemo(() => {
@@ -54,7 +55,14 @@ export default function ParentHomeScreen() {
             </View>
           </View>
           <View style={styles.headerRow}>
-            <Pressable onPress={logout} style={styles.logoutBtn}>
+            <Pressable
+              onPress={async () => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                await logout();
+                router.replace('/login');
+              }}
+              style={styles.logoutBtn}
+            >
               <Ionicons name="log-out-outline" size={22} color="rgba(255,255,255,0.7)" />
             </Pressable>
             <View style={styles.headerText}>
