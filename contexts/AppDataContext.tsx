@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useRef, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export interface Student {
@@ -59,6 +59,8 @@ interface AppDataContextValue {
   news: NewsItem[];
   inbox: InboxMessage[];
   messages: Message[];
+  welcomeMessage: string;
+  setWelcomeMessage: (msg: string) => void;
   updateStudent: (id: string, data: Partial<Student>) => void;
   addStudent: (student: Student) => void;
   removeStudent: (id: string) => void;
@@ -71,6 +73,16 @@ interface AppDataContextValue {
   removeEmployee: (id: string) => void;
   updateEmployee: (id: string, data: Partial<Employee>) => void;
 }
+
+const DEFAULT_WELCOME_MSG =
+`مرحباً بك في روضة أحباب الله الخاصة 🌟
+
+يسعدنا تواصلك معنا. سيقوم فريق الإدارة بالرد على رسالتك في أقرب وقت ممكن.
+
+للتواصل الفوري يمكنك مراسلتنا على واتساب:
++249917545129
+
+— إدارة روضة أحباب الله`;
 
 const AppDataContext = createContext<AppDataContextValue | null>(null);
 
@@ -154,6 +166,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const [news, setNews] = useState<NewsItem[]>(DEMO_NEWS);
   const [inbox, setInbox] = useState<InboxMessage[]>(DEMO_INBOX);
   const [messages, setMessages] = useState<Message[]>(DEMO_MESSAGES);
+  const [welcomeMessage, setWelcomeMessageState] = useState<string>(DEFAULT_WELCOME_MSG);
+  const welcomeRef = useRef<string>(DEFAULT_WELCOME_MSG);
 
   useEffect(() => {
     const load = async () => {
@@ -162,14 +176,25 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       const savedNews = await AsyncStorage.getItem('app_news');
       const savedInbox = await AsyncStorage.getItem('app_inbox');
       const savedMessages = await AsyncStorage.getItem('app_messages');
+      const savedWelcome = await AsyncStorage.getItem('app_welcome_msg');
       if (savedStudents) setStudents(JSON.parse(savedStudents));
       if (savedEmployees) setEmployees(JSON.parse(savedEmployees));
       if (savedNews) setNews(JSON.parse(savedNews));
       if (savedInbox) setInbox(JSON.parse(savedInbox));
       if (savedMessages) setMessages(JSON.parse(savedMessages));
+      if (savedWelcome) {
+        setWelcomeMessageState(savedWelcome);
+        welcomeRef.current = savedWelcome;
+      }
     };
     load();
   }, []);
+
+  const setWelcomeMessage = (msg: string) => {
+    welcomeRef.current = msg;
+    setWelcomeMessageState(msg);
+    AsyncStorage.setItem('app_welcome_msg', msg);
+  };
 
   const updateStudent = (id: string, data: Partial<Student>) => {
     setStudents(prev => {
@@ -213,7 +238,29 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
 
   const sendMessage = (msg: Message) => {
     setMessages(prev => {
+      // Detect first-time contact: sender never messaged admin before
+      const isFirstContact =
+        msg.receiverId === 'admin' &&
+        msg.senderId !== 'admin' &&
+        !prev.some(m => m.senderId === msg.senderId && m.receiverId === 'admin');
+
       const updated = [...prev, msg];
+
+      if (isFirstContact) {
+        const autoReply: Message = {
+          id: Date.now().toString() + '_auto',
+          senderId: 'admin',
+          senderName: 'الإدارة',
+          receiverId: msg.senderId,
+          body: welcomeRef.current,
+          date: new Date(new Date(msg.date).getTime() + 800).toISOString(),
+          read: false,
+        };
+        const withReply = [...updated, autoReply];
+        AsyncStorage.setItem('app_messages', JSON.stringify(withReply));
+        return withReply;
+      }
+
       AsyncStorage.setItem('app_messages', JSON.stringify(updated));
       return updated;
     });
@@ -261,10 +308,11 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo(() => ({
     students, employees, news, inbox, messages,
+    welcomeMessage, setWelcomeMessage,
     updateStudent, addStudent, removeStudent,
     addNews, removeNews, replyInbox, markInboxRead, sendMessage,
     addEmployee, removeEmployee, updateEmployee,
-  }), [students, employees, news, inbox, messages]);
+  }), [students, employees, news, inbox, messages, welcomeMessage]);
 
   return <AppDataContext.Provider value={value}>{children}</AppDataContext.Provider>;
 }
