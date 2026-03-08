@@ -7,34 +7,40 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Colors } from '@/constants/colors';
 import { useAuth } from '@/contexts/AuthContext';
-import { useAppData } from '@/contexts/AppDataContext';
+import { useAppData, ScheduleDay, ScheduleLevel } from '@/contexts/AppDataContext';
 import HexFrame from '@/components/HexFrame';
 import * as Haptics from 'expo-haptics';
 
-const SCHEDULE = [
-  { time: '07:30 - 08:00', subject: 'تجمع الصباح', type: 'assembly', color: '#F59E0B' },
-  { time: '08:00 - 08:45', subject: 'اللغة العربية', type: 'core', color: '#3B82F6' },
-  { time: '08:45 - 09:30', subject: 'الرياضيات', type: 'core', color: '#10B981' },
-  { time: '09:30 - 10:00', subject: 'استراحة', type: 'break', color: '#94A3B8' },
-  { time: '10:00 - 10:45', subject: 'العلوم', type: 'core', color: '#8B5CF6' },
-  { time: '10:45 - 11:30', subject: 'التربية الفنية', type: 'activity', color: '#EC4899' },
-  { time: '11:30 - 12:00', subject: 'القصة والقراءة', type: 'activity', color: '#F59E0B' },
-];
-
-const DAYS = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس'];
+const DAYS: ScheduleDay[] = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس'];
+const PERIOD_COLORS: Record<string, string> = {
+  lesson:   '#3B82F6',
+  break:    '#94A3B8',
+  activity: '#8B5CF6',
+};
 
 export default function TeacherScheduleScreen() {
   const insets = useSafeAreaInsets();
   const { user, logout } = useAuth();
-  const { students } = useAppData();
+  const { students, schedule } = useAppData();
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
 
-  const myStudents = students;
+  const teacherClass = (user as any)?.teacherClass as ScheduleLevel | undefined;
+  const myStudents = teacherClass ? students.filter(s => s.level === teacherClass) : students;
   const presentToday = myStudents.filter(s => s.attendance > 85).length;
 
   const today = new Date();
-  const dayIndex = today.getDay();
-  const dayName = dayIndex === 0 ? 'الأحد' : dayIndex === 1 ? 'الإثنين' : dayIndex === 2 ? 'الثلاثاء' : dayIndex === 3 ? 'الأربعاء' : 'الخميس';
+  const jsDay = today.getDay(); // 0=Sun, 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat
+  const todayDayName: ScheduleDay | null = jsDay >= 0 && jsDay <= 4 ? DAYS[jsDay] : null;
+  const dayName = todayDayName ?? 'الأحد';
+  const activeDayIdx = DAYS.indexOf(dayName);
+
+  const todaySchedule = schedule
+    .filter(p => p.day === dayName && (!teacherClass || p.level === teacherClass))
+    .sort((a, b) => a.startTime.localeCompare(b.startTime));
+
+  const todayFormatted = today.toLocaleDateString('ar-SA', {
+    day: 'numeric', month: 'long', year: 'numeric'
+  });
 
   return (
     <View style={styles.container}>
@@ -65,7 +71,7 @@ export default function TeacherScheduleScreen() {
 
           <View style={styles.todayCard}>
             <View style={styles.todayHeader}>
-              <Text style={styles.todayDate}>{today.getDate()} مارس 2026</Text>
+              <Text style={styles.todayDate}>{todayFormatted}</Text>
               <Text style={styles.todayDay}>{dayName}</Text>
             </View>
             <View style={styles.todayStats}>
@@ -88,33 +94,42 @@ export default function TeacherScheduleScreen() {
         </LinearGradient>
 
         <View style={styles.body}>
-          <Text style={styles.sectionTitle}>جدول اليوم</Text>
+          <Text style={styles.sectionTitle}>جدول اليوم — {dayName}</Text>
           <View style={styles.schedule}>
-            {SCHEDULE.map((item, i) => (
-              <View key={i} style={[styles.scheduleItem, item.type === 'break' && styles.scheduleBreak]}>
-                <View style={[styles.scheduleIndicator, { backgroundColor: item.color }]} />
-                <View style={styles.scheduleContent}>
-                  <Text style={[styles.scheduleSubject, item.type === 'break' && styles.scheduleBreakText]}>
-                    {item.subject}
-                  </Text>
-                  <Text style={styles.scheduleTime}>{item.time}</Text>
-                </View>
-                {item.type !== 'break' && (
-                  <View style={[styles.scheduleTypeBadge, { backgroundColor: item.color + '20' }]}>
-                    <Text style={[styles.scheduleTypeText, { color: item.color }]}>
-                      {item.type === 'core' ? 'أساسي' : item.type === 'assembly' ? 'تجمع' : 'نشاط'}
-                    </Text>
-                  </View>
-                )}
+            {todaySchedule.length === 0 ? (
+              <View style={styles.emptySchedule}>
+                <MaterialCommunityIcons name="calendar-blank-outline" size={36} color={Colors.textLight} />
+                <Text style={styles.emptyScheduleText}>لا توجد حصص مجدولة لهذا اليوم</Text>
               </View>
-            ))}
+            ) : todaySchedule.map(item => {
+              const color = PERIOD_COLORS[item.type] ?? '#3B82F6';
+              const isBreak = item.type === 'break';
+              return (
+                <View key={item.id} style={[styles.scheduleItem, isBreak && styles.scheduleBreak]}>
+                  <View style={[styles.scheduleIndicator, { backgroundColor: color }]} />
+                  <View style={styles.scheduleContent}>
+                    <Text style={[styles.scheduleSubject, isBreak && styles.scheduleBreakText]}>
+                      {item.subject}
+                    </Text>
+                    <Text style={styles.scheduleTime}>{item.startTime} - {item.endTime}</Text>
+                  </View>
+                  {!isBreak && (
+                    <View style={[styles.scheduleTypeBadge, { backgroundColor: color + '20' }]}>
+                      <Text style={[styles.scheduleTypeText, { color }]}>
+                        {item.type === 'lesson' ? 'حصة' : 'نشاط'}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              );
+            })}
           </View>
 
-          <Text style={styles.sectionTitle}>أبرز الأيام هذا الأسبوع</Text>
+          <Text style={styles.sectionTitle}>أيام الأسبوع</Text>
           <View style={styles.daysRow}>
             {DAYS.map((day, i) => (
-              <View key={day} style={[styles.dayChip, i === dayIndex - 1 && styles.dayChipActive]}>
-                <Text style={[styles.dayChipText, i === dayIndex - 1 && styles.dayChipTextActive]}>{day}</Text>
+              <View key={day} style={[styles.dayChip, i === activeDayIdx && styles.dayChipActive]}>
+                <Text style={[styles.dayChipText, i === activeDayIdx && styles.dayChipTextActive]}>{day}</Text>
               </View>
             ))}
           </View>
@@ -158,6 +173,8 @@ const styles = StyleSheet.create({
   scheduleTime: { fontSize: 11, fontFamily: 'Inter_400Regular', color: Colors.textLight, marginTop: 2 },
   scheduleTypeBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
   scheduleTypeText: { fontSize: 10, fontFamily: 'Inter_600SemiBold' },
+  emptySchedule: { alignItems: 'center', paddingVertical: 24, gap: 8 },
+  emptyScheduleText: { fontSize: 13, fontFamily: 'Inter_400Regular', color: Colors.textLight, textAlign: 'center' },
   daysRow: { flexDirection: 'row', gap: 6 },
   dayChip: { flex: 1, paddingVertical: 8, borderRadius: 10, backgroundColor: Colors.surface, alignItems: 'center' },
   dayChipActive: { backgroundColor: '#1A6B5C' },

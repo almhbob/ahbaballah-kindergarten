@@ -76,6 +76,9 @@ function ClassicAdminTabs() {
       <Tabs.Screen name="finance"    options={{ title: 'المالية',      tabBarIcon: ({ color }) => <Ionicons name="wallet"        size={22} color={color} /> }} />
       <Tabs.Screen name="employees"  options={{ href: null }} />
       <Tabs.Screen name="news"       options={{ href: null }} />
+      <Tabs.Screen name="meetings"   options={{ href: null }} />
+      <Tabs.Screen name="settings"   options={{ href: null }} />
+      <Tabs.Screen name="export"     options={{ href: null }} />
     </Tabs>
   );
 }

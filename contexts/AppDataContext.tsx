@@ -1,17 +1,33 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useRef, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+export interface AssessmentResult {
+  id: string;
+  date: string;
+  lettersScore: number;
+  lettersMax: number;
+  numbersScore: number;
+  numbersMax: number;
+  mathScore: number;
+  mathMax: number;
+  totalScore: number;
+  totalMax: number;
+  levelLabel: 'مبتدئ' | 'متوسط' | 'متقدم' | 'ممتاز';
+}
+
 export interface Student {
   id: string;
   name: string;
   level: string;
   parentName: string;
+  parentPhone: string;
   attendance: number;
   behavior: 'ممتاز' | 'جيد' | 'مقبول' | 'يحتاج متابعة';
   homework: 'منجز' | 'ناقص' | 'لم ينجز';
   notes: string;
   grades: { subject: string; score: number; total: number; date: string }[];
   dailyReports: { date: string; ate: string; learned: string; behaviorNote: string; mood: string }[];
+  assessments: AssessmentResult[];
 }
 
 export interface Employee {
@@ -23,6 +39,8 @@ export interface Employee {
   daysPresent: number;
   daysAbsent: number;
   phone: string;
+  email: string;
+  password: string;
 }
 
 export interface SchoolInfo {
@@ -38,6 +56,30 @@ export interface HonorWeights {
   attendance: number;
   behavior: number;
   homework: number;
+}
+
+export interface Meeting {
+  id: string;
+  title: string;
+  date: string;
+  time: string;
+  location: string;
+  type: 'parent' | 'staff' | 'admin' | 'other';
+  notes: string;
+  status: 'upcoming' | 'done' | 'cancelled';
+}
+
+export type ScheduleDay = 'الأحد' | 'الإثنين' | 'الثلاثاء' | 'الأربعاء' | 'الخميس';
+export type ScheduleLevel = 'براعم' | 'مستوى أول' | 'مستوى ثاني';
+
+export interface SchedulePeriod {
+  id: string;
+  day: ScheduleDay;
+  startTime: string;
+  endTime: string;
+  subject: string;
+  level: ScheduleLevel;
+  type: 'lesson' | 'break' | 'activity';
 }
 
 export const DEFAULT_SCHOOL_INFO: SchoolInfo = {
@@ -83,12 +125,59 @@ export interface Message {
   read: boolean;
 }
 
+const DEMO_MEETINGS: Meeting[] = [
+  { id: 'm1', title: 'اجتماع أولياء الأمور — مستوى ثاني', date: '2026-03-15', time: '10:00', location: 'قاعة الاجتماعات', type: 'parent', notes: 'مناقشة نتائج الفصل الأول', status: 'upcoming' },
+  { id: 'm2', title: 'اجتماع الكادر التعليمي', date: '2026-03-10', time: '09:00', location: 'غرفة المديرة', type: 'staff', notes: 'مراجعة خطة المنهج للفصل الثاني', status: 'upcoming' },
+  { id: 'm3', title: 'اجتماع لجنة التقييم', date: '2026-02-28', time: '11:00', location: 'مكتب الإدارة', type: 'admin', notes: 'مراجعة معايير التقييم', status: 'done' },
+];
+
+const DAYS: ScheduleDay[] = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس'];
+const LEVELS_ALL: ScheduleLevel[] = ['براعم', 'مستوى أول', 'مستوى ثاني'];
+
+function buildDefaultSchedule(): SchedulePeriod[] {
+  const subjects: Record<ScheduleLevel, string[]> = {
+    'براعم': ['تلاوة قرآنية', 'رياضيات', 'استراحة', 'لغة عربية', 'أنشطة فنية'],
+    'مستوى أول': ['قرآن كريم', 'رياضيات', 'استراحة', 'لغة عربية', 'علوم'],
+    'مستوى ثاني': ['قرآن كريم', 'رياضيات', 'استراحة', 'لغة عربية', 'علوم واجتماعيات'],
+  };
+  const times = [
+    { start: '07:30', end: '08:15' },
+    { start: '08:15', end: '09:00' },
+    { start: '09:00', end: '09:20' },
+    { start: '09:20', end: '10:05' },
+    { start: '10:05', end: '10:50' },
+  ];
+  const periods: SchedulePeriod[] = [];
+  let idx = 0;
+  for (const day of DAYS) {
+    for (const level of LEVELS_ALL) {
+      const subs = subjects[level];
+      subs.forEach((subject, i) => {
+        periods.push({
+          id: `p${idx++}`,
+          day,
+          level,
+          startTime: times[i].start,
+          endTime: times[i].end,
+          subject,
+          type: subject === 'استراحة' ? 'break' : subject.includes('أنشط') ? 'activity' : 'lesson',
+        });
+      });
+    }
+  }
+  return periods;
+}
+
+const DEFAULT_SCHEDULE = buildDefaultSchedule();
+
 interface AppDataContextValue {
   students: Student[];
   employees: Employee[];
   news: NewsItem[];
   inbox: InboxMessage[];
   messages: Message[];
+  meetings: Meeting[];
+  schedule: SchedulePeriod[];
   welcomeMessage: string;
   schoolInfo: SchoolInfo;
   honorWeights: HonorWeights;
@@ -106,6 +195,12 @@ interface AppDataContextValue {
   addEmployee: (emp: Employee) => void;
   removeEmployee: (id: string) => void;
   updateEmployee: (id: string, data: Partial<Employee>) => void;
+  addMeeting: (m: Meeting) => void;
+  updateMeeting: (id: string, data: Partial<Meeting>) => void;
+  removeMeeting: (id: string) => void;
+  addPeriod: (p: SchedulePeriod) => void;
+  updatePeriod: (id: string, data: Partial<SchedulePeriod>) => void;
+  removePeriod: (id: string) => void;
   resetAllData: () => void;
 }
 
@@ -123,7 +218,7 @@ const AppDataContext = createContext<AppDataContextValue | null>(null);
 
 const DEMO_STUDENTS: Student[] = [
   {
-    id: 's1', name: 'أحمد محمد العمري', level: 'مستوى ثاني', parentName: 'محمد العمري',
+    id: 's1', name: 'أحمد محمد العمري', level: 'مستوى ثاني', parentName: 'محمد العمري', parentPhone: '+249912345678',
     attendance: 92, behavior: 'ممتاز', homework: 'منجز', notes: 'طالب متميز ومنتظم',
     grades: [
       { subject: 'الرياضيات', score: 18, total: 20, date: '2026-02-10' },
@@ -133,10 +228,11 @@ const DEMO_STUDENTS: Student[] = [
     dailyReports: [
       { date: '2026-03-08', ate: 'أكل وجبته كاملة', learned: 'الأعداد من 1 إلى 20', behaviorNote: 'هادئ ومتعاون', mood: 'سعيد' },
       { date: '2026-03-07', ate: 'أكل نصف الوجبة', learned: 'الألوان والأشكال', behaviorNote: 'مشارك بفعالية', mood: 'نشيط' },
-    ]
+    ],
+    assessments: [],
   },
   {
-    id: 's2', name: 'سارة خالد الزهراني', level: 'مستوى أول', parentName: 'خالد الزهراني',
+    id: 's2', name: 'سارة خالد الزهراني', level: 'مستوى أول', parentName: 'خالد الزهراني', parentPhone: '+249923456789',
     attendance: 88, behavior: 'جيد', homework: 'ناقص', notes: 'تحتاج تشجيع في القراءة',
     grades: [
       { subject: 'الرياضيات', score: 15, total: 20, date: '2026-02-10' },
@@ -144,10 +240,11 @@ const DEMO_STUDENTS: Student[] = [
     ],
     dailyReports: [
       { date: '2026-03-08', ate: 'لم تأكل الخضار', learned: 'الحروف الهجائية', behaviorNote: 'كانت خجولة اليوم', mood: 'هادئ' },
-    ]
+    ],
+    assessments: [],
   },
   {
-    id: 's3', name: 'عمر سعد القحطاني', level: 'مستوى ثاني', parentName: 'سعد القحطاني',
+    id: 's3', name: 'عمر سعد القحطاني', level: 'مستوى ثاني', parentName: 'سعد القحطاني', parentPhone: '+249934567890',
     attendance: 95, behavior: 'ممتاز', homework: 'منجز', notes: 'يتفوق في الرياضيات',
     grades: [
       { subject: 'الرياضيات', score: 20, total: 20, date: '2026-02-10' },
@@ -156,26 +253,28 @@ const DEMO_STUDENTS: Student[] = [
     ],
     dailyReports: [
       { date: '2026-03-08', ate: 'أكل وجبته كاملة', learned: 'مفاهيم الجمع والطرح', behaviorNote: 'قائد في المجموعة', mood: 'متحمس' },
-    ]
+    ],
+    assessments: [],
   },
   {
-    id: 's4', name: 'ليلى عبدالله الحربي', level: 'براعم', parentName: 'عبدالله الحربي',
+    id: 's4', name: 'ليلى عبدالله الحربي', level: 'براعم', parentName: 'عبدالله الحربي', parentPhone: '+249945678901',
     attendance: 80, behavior: 'مقبول', homework: 'لم ينجز', notes: 'غيابات متكررة',
     grades: [
       { subject: 'الأنشطة', score: 12, total: 20, date: '2026-02-10' },
     ],
     dailyReports: [
       { date: '2026-03-08', ate: 'أكل وجبته جزئياً', learned: 'التعرف على الحيوانات', behaviorNote: 'تحسّن ملحوظ', mood: 'هادئ' },
-    ]
+    ],
+    assessments: [],
   },
 ];
 
 const DEMO_EMPLOYEES: Employee[] = [
-  { id: 'e1', name: 'نورة أحمد السبيعي', role: 'معلمة مستوى ثاني', level: 'مستوى ثاني', salary: 6500, daysPresent: 22, daysAbsent: 0, phone: '0501234567' },
-  { id: 'e2', name: 'هيا محمد الدوسري', role: 'معلمة مستوى أول', level: 'مستوى أول', salary: 6000, daysPresent: 20, daysAbsent: 2, phone: '0507654321' },
-  { id: 'e3', name: 'منى خالد العتيبي', role: 'معلمة براعم', level: 'براعم', salary: 5800, daysPresent: 21, daysAbsent: 1, phone: '0509876543' },
-  { id: 'e4', name: 'رنا سعد المالكي', role: 'مساعدة معلمة', salary: 4500, daysPresent: 22, daysAbsent: 0, phone: '0503456789' },
-  { id: 'e5', name: 'فاطمة علي الشهري', role: 'مستقبلة', salary: 4000, daysPresent: 19, daysAbsent: 3, phone: '0505432198' },
+  { id: 'e1', name: 'نورة أحمد السبيعي', role: 'معلمة مستوى ثاني', level: 'مستوى ثاني', salary: 6500, daysPresent: 22, daysAbsent: 0, phone: '0501234567', email: 'noura@ahbaballah.edu', password: '1234' },
+  { id: 'e2', name: 'هيا محمد الدوسري',  role: 'معلمة مستوى أول',  level: 'مستوى أول',  salary: 6000, daysPresent: 20, daysAbsent: 2, phone: '0507654321', email: 'haya@ahbaballah.edu',  password: '1234' },
+  { id: 'e3', name: 'منى خالد العتيبي',  role: 'معلمة براعم',       level: 'براعم',      salary: 5800, daysPresent: 21, daysAbsent: 1, phone: '0509876543', email: 'mona@ahbaballah.edu',  password: '1234' },
+  { id: 'e4', name: 'رنا سعد المالكي',   role: 'مساعدة معلمة',                          salary: 4500, daysPresent: 22, daysAbsent: 0, phone: '0503456789', email: 'rana@ahbaballah.edu',  password: '1234' },
+  { id: 'e5', name: 'فاطمة علي الشهري',  role: 'مستقبلة',                               salary: 4000, daysPresent: 19, daysAbsent: 3, phone: '0505432198', email: 'fatima@ahbaballah.edu', password: '1234' },
 ];
 
 const DEMO_NEWS: NewsItem[] = [
@@ -201,6 +300,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const [news, setNews] = useState<NewsItem[]>(DEMO_NEWS);
   const [inbox, setInbox] = useState<InboxMessage[]>(DEMO_INBOX);
   const [messages, setMessages] = useState<Message[]>(DEMO_MESSAGES);
+  const [meetings, setMeetings] = useState<Meeting[]>(DEMO_MEETINGS);
+  const [schedule, setSchedule] = useState<SchedulePeriod[]>(DEFAULT_SCHEDULE);
   const [welcomeMessage, setWelcomeMessageState] = useState<string>(DEFAULT_WELCOME_MSG);
   const [schoolInfo, setSchoolInfoState] = useState<SchoolInfo>(DEFAULT_SCHOOL_INFO);
   const [honorWeights, setHonorWeightsState] = useState<HonorWeights>(DEFAULT_HONOR_WEIGHTS);
@@ -213,14 +314,18 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       const savedNews = await AsyncStorage.getItem('app_news');
       const savedInbox = await AsyncStorage.getItem('app_inbox');
       const savedMessages = await AsyncStorage.getItem('app_messages');
+      const savedMeetings = await AsyncStorage.getItem('app_meetings');
+      const savedSchedule = await AsyncStorage.getItem('app_schedule');
       const savedWelcome = await AsyncStorage.getItem('app_welcome_msg');
       const savedSchoolInfo = await AsyncStorage.getItem('app_school_info');
       const savedHonorWeights = await AsyncStorage.getItem('app_honor_weights');
-      if (savedStudents) setStudents(JSON.parse(savedStudents));
-      if (savedEmployees) setEmployees(JSON.parse(savedEmployees));
+      if (savedStudents) setStudents((JSON.parse(savedStudents) as Student[]).map(s => ({ assessments: [], parentPhone: '', parentPassword: '1234', ...s })));
+      if (savedEmployees) setEmployees((JSON.parse(savedEmployees) as Employee[]).map(e => ({ email: '', password: '1234', ...e })));
       if (savedNews) setNews(JSON.parse(savedNews));
       if (savedInbox) setInbox(JSON.parse(savedInbox));
       if (savedMessages) setMessages(JSON.parse(savedMessages));
+      if (savedMeetings) setMeetings(JSON.parse(savedMeetings));
+      if (savedSchedule) setSchedule(JSON.parse(savedSchedule));
       if (savedWelcome) {
         setWelcomeMessageState(savedWelcome);
         welcomeRef.current = savedWelcome;
@@ -247,19 +352,70 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     AsyncStorage.setItem('app_honor_weights', JSON.stringify(w));
   };
 
+  const addMeeting = (m: Meeting) => {
+    setMeetings(prev => {
+      const updated = [m, ...prev];
+      AsyncStorage.setItem('app_meetings', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const updateMeeting = (id: string, data: Partial<Meeting>) => {
+    setMeetings(prev => {
+      const updated = prev.map(m => m.id === id ? { ...m, ...data } : m);
+      AsyncStorage.setItem('app_meetings', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const removeMeeting = (id: string) => {
+    setMeetings(prev => {
+      const updated = prev.filter(m => m.id !== id);
+      AsyncStorage.setItem('app_meetings', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const addPeriod = (p: SchedulePeriod) => {
+    setSchedule(prev => {
+      const updated = [...prev, p];
+      AsyncStorage.setItem('app_schedule', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const updatePeriod = (id: string, data: Partial<SchedulePeriod>) => {
+    setSchedule(prev => {
+      const updated = prev.map(p => p.id === id ? { ...p, ...data } : p);
+      AsyncStorage.setItem('app_schedule', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const removePeriod = (id: string) => {
+    setSchedule(prev => {
+      const updated = prev.filter(p => p.id !== id);
+      AsyncStorage.setItem('app_schedule', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
   const resetAllData = () => {
     setStudents(DEMO_STUDENTS);
     setEmployees(DEMO_EMPLOYEES);
     setNews(DEMO_NEWS);
     setInbox(DEMO_INBOX);
     setMessages(DEMO_MESSAGES);
+    setMeetings(DEMO_MEETINGS);
+    setSchedule(DEFAULT_SCHEDULE);
     setWelcomeMessageState(DEFAULT_WELCOME_MSG);
     welcomeRef.current = DEFAULT_WELCOME_MSG;
     setSchoolInfoState(DEFAULT_SCHOOL_INFO);
     setHonorWeightsState(DEFAULT_HONOR_WEIGHTS);
     AsyncStorage.multiRemove([
       'app_students', 'app_employees', 'app_news', 'app_inbox',
-      'app_messages', 'app_welcome_msg', 'app_school_info', 'app_honor_weights',
+      'app_messages', 'app_meetings', 'app_schedule',
+      'app_welcome_msg', 'app_school_info', 'app_honor_weights',
     ]);
   };
 
@@ -374,13 +530,15 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   };
 
   const value = useMemo(() => ({
-    students, employees, news, inbox, messages,
+    students, employees, news, inbox, messages, meetings, schedule,
     welcomeMessage, schoolInfo, honorWeights,
     setWelcomeMessage, setSchoolInfo, setHonorWeights, resetAllData,
     updateStudent, addStudent, removeStudent,
     addNews, removeNews, replyInbox, markInboxRead, sendMessage,
     addEmployee, removeEmployee, updateEmployee,
-  }), [students, employees, news, inbox, messages, welcomeMessage, schoolInfo, honorWeights]);
+    addMeeting, updateMeeting, removeMeeting,
+    addPeriod, updatePeriod, removePeriod,
+  }), [students, employees, news, inbox, messages, meetings, schedule, welcomeMessage, schoolInfo, honorWeights]);
 
   return <AppDataContext.Provider value={value}>{children}</AppDataContext.Provider>;
 }

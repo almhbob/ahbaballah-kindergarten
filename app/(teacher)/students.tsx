@@ -101,6 +101,10 @@ export default function StudentsScreen() {
     });
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setSelected(null);
+    setReportAte('');
+    setReportLearned('');
+    setReportMood('');
+    setEditNotes('');
   };
 
   return (

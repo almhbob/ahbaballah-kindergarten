@@ -50,7 +50,9 @@ export default function AdminDashboard() {
 
   const unreadInbox = inbox.filter(m => !m.read).length;
   const totalStudents = students.length;
-  const avgAttendance = Math.round(students.reduce((a, s) => a + s.attendance, 0) / students.length);
+  const avgAttendance = students.length > 0
+    ? Math.round(students.reduce((a, s) => a + s.attendance, 0) / students.length)
+    : 0;
   const totalPayroll = employees.reduce((a, e) => a + e.salary, 0).toLocaleString('ar-SA');
 
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
@@ -99,7 +101,7 @@ export default function AdminDashboard() {
           <View style={styles.statsGrid}>
             <StatCard label="الطلاب" value={String(totalStudents)} sub="مسجل" icon="account-group" color="#3B82F6" bg="#EFF6FF" />
             <StatCard label="الحضور" value={`${avgAttendance}%`} sub="المتوسط" icon="calendar-check" color={Colors.success} bg="#ECFDF5" />
-            <StatCard label="الموظفون" value={String(employees.length)} sub="موظف" icon="badge-account" color="#8B5CF6" bg="#F5F3FF" />
+            <StatCard label="المعلمات" value={String(employees.length)} sub="معلمة" icon="badge-account" color="#8B5CF6" bg="#F5F3FF" />
             <StatCard label="الوارد" value={String(unreadInbox)} sub="غير مقروء" icon="email-alert" color={Colors.danger} bg="#FEF2F2" />
           </View>
         </LinearGradient>
@@ -107,12 +109,14 @@ export default function AdminDashboard() {
         <View style={styles.body}>
           <Text style={styles.sectionTitle}>الإجراءات السريعة</Text>
           <View style={styles.quickActions}>
-            <QuickAction icon="account-group" label="الطلاب" color="#3B82F6" onPress={() => {}} />
-            <QuickAction icon="account-tie" label="الموظفون" color="#8B5CF6" onPress={() => router.push('/(admin)/employees')} />
+            <QuickAction icon="account-group" label="الطلاب" color="#3B82F6" onPress={() => router.push('/(admin)/management')} />
+            <QuickAction icon="account-tie" label="المعلمات" color="#8B5CF6" onPress={() => router.push('/(admin)/employees')} />
             <QuickAction icon="cash-multiple" label="الرواتب" color={Colors.success} onPress={() => router.push('/(admin)/finance')} />
             <QuickAction icon="bulletin-board" label="الأخبار" color={Colors.accent} onPress={() => router.push('/(admin)/news')} />
             <QuickAction icon="email-open-outline" label="الوارد" color={Colors.danger} onPress={() => router.push('/(admin)/inbox')} />
-            <QuickAction icon="archive" label="الأرشيف" color="#64748B" onPress={() => {}} />
+            <QuickAction icon="calendar-account" label="الاجتماعات" color="#7C3AED" onPress={() => router.push('/(admin)/meetings')} />
+            <QuickAction icon="cog" label="الإعدادات" color="#64748B" onPress={() => router.push('/(admin)/settings')} />
+            <QuickAction icon="printer" label="طباعة" color="#0EA5E9" onPress={() => router.push('/(admin)/export')} />
           </View>
 
           <Text style={styles.sectionTitle}>آخر الأخبار</Text>
@@ -149,7 +153,9 @@ export default function AdminDashboard() {
                 <View>
                   <Text style={styles.financeSubLabel}>متوسط الراتب</Text>
                   <Text style={styles.financeSubValue}>
-                    {Math.round(employees.reduce((a, e) => a + e.salary, 0) / employees.length).toLocaleString('ar-SA')} ج.س
+                    {employees.length > 0
+                      ? Math.round(employees.reduce((a, e) => a + e.salary, 0) / employees.length).toLocaleString('ar-SA')
+                      : '0'} ج.س
                   </Text>
                 </View>
               </View>

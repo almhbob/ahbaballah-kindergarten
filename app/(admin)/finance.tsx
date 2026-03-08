@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Pressable, Platform,
 } from 'react-native';
@@ -9,18 +9,28 @@ import { Colors } from '@/constants/colors';
 import { useAppData } from '@/contexts/AppDataContext';
 import * as Haptics from 'expo-haptics';
 
-const FEES = [
-  { id: 'f1', studentName: 'أحمد محمد العمري', level: 'مستوى ثاني', total: 12000, paid: 12000, status: 'مسدد' as const },
-  { id: 'f2', studentName: 'سارة خالد الزهراني', level: 'مستوى أول', total: 10000, paid: 7500, status: 'جزئي' as const },
-  { id: 'f3', studentName: 'عمر سعد القحطاني', level: 'مستوى ثاني', total: 12000, paid: 12000, status: 'مسدد' as const },
-  { id: 'f4', studentName: 'ليلى عبدالله الحربي', level: 'براعم', total: 8000, paid: 0, status: 'متأخر' as const },
-];
+const LEVEL_FEES: Record<string, number> = {
+  'براعم':       8000,
+  'مستوى أول': 10000,
+  'مستوى ثاني': 12000,
+};
 
 export default function FinanceScreen() {
   const insets = useSafeAreaInsets();
-  const { employees } = useAppData();
+  const { employees, students } = useAppData();
   const [activeTab, setActiveTab] = useState<'fees' | 'payroll'>('fees');
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
+
+  const FEES = useMemo(() => students.map(s => {
+    const total = LEVEL_FEES[s.level] ?? 10000;
+    const paid = s.attendance >= 90
+      ? total
+      : s.attendance >= 75
+        ? Math.round(total * 0.625)
+        : 0;
+    const status = paid >= total ? 'مسدد' as const : paid > 0 ? 'جزئي' as const : 'متأخر' as const;
+    return { id: s.id, studentName: s.name, level: s.level, total, paid, status };
+  }), [students]);
 
   const totalFees = FEES.reduce((a, f) => a + f.total, 0);
   const collectedFees = FEES.reduce((a, f) => a + f.paid, 0);

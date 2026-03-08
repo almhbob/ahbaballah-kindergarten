@@ -6,6 +6,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import { Colors } from '@/constants/colors';
 import { useAppData, Employee, Student } from '@/contexts/AppDataContext';
 import HexFrame from '@/components/HexFrame';
@@ -106,7 +107,7 @@ export default function ManagementScreen() {
 
         <View style={styles.segmentRow}>
           {[
-            { key: 'teachers', label: 'المعلمون', icon: 'school' },
+            { key: 'teachers', label: 'المعلمات', icon: 'school' },
             { key: 'students', label: 'الطلاب', icon: 'people' },
             { key: 'classes', label: 'الفصول', icon: 'albums' },
           ].map(s => (
@@ -164,7 +165,7 @@ export default function ManagementScreen() {
           if (editingEmployee) {
             updateEmployee(editingEmployee.id, data);
           } else {
-            addEmployee({ id: genId(), daysPresent: 22, daysAbsent: 0, ...data } as Employee);
+            addEmployee({ id: genId(), daysPresent: 22, daysAbsent: 0, email: '', password: '1234', ...data } as Employee);
           }
           setShowAddTeacher(false);
           setEditingEmployee(null);
@@ -183,7 +184,7 @@ export default function ManagementScreen() {
           } else {
             addStudent({
               id: genId(), attendance: 100, behavior: 'ممتاز', homework: 'منجز',
-              notes: '', grades: [], dailyReports: [], ...data,
+              notes: '', grades: [], dailyReports: [], assessments: [], ...data,
             } as Student);
           }
           setShowAddStudent(false);
@@ -279,12 +280,21 @@ function StudentsSection({ students, onAdd, onEdit, onView, onDelete }: {
         keyExtractor={s => s.id}
         contentContainerStyle={styles.listContent}
         ListHeaderComponent={
-          <Pressable style={styles.addBtn} onPress={onAdd}>
-            <LinearGradient colors={['#ca9928', '#b8841c']} style={styles.addBtnGrad}>
-              <Ionicons name="add" size={20} color="#fff" />
-              <Text style={styles.addBtnText}>إضافة طالب جديد</Text>
-            </LinearGradient>
-          </Pressable>
+          <View style={{ gap: 10, marginBottom: 2 }}>
+            <Pressable style={styles.addBtn} onPress={onAdd}>
+              <LinearGradient colors={['#ca9928', '#b8841c']} style={styles.addBtnGrad}>
+                <Ionicons name="add" size={20} color="#fff" />
+                <Text style={styles.addBtnText}>إضافة طالب جديد</Text>
+              </LinearGradient>
+            </Pressable>
+            <Pressable
+              style={styles.exportBtn}
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/(admin)/export'); }}
+            >
+              <MaterialCommunityIcons name="printer" size={18} color={Colors.primary} />
+              <Text style={styles.exportBtnText}>تصدير وطباعة القائمة</Text>
+            </Pressable>
+          </View>
         }
         ListEmptyComponent={
           <View style={styles.empty}>
@@ -397,21 +407,25 @@ function AddEmployeeModal({ visible, editing, onClose, onSave }: {
   const [role, setRole] = useState('معلمة');
   const [level, setLevel] = useState('');
   const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [salary, setSalary] = useState('');
 
   React.useEffect(() => {
     if (editing) {
       setName(editing.name); setRole(editing.role);
       setLevel(editing.level ?? ''); setPhone(editing.phone);
+      setEmail(editing.email ?? ''); setPassword(editing.password ?? '1234');
       setSalary(String(editing.salary));
     } else {
-      setName(''); setRole('معلمة'); setLevel(''); setPhone(''); setSalary('');
+      setName(''); setRole('معلمة'); setLevel(''); setPhone('');
+      setEmail(''); setPassword('1234'); setSalary('');
     }
   }, [editing, visible]);
 
   const handleSave = () => {
     if (!name.trim()) { Alert.alert('تنبيه', 'الرجاء إدخال الاسم'); return; }
-    onSave({ name: name.trim(), role, level: level || undefined, phone: phone.trim(), salary: Number(salary) || 0 });
+    onSave({ name: name.trim(), role, level: level || undefined, phone: phone.trim(), email: email.trim().toLowerCase(), password: password || '1234', salary: Number(salary) || 0 });
   };
 
   return (
@@ -452,13 +466,25 @@ function AddEmployeeModal({ visible, editing, onClose, onSave }: {
           <Text style={styles.fieldLabel}>رقم الهاتف</Text>
           <TextInput style={styles.fieldInput} value={phone} onChangeText={setPhone} placeholder="+249 XXX XXX XXX" placeholderTextColor={Colors.textLight} keyboardType="phone-pad" textAlign="right" />
 
+          <Text style={styles.fieldLabel}>البريد الإلكتروني (لتسجيل الدخول)</Text>
+          <TextInput style={styles.fieldInput} value={email} onChangeText={setEmail} placeholder="example@ahbaballah.edu" placeholderTextColor={Colors.textLight} keyboardType="email-address" autoCapitalize="none" textAlign="right" />
+
+          <Text style={styles.fieldLabel}>كلمة المرور</Text>
+          <TextInput style={styles.fieldInput} value={password} onChangeText={setPassword} placeholder="1234" placeholderTextColor={Colors.textLight} textAlign="right" />
+
           <Text style={styles.fieldLabel}>الراتب (ج.س)</Text>
           <TextInput style={styles.fieldInput} value={salary} onChangeText={setSalary} placeholder="0" placeholderTextColor={Colors.textLight} keyboardType="numeric" textAlign="right" />
+          <View style={{ height: 20 }} />
         </ScrollView>
       </View>
     </Modal>
   );
 }
+
+const BEHAVIORS: Student['behavior'][] = ['ممتاز', 'جيد', 'مقبول', 'يحتاج متابعة'];
+const HOMEWORKS: Student['homework'][] = ['منجز', 'ناقص', 'لم ينجز'];
+const BEHAVIOR_COLORS: Record<string, string> = { 'ممتاز': '#10B981', 'جيد': '#3B82F6', 'مقبول': '#F59E0B', 'يحتاج متابعة': Colors.danger };
+const HOMEWORK_COLORS: Record<string, string> = { 'منجز': '#10B981', 'ناقص': '#F59E0B', 'لم ينجز': Colors.danger };
 
 function AddStudentModal({ visible, editing, onClose, onSave }: {
   visible: boolean;
@@ -470,22 +496,32 @@ function AddStudentModal({ visible, editing, onClose, onSave }: {
   const [name, setName] = useState('');
   const [level, setLevel] = useState('مستوى أول');
   const [parentName, setParentName] = useState('');
+  const [parentPhone, setParentPhone] = useState('');
   const [notes, setNotes] = useState('');
+  const [attendance, setAttendance] = useState('100');
+  const [behavior, setBehavior] = useState<Student['behavior']>('ممتاز');
+  const [homework, setHomework] = useState<Student['homework']>('منجز');
 
   React.useEffect(() => {
     if (editing) {
       setName(editing.name); setLevel(editing.level);
-      setParentName(editing.parentName); setNotes(editing.notes);
+      setParentName(editing.parentName); setParentPhone(editing.parentPhone ?? '');
+      setNotes(editing.notes); setAttendance(String(editing.attendance));
+      setBehavior(editing.behavior); setHomework(editing.homework);
     } else {
-      setName(''); setLevel('مستوى أول'); setParentName(''); setNotes('');
+      setName(''); setLevel('مستوى أول'); setParentName(''); setParentPhone('');
+      setNotes(''); setAttendance('100'); setBehavior('ممتاز'); setHomework('منجز');
     }
   }, [editing, visible]);
 
   const handleSave = () => {
     if (!name.trim()) { Alert.alert('تنبيه', 'الرجاء إدخال اسم الطالب'); return; }
     if (!parentName.trim()) { Alert.alert('تنبيه', 'الرجاء إدخال اسم ولي الأمر'); return; }
-    onSave({ name: name.trim(), level, parentName: parentName.trim(), notes: notes.trim() });
+    const att = Math.min(100, Math.max(0, Number(attendance) || 0));
+    onSave({ name: name.trim(), level, parentName: parentName.trim(), parentPhone: parentPhone.trim(), notes: notes.trim(), attendance: att, behavior, homework });
   };
+
+  const attNum = Math.min(100, Math.max(0, Number(attendance) || 0));
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
@@ -516,6 +552,62 @@ function AddStudentModal({ visible, editing, onClose, onSave }: {
           <Text style={styles.fieldLabel}>اسم ولي الأمر *</Text>
           <TextInput style={styles.fieldInput} value={parentName} onChangeText={setParentName} placeholder="مثال: علي سعد الأحمد" placeholderTextColor={Colors.textLight} textAlign="right" />
 
+          <Text style={styles.fieldLabel}>هاتف ولي الأمر</Text>
+          <TextInput style={styles.fieldInput} value={parentPhone} onChangeText={setParentPhone} placeholder="+249 XXX XXX XXX" placeholderTextColor={Colors.textLight} keyboardType="phone-pad" textAlign="right" />
+
+          <Text style={styles.fieldLabel}>نسبة الحضور (%)</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 18 }}>
+            <Pressable
+              style={[styles.pill, { paddingHorizontal: 16, paddingVertical: 8 }]}
+              onPress={() => setAttendance(String(Math.max(0, attNum - 1)))}
+            >
+              <Text style={[styles.pillText, { fontSize: 18 }]}>−</Text>
+            </Pressable>
+            <View style={{ flex: 1 }}>
+              <View style={{ height: 8, backgroundColor: Colors.borderLight, borderRadius: 4, overflow: 'hidden', marginBottom: 6 }}>
+                <View style={{ height: 8, width: `${attNum}%` as any, backgroundColor: attNum >= 90 ? Colors.success : attNum >= 75 ? '#F59E0B' : Colors.danger, borderRadius: 4 }} />
+              </View>
+              <TextInput
+                style={[styles.fieldInput, { marginBottom: 0, textAlign: 'center', paddingVertical: 8 }]}
+                value={attendance} onChangeText={setAttendance}
+                keyboardType="numeric" placeholder="100"
+                placeholderTextColor={Colors.textLight}
+              />
+            </View>
+            <Pressable
+              style={[styles.pill, { paddingHorizontal: 16, paddingVertical: 8 }]}
+              onPress={() => setAttendance(String(Math.min(100, attNum + 1)))}
+            >
+              <Text style={[styles.pillText, { fontSize: 18 }]}>+</Text>
+            </Pressable>
+          </View>
+
+          <Text style={styles.fieldLabel}>السلوك</Text>
+          <View style={styles.pillRow}>
+            {BEHAVIORS.map(b => (
+              <Pressable
+                key={b}
+                style={[styles.pill, behavior === b && { backgroundColor: BEHAVIOR_COLORS[b], borderColor: BEHAVIOR_COLORS[b] }]}
+                onPress={() => setBehavior(b)}
+              >
+                <Text style={[styles.pillText, behavior === b && styles.pillTextActive]}>{b}</Text>
+              </Pressable>
+            ))}
+          </View>
+
+          <Text style={styles.fieldLabel}>الواجبات</Text>
+          <View style={styles.pillRow}>
+            {HOMEWORKS.map(h => (
+              <Pressable
+                key={h}
+                style={[styles.pill, homework === h && { backgroundColor: HOMEWORK_COLORS[h], borderColor: HOMEWORK_COLORS[h] }]}
+                onPress={() => setHomework(h)}
+              >
+                <Text style={[styles.pillText, homework === h && styles.pillTextActive]}>{h}</Text>
+              </Pressable>
+            ))}
+          </View>
+
           <Text style={styles.fieldLabel}>ملاحظات</Text>
           <TextInput
             style={[styles.fieldInput, { height: 80, textAlignVertical: 'top', paddingTop: 10 }]}
@@ -524,25 +616,46 @@ function AddStudentModal({ visible, editing, onClose, onSave }: {
             placeholderTextColor={Colors.textLight}
             textAlign="right" multiline
           />
+          <View style={{ height: 40 }} />
         </ScrollView>
       </View>
     </Modal>
   );
 }
 
+const MOOD_ICONS: Record<string, string> = { 'سعيد': '😊', 'نشيط': '⚡', 'هادئ': '😌', 'متحمس': '🌟', 'حزين': '😢', 'تعبان': '😔' };
+const ASSESSMENT_LEVEL_COLORS: Record<string, string> = { 'مبتدئ': Colors.danger, 'متوسط': '#F59E0B', 'متقدم': '#3B82F6', 'ممتاز': '#10B981' };
+const PROFILE_TABS = ['نظرة عامة', 'الدرجات', 'التقارير', 'التقييمات'] as const;
+
 function StudentProfileSheet({ student, onClose }: { student: Student | null; onClose: () => void }) {
   const insets = useSafeAreaInsets();
+  const [activeTab, setActiveTab] = useState<typeof PROFILE_TABS[number]>('نظرة عامة');
+
+  React.useEffect(() => {
+    if (student) setActiveTab('نظرة عامة');
+  }, [student]);
+
   if (!student) return null;
+
   const avgGrade = student.grades.length > 0
     ? Math.round(student.grades.reduce((a, g) => a + (g.score / g.total) * 100, 0) / student.grades.length)
     : 0;
   const levelColor = LEVEL_COLORS[student.level] ?? '#8B5CF6';
   const behColor = student.behavior === 'ممتاز' ? '#10B981' : student.behavior === 'جيد' ? '#3B82F6' : student.behavior === 'مقبول' ? '#F59E0B' : Colors.danger;
   const hwColor = student.homework === 'منجز' ? '#10B981' : student.homework === 'ناقص' ? '#F59E0B' : Colors.danger;
+  const attColor = student.attendance >= 90 ? '#10B981' : student.attendance >= 75 ? '#F59E0B' : Colors.danger;
+
+  const tabBadges: Record<string, number | null> = {
+    'نظرة عامة': null,
+    'الدرجات': student.grades.length || null,
+    'التقارير': student.dailyReports.length || null,
+    'التقييمات': student.assessments?.length || null,
+  };
 
   return (
     <Modal visible={!!student} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <View style={[pStyles.container, { paddingTop: insets.top + 8 }]}>
+        {/* ── Gradient Header ── */}
         <LinearGradient colors={['#1a0a3c', '#3d1a6e', levelColor]} style={pStyles.profileHeader}>
           <Pressable onPress={onClose} style={pStyles.closeBtn}>
             <Ionicons name="chevron-down" size={24} color="#fff" />
@@ -561,12 +674,12 @@ function StudentProfileSheet({ student, onClose }: { student: Student | null; on
           </View>
           <View style={pStyles.headerStats}>
             <View style={pStyles.headerStat}>
-              <Text style={pStyles.headerStatVal}>{student.attendance}%</Text>
+              <Text style={[pStyles.headerStatVal, { color: attColor }]}>{student.attendance}%</Text>
               <Text style={pStyles.headerStatLbl}>الحضور</Text>
             </View>
             <View style={pStyles.headerStatDivider} />
             <View style={pStyles.headerStat}>
-              <Text style={pStyles.headerStatVal}>{avgGrade}%</Text>
+              <Text style={pStyles.headerStatVal}>{avgGrade > 0 ? `${avgGrade}%` : '—'}</Text>
               <Text style={pStyles.headerStatLbl}>المعدل</Text>
             </View>
             <View style={pStyles.headerStatDivider} />
@@ -574,102 +687,255 @@ function StudentProfileSheet({ student, onClose }: { student: Student | null; on
               <Text style={pStyles.headerStatVal}>{student.grades.length}</Text>
               <Text style={pStyles.headerStatLbl}>مواد</Text>
             </View>
+            <View style={pStyles.headerStatDivider} />
+            <View style={pStyles.headerStat}>
+              <Text style={pStyles.headerStatVal}>{student.dailyReports.length}</Text>
+              <Text style={pStyles.headerStatLbl}>تقرير</Text>
+            </View>
           </View>
         </LinearGradient>
 
-        <ScrollView style={pStyles.body} showsVerticalScrollIndicator={false}>
-          {/* Status Row */}
-          <View style={pStyles.statusRow}>
-            <View style={[pStyles.statusCard, { borderColor: behColor + '40' }]}>
-              <Text style={[pStyles.statusVal, { color: behColor }]}>{student.behavior}</Text>
-              <Text style={pStyles.statusLbl}>السلوك</Text>
-            </View>
-            <View style={[pStyles.statusCard, { borderColor: hwColor + '40' }]}>
-              <Text style={[pStyles.statusVal, { color: hwColor }]}>{student.homework}</Text>
-              <Text style={pStyles.statusLbl}>الواجبات</Text>
-            </View>
-          </View>
+        {/* ── Tab Bar ── */}
+        <View style={pStyles.tabBar}>
+          {PROFILE_TABS.map(tab => (
+            <Pressable
+              key={tab}
+              style={[pStyles.tabBtn, activeTab === tab && { borderBottomColor: levelColor, borderBottomWidth: 2.5 }]}
+              onPress={() => setActiveTab(tab)}
+            >
+              <Text style={[pStyles.tabBtnTxt, activeTab === tab && { color: levelColor, fontFamily: 'Inter_700Bold' }]}>{tab}</Text>
+              {tabBadges[tab] ? (
+                <View style={[pStyles.tabBadge, { backgroundColor: levelColor }]}>
+                  <Text style={pStyles.tabBadgeTxt}>{tabBadges[tab]}</Text>
+                </View>
+              ) : null}
+            </Pressable>
+          ))}
+        </View>
 
-          {/* Attendance Bar */}
-          <View style={pStyles.section}>
-            <Text style={pStyles.sectionTitle}>نسبة الحضور</Text>
-            <View style={pStyles.attendanceRow}>
-              <Text style={[pStyles.attendancePct, { color: student.attendance >= 90 ? '#10B981' : student.attendance >= 75 ? '#F59E0B' : Colors.danger }]}>
-                {student.attendance}%
-              </Text>
-              <View style={pStyles.attendanceBarBg}>
-                <View style={[pStyles.attendanceBarFill, {
-                  width: `${student.attendance}%` as any,
-                  backgroundColor: student.attendance >= 90 ? '#10B981' : student.attendance >= 75 ? '#F59E0B' : Colors.danger,
-                }]} />
-              </View>
-            </View>
-          </View>
+        {/* ── Tab Content ── */}
+        <ScrollView style={pStyles.body} showsVerticalScrollIndicator={false} key={activeTab}>
 
-          {/* Grades */}
-          {student.grades.length > 0 && (
-            <View style={pStyles.section}>
-              <Text style={pStyles.sectionTitle}>الدرجات والمواد</Text>
-              {student.grades.map((g, i) => {
-                const pct = Math.round((g.score / g.total) * 100);
-                const gc = pct >= 90 ? '#10B981' : pct >= 75 ? '#3B82F6' : pct >= 60 ? '#F59E0B' : Colors.danger;
-                return (
-                  <View key={i} style={pStyles.gradeRow}>
-                    <View style={[pStyles.gradeScore, { backgroundColor: gc + '15', borderColor: gc + '30' }]}>
-                      <Text style={[pStyles.gradeScoreTxt, { color: gc }]}>{g.score}/{g.total}</Text>
+          {/* ══ TAB: نظرة عامة ══ */}
+          {activeTab === 'نظرة عامة' && (
+            <>
+              {/* Contact Card */}
+              <View style={pStyles.section}>
+                <Text style={pStyles.sectionTitle}>معلومات ولي الأمر</Text>
+                <View style={pStyles.contactBlock}>
+                  <View style={pStyles.contactLine}>
+                    <Text style={pStyles.contactVal}>{student.parentName}</Text>
+                    <View style={pStyles.contactIcon}>
+                      <Ionicons name="person" size={16} color={Colors.primary} />
                     </View>
-                    <View style={pStyles.gradeInfo}>
-                      <Text style={pStyles.gradeSubject}>{g.subject}</Text>
-                      <View style={pStyles.gradeBarBg}>
-                        <View style={[pStyles.gradeBarFill, { width: `${pct}%` as any, backgroundColor: gc }]} />
+                  </View>
+                  {student.parentPhone ? (
+                    <Pressable
+                      style={pStyles.contactLine}
+                      onPress={() => Linking.openURL(`tel:${student.parentPhone}`)}
+                    >
+                      <Text style={[pStyles.contactVal, { color: '#3B82F6' }]}>{student.parentPhone}</Text>
+                      <View style={[pStyles.contactIcon, { backgroundColor: '#3B82F620' }]}>
+                        <Ionicons name="call" size={16} color="#3B82F6" />
                       </View>
+                    </Pressable>
+                  ) : null}
+                  <View style={pStyles.contactLine}>
+                    <Text style={pStyles.contactVal}>{student.level}</Text>
+                    <View style={[pStyles.contactIcon, { backgroundColor: levelColor + '20' }]}>
+                      <Ionicons name="school" size={16} color={levelColor} />
                     </View>
-                    <Text style={[pStyles.gradePct, { color: gc }]}>{pct}%</Text>
-                  </View>
-                );
-              })}
-            </View>
-          )}
-
-          {/* Daily Reports */}
-          {student.dailyReports.length > 0 && (
-            <View style={pStyles.section}>
-              <Text style={pStyles.sectionTitle}>آخر التقارير اليومية</Text>
-              {student.dailyReports.slice(0, 3).map((r, i) => (
-                <View key={i} style={pStyles.reportCard}>
-                  <View style={pStyles.reportHeader}>
-                    <Text style={pStyles.reportMood}>{r.mood}</Text>
-                    <Text style={pStyles.reportDate}>{r.date}</Text>
-                  </View>
-                  <View style={pStyles.reportRow}>
-                    <Text style={pStyles.reportVal}>{r.ate}</Text>
-                    <Text style={pStyles.reportKey}>الوجبة:</Text>
-                  </View>
-                  <View style={pStyles.reportRow}>
-                    <Text style={pStyles.reportVal}>{r.learned}</Text>
-                    <Text style={pStyles.reportKey}>تعلّم:</Text>
-                  </View>
-                  <View style={pStyles.reportRow}>
-                    <Text style={pStyles.reportVal}>{r.behaviorNote}</Text>
-                    <Text style={pStyles.reportKey}>السلوك:</Text>
                   </View>
                 </View>
-              ))}
-            </View>
+              </View>
+
+              {/* Attendance */}
+              <View style={pStyles.section}>
+                <Text style={pStyles.sectionTitle}>نسبة الحضور</Text>
+                <View style={pStyles.attendanceRow}>
+                  <Text style={[pStyles.attendancePct, { color: attColor }]}>{student.attendance}%</Text>
+                  <View style={{ flex: 1 }}>
+                    <View style={pStyles.attendanceBarBg}>
+                      <View style={[pStyles.attendanceBarFill, { width: `${student.attendance}%` as any, backgroundColor: attColor }]} />
+                    </View>
+                    <Text style={pStyles.attendanceHint}>
+                      {student.attendance >= 90 ? 'حضور ممتاز' : student.attendance >= 75 ? 'حضور جيد' : 'يحتاج متابعة'}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+
+              {/* Behavior & Homework */}
+              <View style={pStyles.statusRow}>
+                <View style={[pStyles.statusCard, { borderColor: behColor + '40' }]}>
+                  <MaterialCommunityIcons name="emoticon-outline" size={22} color={behColor} style={{ marginBottom: 4 }} />
+                  <Text style={[pStyles.statusVal, { color: behColor }]}>{student.behavior}</Text>
+                  <Text style={pStyles.statusLbl}>السلوك</Text>
+                </View>
+                <View style={[pStyles.statusCard, { borderColor: hwColor + '40' }]}>
+                  <MaterialCommunityIcons name="notebook-check-outline" size={22} color={hwColor} style={{ marginBottom: 4 }} />
+                  <Text style={[pStyles.statusVal, { color: hwColor }]}>{student.homework}</Text>
+                  <Text style={pStyles.statusLbl}>الواجبات</Text>
+                </View>
+              </View>
+
+              {/* Notes */}
+              <View style={pStyles.section}>
+                <Text style={pStyles.sectionTitle}>ملاحظات المعلمة</Text>
+                <View style={pStyles.notesBox}>
+                  <Ionicons name="chatbubble-ellipses-outline" size={16} color={Colors.primary} style={{ marginLeft: 8 }} />
+                  <Text style={pStyles.notesTxt}>{student.notes || 'لا توجد ملاحظات مسجّلة'}</Text>
+                </View>
+              </View>
+            </>
           )}
 
-          {/* Notes */}
-          {student.notes ? (
-            <View style={pStyles.section}>
-              <Text style={pStyles.sectionTitle}>ملاحظات المعلمة</Text>
-              <View style={pStyles.notesBox}>
-                <Ionicons name="chatbubble-ellipses-outline" size={16} color={Colors.primary} style={{ marginLeft: 8 }} />
-                <Text style={pStyles.notesTxt}>{student.notes}</Text>
-              </View>
-            </View>
-          ) : null}
+          {/* ══ TAB: الدرجات ══ */}
+          {activeTab === 'الدرجات' && (
+            <>
+              {student.grades.length === 0 ? (
+                <View style={pStyles.emptyTab}>
+                  <MaterialCommunityIcons name="clipboard-text-outline" size={48} color={Colors.textLight} />
+                  <Text style={pStyles.emptyTabTxt}>لم تُسجَّل درجات بعد</Text>
+                </View>
+              ) : (
+                <>
+                  {/* Summary */}
+                  <View style={[pStyles.section, { flexDirection: 'row', gap: 10 }]}>
+                    <View style={pStyles.gradeSumCard}>
+                      <Text style={[pStyles.gradeSumVal, { color: avgGrade >= 90 ? '#10B981' : avgGrade >= 75 ? '#3B82F6' : '#F59E0B' }]}>{avgGrade}%</Text>
+                      <Text style={pStyles.gradeSumLbl}>المعدل العام</Text>
+                    </View>
+                    <View style={pStyles.gradeSumCard}>
+                      <Text style={[pStyles.gradeSumVal, { color: Colors.primary }]}>{student.grades.length}</Text>
+                      <Text style={pStyles.gradeSumLbl}>عدد المواد</Text>
+                    </View>
+                    <View style={pStyles.gradeSumCard}>
+                      <Text style={[pStyles.gradeSumVal, { color: '#10B981' }]}>
+                        {student.grades.filter(g => (g.score / g.total) * 100 >= 90).length}
+                      </Text>
+                      <Text style={pStyles.gradeSumLbl}>ممتاز</Text>
+                    </View>
+                  </View>
+                  <View style={pStyles.section}>
+                    {student.grades.map((g, i) => {
+                      const pct = Math.round((g.score / g.total) * 100);
+                      const gc = pct >= 90 ? '#10B981' : pct >= 75 ? '#3B82F6' : pct >= 60 ? '#F59E0B' : Colors.danger;
+                      return (
+                        <View key={i} style={pStyles.gradeRow}>
+                          <View style={[pStyles.gradeScore, { backgroundColor: gc + '15', borderColor: gc + '30' }]}>
+                            <Text style={[pStyles.gradeScoreTxt, { color: gc }]}>{g.score}/{g.total}</Text>
+                          </View>
+                          <View style={pStyles.gradeInfo}>
+                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
+                              <Text style={pStyles.gradeDate}>{g.date}</Text>
+                              <Text style={pStyles.gradeSubject}>{g.subject}</Text>
+                            </View>
+                            <View style={pStyles.gradeBarBg}>
+                              <View style={[pStyles.gradeBarFill, { width: `${pct}%` as any, backgroundColor: gc }]} />
+                            </View>
+                          </View>
+                          <Text style={[pStyles.gradePct, { color: gc }]}>{pct}%</Text>
+                        </View>
+                      );
+                    })}
+                  </View>
+                </>
+              )}
+            </>
+          )}
 
-          <View style={{ height: insets.bottom + 32 }} />
+          {/* ══ TAB: التقارير اليومية ══ */}
+          {activeTab === 'التقارير' && (
+            <>
+              {student.dailyReports.length === 0 ? (
+                <View style={pStyles.emptyTab}>
+                  <MaterialCommunityIcons name="calendar-text-outline" size={48} color={Colors.textLight} />
+                  <Text style={pStyles.emptyTabTxt}>لا توجد تقارير يومية</Text>
+                </View>
+              ) : (
+                <View style={pStyles.section}>
+                  <Text style={pStyles.sectionTitle}>جميع التقارير ({student.dailyReports.length})</Text>
+                  {[...student.dailyReports].reverse().map((r, i) => (
+                    <View key={i} style={pStyles.reportCard}>
+                      <View style={pStyles.reportHeader}>
+                        <Text style={pStyles.reportMood}>{MOOD_ICONS[r.mood] ?? '😊'} {r.mood}</Text>
+                        <Text style={pStyles.reportDate}>{r.date}</Text>
+                      </View>
+                      <View style={pStyles.reportRow}>
+                        <Text style={pStyles.reportVal}>{r.ate}</Text>
+                        <Text style={pStyles.reportKey}>🍱 الوجبة</Text>
+                      </View>
+                      <View style={pStyles.reportRow}>
+                        <Text style={pStyles.reportVal}>{r.learned}</Text>
+                        <Text style={pStyles.reportKey}>📚 تعلّم</Text>
+                      </View>
+                      <View style={[pStyles.reportRow, { borderBottomWidth: 0 }]}>
+                        <Text style={pStyles.reportVal}>{r.behaviorNote}</Text>
+                        <Text style={pStyles.reportKey}>✨ السلوك</Text>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </>
+          )}
+
+          {/* ══ TAB: التقييمات ══ */}
+          {activeTab === 'التقييمات' && (
+            <>
+              {(!student.assessments || student.assessments.length === 0) ? (
+                <View style={pStyles.emptyTab}>
+                  <MaterialCommunityIcons name="star-outline" size={48} color={Colors.textLight} />
+                  <Text style={pStyles.emptyTabTxt}>لم يُجرَ تقييم لهذا الطالب بعد</Text>
+                  <Text style={pStyles.emptyTabSub}>يمكن للمعلمة إجراء تقييم من شاشة التقييمات</Text>
+                </View>
+              ) : (
+                <View style={pStyles.section}>
+                  <Text style={pStyles.sectionTitle}>سجل التقييمات ({student.assessments.length})</Text>
+                  {[...student.assessments].reverse().map((a, i) => {
+                    const lvlColor = ASSESSMENT_LEVEL_COLORS[a.levelLabel] ?? Colors.primary;
+                    const totalPct = Math.round((a.totalScore / a.totalMax) * 100);
+                    return (
+                      <View key={i} style={[pStyles.assessCard, { borderColor: lvlColor + '30' }]}>
+                        <View style={pStyles.assessHeader}>
+                          <View style={[pStyles.assessBadge, { backgroundColor: lvlColor + '18', borderColor: lvlColor + '40' }]}>
+                            <Text style={[pStyles.assessBadgeTxt, { color: lvlColor }]}>{a.levelLabel}</Text>
+                          </View>
+                          <Text style={pStyles.assessDate}>{a.date}</Text>
+                        </View>
+                        <View style={pStyles.assessScoreRow}>
+                          <Text style={[pStyles.assessTotal, { color: lvlColor }]}>{totalPct}%</Text>
+                          <View style={{ flex: 1 }}>
+                            <View style={pStyles.attendanceBarBg}>
+                              <View style={[pStyles.attendanceBarFill, { width: `${totalPct}%` as any, backgroundColor: lvlColor }]} />
+                            </View>
+                          </View>
+                          <Text style={pStyles.assessScore}>{a.totalScore}/{a.totalMax}</Text>
+                        </View>
+                        <View style={pStyles.assessBreakdown}>
+                          <View style={pStyles.assessSubject}>
+                            <Text style={pStyles.assessSubLbl}>الحروف</Text>
+                            <Text style={pStyles.assessSubVal}>{a.lettersScore}/{a.lettersMax}</Text>
+                          </View>
+                          <View style={pStyles.assessSubject}>
+                            <Text style={pStyles.assessSubLbl}>الأرقام</Text>
+                            <Text style={pStyles.assessSubVal}>{a.numbersScore}/{a.numbersMax}</Text>
+                          </View>
+                          <View style={pStyles.assessSubject}>
+                            <Text style={pStyles.assessSubLbl}>الحساب</Text>
+                            <Text style={pStyles.assessSubVal}>{a.mathScore}/{a.mathMax}</Text>
+                          </View>
+                        </View>
+                      </View>
+                    );
+                  })}
+                </View>
+              )}
+            </>
+          )}
+
+          <View style={{ height: insets.bottom + 40 }} />
         </ScrollView>
       </View>
     </Modal>
@@ -848,6 +1114,40 @@ const pStyles = StyleSheet.create({
   salaryLabel: { fontSize: 12, fontFamily: 'Inter_400Regular', color: 'rgba(255,255,255,0.6)', marginBottom: 6 },
   salaryVal: { fontSize: 36, fontFamily: 'Inter_700Bold', color: Colors.accent },
   salaryCurrency: { fontSize: 16, fontFamily: 'Inter_500Medium', color: 'rgba(255,255,255,0.7)' },
+
+  tabBar: { flexDirection: 'row', backgroundColor: Colors.surface, borderBottomWidth: 1, borderBottomColor: Colors.borderLight },
+  tabBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 12, gap: 5, borderBottomWidth: 2.5, borderBottomColor: 'transparent' },
+  tabBtnTxt: { fontSize: 12, fontFamily: 'Inter_500Medium', color: Colors.textSecondary },
+  tabBadge: { paddingHorizontal: 6, paddingVertical: 1, borderRadius: 10, minWidth: 18, alignItems: 'center' },
+  tabBadgeTxt: { fontSize: 10, fontFamily: 'Inter_700Bold', color: '#fff' },
+
+  contactBlock: { backgroundColor: Colors.surface, borderRadius: 14, overflow: 'hidden', borderWidth: 1, borderColor: Colors.borderLight },
+  contactLine: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 12, paddingHorizontal: 14, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: Colors.borderLight + '80' },
+
+  attendanceHint: { fontSize: 11, fontFamily: 'Inter_400Regular', color: Colors.textLight, textAlign: 'right', marginTop: 4 },
+
+  emptyTab: { alignItems: 'center', paddingVertical: 60, gap: 12, paddingHorizontal: 20 },
+  emptyTabTxt: { fontSize: 15, fontFamily: 'Inter_500Medium', color: Colors.textSecondary, textAlign: 'center' },
+  emptyTabSub: { fontSize: 12, fontFamily: 'Inter_400Regular', color: Colors.textLight, textAlign: 'center' },
+
+  gradeSumCard: { flex: 1, backgroundColor: Colors.surface, borderRadius: 12, padding: 14, alignItems: 'center', borderWidth: 1, borderColor: Colors.borderLight },
+  gradeSumVal: { fontSize: 22, fontFamily: 'Inter_700Bold', marginBottom: 2 },
+  gradeSumLbl: { fontSize: 10, fontFamily: 'Inter_400Regular', color: Colors.textSecondary },
+
+  gradeDate: { fontSize: 10, fontFamily: 'Inter_400Regular', color: Colors.textLight },
+
+  assessCard: { backgroundColor: Colors.surface, borderRadius: 14, padding: 14, marginBottom: 10, borderWidth: 1.5 },
+  assessHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+  assessBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20, borderWidth: 1 },
+  assessBadgeTxt: { fontSize: 12, fontFamily: 'Inter_700Bold' },
+  assessDate: { fontSize: 12, fontFamily: 'Inter_400Regular', color: Colors.textLight },
+  assessScoreRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 },
+  assessTotal: { fontSize: 18, fontFamily: 'Inter_700Bold', width: 44 },
+  assessScore: { fontSize: 12, fontFamily: 'Inter_600SemiBold', color: Colors.textSecondary, width: 44, textAlign: 'right' },
+  assessBreakdown: { flexDirection: 'row', gap: 8 },
+  assessSubject: { flex: 1, backgroundColor: Colors.surfaceAlt, borderRadius: 10, padding: 10, alignItems: 'center' },
+  assessSubLbl: { fontSize: 10, fontFamily: 'Inter_400Regular', color: Colors.textSecondary, marginBottom: 3 },
+  assessSubVal: { fontSize: 13, fontFamily: 'Inter_700Bold', color: Colors.text },
 });
 
 const styles = StyleSheet.create({
@@ -872,6 +1172,8 @@ const styles = StyleSheet.create({
   addBtn: { borderRadius: 14, overflow: 'hidden', marginBottom: 4 },
   addBtnGrad: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14 },
   addBtnText: { fontSize: 15, fontFamily: 'Inter_600SemiBold', color: '#fff' },
+  exportBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 11, borderRadius: 12, backgroundColor: Colors.surface, borderWidth: 1.5, borderColor: Colors.primary + '30' },
+  exportBtnText: { fontSize: 14, fontFamily: 'Inter_600SemiBold', color: Colors.primary },
   card: { backgroundColor: Colors.surface, borderRadius: 16, padding: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1, borderColor: Colors.borderLight },
   cardRight: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 },
   avatarCircle: { width: 46, height: 46, borderRadius: 23, alignItems: 'center', justifyContent: 'center' },

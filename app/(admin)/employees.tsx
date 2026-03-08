@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Colors } from '@/constants/colors';
 import { useAppData, Employee } from '@/contexts/AppDataContext';
+import HexFrame from '@/components/HexFrame';
 import * as Haptics from 'expo-haptics';
 
 function EmployeeCard({ emp }: { emp: Employee }) {
@@ -15,9 +16,9 @@ function EmployeeCard({ emp }: { emp: Employee }) {
   return (
     <View style={styles.empCard}>
       <View style={styles.empRow}>
-        <View style={styles.empAvatar}>
+        <HexFrame size={46} fill={Colors.primary} stroke={Colors.accent + '80'} strokeWidth={1.5} style={{ marginLeft: 12 }}>
           <Text style={styles.empAvatarText}>{emp.name.charAt(0)}</Text>
-        </View>
+        </HexFrame>
         <View style={styles.empInfo}>
           <Text style={styles.empName}>{emp.name}</Text>
           <Text style={styles.empRole}>{emp.role}</Text>
@@ -92,7 +93,7 @@ export default function EmployeesScreen() {
           <Pressable onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowAdd(true); }} style={styles.addBtn}>
             <Ionicons name="add" size={22} color="#FFFFFF" />
           </Pressable>
-          <Text style={styles.headerTitle}>الموظفون</Text>
+          <Text style={styles.headerTitle}>المعلمات</Text>
         </View>
         <View style={styles.searchBox}>
           <Ionicons name="search" size={18} color={Colors.textLight} />
