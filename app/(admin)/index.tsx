@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, Pressable, Platform, Image
+  View, Text, StyleSheet, ScrollView, Pressable, Platform, Image, Linking
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -61,9 +61,15 @@ export default function AdminDashboard() {
         contentInsetAdjustmentBehavior="automatic"
       >
         <LinearGradient
-          colors={[Colors.primary, Colors.primaryLight]}
+          colors={['#040b3c', '#0c1155', '#1e2480']}
           style={[styles.header, { paddingTop: topPadding + 16 }]}
         >
+          {/* Watermark */}
+          <Image
+            source={require('@/assets/images/logo_app.png')}
+            style={styles.watermark}
+            resizeMode="contain"
+          />
           <View style={styles.headerRow}>
             <Pressable onPress={logout} style={styles.logoutBtn}>
               <Ionicons name="log-out-outline" size={22} color="rgba(255,255,255,0.7)" />
@@ -76,7 +82,7 @@ export default function AdminDashboard() {
             </View>
             <View style={styles.avatarCircle}>
               <Image
-                source={require('@/assets/images/logo.jpg')}
+                source={require('@/assets/images/logo_app.png')}
                 style={styles.logoSmall}
                 resizeMode="contain"
               />
@@ -124,9 +130,9 @@ export default function AdminDashboard() {
 
           <Text style={styles.sectionTitle}>نظرة مالية سريعة</Text>
           <View style={styles.financeCard}>
-            <LinearGradient colors={['#111444', '#1a1f5c']} style={styles.financeGradient}>
+            <LinearGradient colors={['#040b3c', '#0c1155']} style={styles.financeGradient}>
               <Text style={styles.financeLabel}>إجمالي الرواتب الشهرية</Text>
-              <Text style={styles.financeValue}>{totalPayroll} ر.س</Text>
+              <Text style={styles.financeValue}>{totalPayroll} ج.س</Text>
               <View style={styles.financeDivider} />
               <View style={styles.financeRow}>
                 <View>
@@ -136,10 +142,53 @@ export default function AdminDashboard() {
                 <View>
                   <Text style={styles.financeSubLabel}>متوسط الراتب</Text>
                   <Text style={styles.financeSubValue}>
-                    {Math.round(employees.reduce((a, e) => a + e.salary, 0) / employees.length).toLocaleString('ar-SA')} ر.س
+                    {Math.round(employees.reduce((a, e) => a + e.salary, 0) / employees.length).toLocaleString('ar-SA')} ج.س
                   </Text>
                 </View>
               </View>
+            </LinearGradient>
+          </View>
+
+          {/* Designer Card */}
+          <Text style={styles.sectionTitle}>عن التطبيق</Text>
+          <View style={styles.designerCard}>
+            <LinearGradient colors={['#040b3c', '#0c1155', '#1e2480']} style={styles.designerGrad}>
+              <Image source={require('@/assets/images/logo_app.png')} style={styles.designerLogo} resizeMode="contain" />
+              <View style={styles.designerBadge}>
+                <Text style={styles.designerBadgeText}>روضة أحباب الله — الخاصة</Text>
+              </View>
+              <Text style={styles.designerBy}>تصميم وتطوير</Text>
+              <Text style={styles.designerName}>م / عاصم عبدالرحمن محمد</Text>
+              <Text style={styles.designerBio}>
+                مهندس برمجيات ومحلل بيانات متخصص في بناء تطبيقات الهاتف المحمول والحلول الرقمية.{'\n'}
+                حاصل على شهادات احترافية من Google وIBM وCisco في تحليل البيانات والأمن السيبراني وعلوم الحاسوب.{'\n'}
+                خبرة في تطوير الأنظمة الإدارية والتعليمية الذكية.
+              </Text>
+              <View style={styles.designerDivider} />
+              <View style={styles.designerLinks}>
+                <Pressable
+                  style={styles.designerLinkBtn}
+                  onPress={() => Linking.openURL('https://wa.me/966530658285')}
+                >
+                  <Ionicons name="logo-whatsapp" size={16} color="#25D366" />
+                  <Text style={styles.designerLinkText}>واتساب السعودية</Text>
+                </Pressable>
+                <Pressable
+                  style={styles.designerLinkBtn}
+                  onPress={() => Linking.openURL('https://wa.me/249916897578')}
+                >
+                  <Ionicons name="logo-whatsapp" size={16} color="#25D366" />
+                  <Text style={styles.designerLinkText}>واتساب السودان</Text>
+                </Pressable>
+                <Pressable
+                  style={styles.designerLinkBtn}
+                  onPress={() => Linking.openURL('https://www.linkedin.com/in/asim-abdulrahman')}
+                >
+                  <Ionicons name="logo-linkedin" size={16} color="#0A66C2" />
+                  <Text style={styles.designerLinkText}>LinkedIn</Text>
+                </Pressable>
+              </View>
+              <Text style={styles.designerMotto}>جودة • التزام • تميز</Text>
             </LinearGradient>
           </View>
         </View>
@@ -150,7 +199,11 @@ export default function AdminDashboard() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
-  header: { paddingHorizontal: 20, paddingBottom: 24 },
+  header: { paddingHorizontal: 20, paddingBottom: 24, overflow: 'hidden' },
+  watermark: {
+    position: 'absolute', right: -20, top: -20,
+    width: 180, height: 180, opacity: 0.07,
+  },
   headerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
   headerText: { flex: 1, alignItems: 'flex-end' },
   schoolName: { fontSize: 17, color: '#FFFFFF', fontFamily: 'Inter_700Bold' },
@@ -165,7 +218,7 @@ const styles = StyleSheet.create({
     marginRight: 12,
     overflow: 'hidden',
     borderWidth: 1.5,
-    borderColor: '#ca9928',
+    borderColor: Colors.accent,
   },
   logoSmall: { width: 46, height: 46 },
   logoutBtn: { padding: 8 },
@@ -208,4 +261,17 @@ const styles = StyleSheet.create({
   financeRow: { flexDirection: 'row', justifyContent: 'space-between' },
   financeSubLabel: { fontSize: 11, color: 'rgba(255,255,255,0.5)', fontFamily: 'Inter_400Regular', textAlign: 'right' },
   financeSubValue: { fontSize: 16, color: '#FFFFFF', fontFamily: 'Inter_600SemiBold', textAlign: 'right' },
+  designerCard: { borderRadius: 20, overflow: 'hidden', marginBottom: 32 },
+  designerGrad: { padding: 24, alignItems: 'center' },
+  designerLogo: { width: 72, height: 72, marginBottom: 12 },
+  designerBadge: { backgroundColor: Colors.accent + '30', paddingHorizontal: 14, paddingVertical: 4, borderRadius: 20, marginBottom: 16, borderWidth: 1, borderColor: Colors.accent + '50' },
+  designerBadgeText: { fontSize: 11, fontFamily: 'Inter_500Medium', color: Colors.accent },
+  designerBy: { fontSize: 11, fontFamily: 'Inter_400Regular', color: 'rgba(255,255,255,0.5)', marginBottom: 4 },
+  designerName: { fontSize: 20, fontFamily: 'Inter_700Bold', color: '#FFFFFF', marginBottom: 12, textAlign: 'center' },
+  designerBio: { fontSize: 12, fontFamily: 'Inter_400Regular', color: 'rgba(255,255,255,0.65)', textAlign: 'center', lineHeight: 20, marginBottom: 16 },
+  designerDivider: { width: '100%', height: 1, backgroundColor: 'rgba(255,255,255,0.1)', marginBottom: 16 },
+  designerLinks: { flexDirection: 'row', gap: 10, flexWrap: 'wrap', justifyContent: 'center', marginBottom: 16 },
+  designerLinkBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(255,255,255,0.1)', paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)' },
+  designerLinkText: { fontSize: 11, fontFamily: 'Inter_500Medium', color: '#fff' },
+  designerMotto: { fontSize: 13, fontFamily: 'Inter_600SemiBold', color: Colors.accent, letterSpacing: 2 },
 });

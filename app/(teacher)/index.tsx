@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, Pressable, Platform,
+  View, Text, StyleSheet, ScrollView, Pressable, Platform, Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -38,7 +38,12 @@ export default function TeacherScheduleScreen() {
   return (
     <View style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false} contentInsetAdjustmentBehavior="automatic">
-        <LinearGradient colors={['#1A6B5C', '#0D4F43']} style={[styles.header, { paddingTop: topPadding + 16 }]}>
+        <LinearGradient colors={['#0d3d35', '#1A6B5C']} style={[styles.header, { paddingTop: topPadding + 16 }]}>
+          <Image
+            source={require('@/assets/images/logo_app.png')}
+            style={styles.watermark}
+            resizeMode="contain"
+          />
           <View style={styles.headerRow}>
             <Pressable onPress={logout} style={styles.logoutBtn}>
               <Ionicons name="log-out-outline" size={22} color="rgba(255,255,255,0.7)" />
@@ -116,7 +121,8 @@ export default function TeacherScheduleScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
-  header: { paddingHorizontal: 20, paddingBottom: 24 },
+  header: { paddingHorizontal: 20, paddingBottom: 24, overflow: 'hidden' },
+  watermark: { position: 'absolute', right: -15, top: -15, width: 150, height: 150, opacity: 0.07 },
   headerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
   headerText: { flex: 1, alignItems: 'flex-end' },
   schoolName: { fontSize: 16, color: '#FFFFFF', fontFamily: 'Inter_700Bold' },

@@ -79,7 +79,7 @@ export default function LoginScreen() {
               <View style={styles.logoGlowRing} />
               <View style={styles.logoContainer}>
                 <Image
-                  source={require('@/assets/images/logo2.png')}
+                  source={require('@/assets/images/logo_app.png')}
                   style={styles.logoImage}
                   resizeMode="contain"
                 />

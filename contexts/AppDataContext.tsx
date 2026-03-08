@@ -25,6 +25,36 @@ export interface Employee {
   phone: string;
 }
 
+export interface SchoolInfo {
+  name: string;
+  principalName: string;
+  phone: string;
+  motto: string;
+  location: string;
+}
+
+export interface HonorWeights {
+  grades: number;
+  attendance: number;
+  behavior: number;
+  homework: number;
+}
+
+export const DEFAULT_SCHOOL_INFO: SchoolInfo = {
+  name: 'روضة أحباب الله — الخاصة',
+  principalName: 'أ. سلوى أحمد داموس',
+  phone: '+249917545129',
+  motto: 'جودة • التزام • تميز',
+  location: 'صفيتة الغنوماب',
+};
+
+export const DEFAULT_HONOR_WEIGHTS: HonorWeights = {
+  grades: 45,
+  attendance: 30,
+  behavior: 15,
+  homework: 10,
+};
+
 export interface NewsItem {
   id: string;
   title: string;
@@ -60,7 +90,11 @@ interface AppDataContextValue {
   inbox: InboxMessage[];
   messages: Message[];
   welcomeMessage: string;
+  schoolInfo: SchoolInfo;
+  honorWeights: HonorWeights;
   setWelcomeMessage: (msg: string) => void;
+  setSchoolInfo: (info: SchoolInfo) => void;
+  setHonorWeights: (w: HonorWeights) => void;
   updateStudent: (id: string, data: Partial<Student>) => void;
   addStudent: (student: Student) => void;
   removeStudent: (id: string) => void;
@@ -72,6 +106,7 @@ interface AppDataContextValue {
   addEmployee: (emp: Employee) => void;
   removeEmployee: (id: string) => void;
   updateEmployee: (id: string, data: Partial<Employee>) => void;
+  resetAllData: () => void;
 }
 
 const DEFAULT_WELCOME_MSG =
@@ -167,6 +202,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const [inbox, setInbox] = useState<InboxMessage[]>(DEMO_INBOX);
   const [messages, setMessages] = useState<Message[]>(DEMO_MESSAGES);
   const [welcomeMessage, setWelcomeMessageState] = useState<string>(DEFAULT_WELCOME_MSG);
+  const [schoolInfo, setSchoolInfoState] = useState<SchoolInfo>(DEFAULT_SCHOOL_INFO);
+  const [honorWeights, setHonorWeightsState] = useState<HonorWeights>(DEFAULT_HONOR_WEIGHTS);
   const welcomeRef = useRef<string>(DEFAULT_WELCOME_MSG);
 
   useEffect(() => {
@@ -177,6 +214,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       const savedInbox = await AsyncStorage.getItem('app_inbox');
       const savedMessages = await AsyncStorage.getItem('app_messages');
       const savedWelcome = await AsyncStorage.getItem('app_welcome_msg');
+      const savedSchoolInfo = await AsyncStorage.getItem('app_school_info');
+      const savedHonorWeights = await AsyncStorage.getItem('app_honor_weights');
       if (savedStudents) setStudents(JSON.parse(savedStudents));
       if (savedEmployees) setEmployees(JSON.parse(savedEmployees));
       if (savedNews) setNews(JSON.parse(savedNews));
@@ -186,6 +225,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         setWelcomeMessageState(savedWelcome);
         welcomeRef.current = savedWelcome;
       }
+      if (savedSchoolInfo) setSchoolInfoState(JSON.parse(savedSchoolInfo));
+      if (savedHonorWeights) setHonorWeightsState(JSON.parse(savedHonorWeights));
     };
     load();
   }, []);
@@ -194,6 +235,32 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     welcomeRef.current = msg;
     setWelcomeMessageState(msg);
     AsyncStorage.setItem('app_welcome_msg', msg);
+  };
+
+  const setSchoolInfo = (info: SchoolInfo) => {
+    setSchoolInfoState(info);
+    AsyncStorage.setItem('app_school_info', JSON.stringify(info));
+  };
+
+  const setHonorWeights = (w: HonorWeights) => {
+    setHonorWeightsState(w);
+    AsyncStorage.setItem('app_honor_weights', JSON.stringify(w));
+  };
+
+  const resetAllData = () => {
+    setStudents(DEMO_STUDENTS);
+    setEmployees(DEMO_EMPLOYEES);
+    setNews(DEMO_NEWS);
+    setInbox(DEMO_INBOX);
+    setMessages(DEMO_MESSAGES);
+    setWelcomeMessageState(DEFAULT_WELCOME_MSG);
+    welcomeRef.current = DEFAULT_WELCOME_MSG;
+    setSchoolInfoState(DEFAULT_SCHOOL_INFO);
+    setHonorWeightsState(DEFAULT_HONOR_WEIGHTS);
+    AsyncStorage.multiRemove([
+      'app_students', 'app_employees', 'app_news', 'app_inbox',
+      'app_messages', 'app_welcome_msg', 'app_school_info', 'app_honor_weights',
+    ]);
   };
 
   const updateStudent = (id: string, data: Partial<Student>) => {
@@ -308,11 +375,12 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo(() => ({
     students, employees, news, inbox, messages,
-    welcomeMessage, setWelcomeMessage,
+    welcomeMessage, schoolInfo, honorWeights,
+    setWelcomeMessage, setSchoolInfo, setHonorWeights, resetAllData,
     updateStudent, addStudent, removeStudent,
     addNews, removeNews, replyInbox, markInboxRead, sendMessage,
     addEmployee, removeEmployee, updateEmployee,
-  }), [students, employees, news, inbox, messages, welcomeMessage]);
+  }), [students, employees, news, inbox, messages, welcomeMessage, schoolInfo, honorWeights]);
 
   return <AppDataContext.Provider value={value}>{children}</AppDataContext.Provider>;
 }

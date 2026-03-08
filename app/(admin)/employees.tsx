@@ -24,7 +24,7 @@ function EmployeeCard({ emp }: { emp: Employee }) {
         </View>
         <View style={styles.empSalary}>
           <Text style={styles.empSalaryValue}>{emp.salary.toLocaleString('ar-SA')}</Text>
-          <Text style={styles.empSalaryLabel}>ر.س</Text>
+          <Text style={styles.empSalaryLabel}>ج.س</Text>
         </View>
       </View>
       <View style={styles.empStats}>
@@ -45,7 +45,7 @@ function EmployeeCard({ emp }: { emp: Employee }) {
       </View>
       <View style={styles.payrollRow}>
         <Text style={styles.payrollLabel}>الراتب المستحق هذا الشهر:</Text>
-        <Text style={styles.payrollValue}>{salaryCalc.toLocaleString('ar-SA')} ر.س</Text>
+        <Text style={styles.payrollValue}>{salaryCalc.toLocaleString('ar-SA')} ج.س</Text>
       </View>
     </View>
   );
@@ -143,7 +143,7 @@ export default function EmployeesScreen() {
             {[
               { label: 'الاسم الكامل *', val: newName, set: setNewName, placeholder: 'اسم الموظف' },
               { label: 'المسمى الوظيفي *', val: newRole, set: setNewRole, placeholder: 'معلمة / مساعدة...' },
-              { label: 'الراتب الشهري (ر.س) *', val: newSalary, set: setNewSalary, placeholder: '5000', keyboard: 'numeric' as const },
+              { label: 'الراتب الشهري (ج.س) *', val: newSalary, set: setNewSalary, placeholder: '5000', keyboard: 'numeric' as const },
               { label: 'رقم الجوال', val: newPhone, set: setNewPhone, placeholder: '05xxxxxxxx', keyboard: 'phone-pad' as const },
             ].map(f => (
               <View key={f.label} style={styles.modalField}>

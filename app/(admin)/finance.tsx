@@ -38,7 +38,7 @@ export default function FinanceScreen() {
           <View style={styles.balanceCard}>
             <MaterialCommunityIcons name="cash-check" size={20} color={Colors.success} />
             <Text style={styles.balanceValue}>{collectedFees.toLocaleString('ar-SA')}</Text>
-            <Text style={styles.balanceLabel}>محصّل (ر.س)</Text>
+            <Text style={styles.balanceLabel}>محصّل (ج.س)</Text>
           </View>
           <View style={[styles.balanceCard, styles.balanceCardMain]}>
             <MaterialCommunityIcons name="bank" size={24} color={Colors.accent} />
@@ -48,7 +48,7 @@ export default function FinanceScreen() {
           <View style={styles.balanceCard}>
             <MaterialCommunityIcons name="clock-alert" size={20} color={Colors.danger} />
             <Text style={styles.balanceValue}>{pendingFees.toLocaleString('ar-SA')}</Text>
-            <Text style={styles.balanceLabel}>متأخر (ر.س)</Text>
+            <Text style={styles.balanceLabel}>متأخر (ج.س)</Text>
           </View>
         </View>
 
@@ -95,12 +95,12 @@ export default function FinanceScreen() {
                   <View style={styles.feeAmounts}>
                     <Text style={styles.feeAmountLabel}>
                       المتبقي: <Text style={[styles.feeAmountValue, { color: Colors.danger }]}>
-                        {(fee.total - fee.paid).toLocaleString('ar-SA')} ر.س
+                        {(fee.total - fee.paid).toLocaleString('ar-SA')} ج.س
                       </Text>
                     </Text>
                     <Text style={styles.feeAmountLabel}>
                       المحصّل: <Text style={[styles.feeAmountValue, { color: Colors.success }]}>
-                        {fee.paid.toLocaleString('ar-SA')} ر.س
+                        {fee.paid.toLocaleString('ar-SA')} ج.س
                       </Text>
                     </Text>
                   </View>
@@ -111,7 +111,7 @@ export default function FinanceScreen() {
             <>
               <View style={styles.payrollSummary}>
                 <Text style={styles.payrollSummaryLabel}>إجمالي رواتب هذا الشهر</Text>
-                <Text style={styles.payrollSummaryValue}>{totalPayroll.toLocaleString('ar-SA')} ر.س</Text>
+                <Text style={styles.payrollSummaryValue}>{totalPayroll.toLocaleString('ar-SA')} ج.س</Text>
               </View>
               {employees.map(emp => {
                 const earned = Math.round((emp.salary / 22) * emp.daysPresent);
@@ -129,17 +129,17 @@ export default function FinanceScreen() {
                     </View>
                     <View style={styles.payrollRow}>
                       <Text style={styles.payrollItemLabel}>الراتب الأساسي</Text>
-                      <Text style={styles.payrollItemValue}>{emp.salary.toLocaleString('ar-SA')} ر.س</Text>
+                      <Text style={styles.payrollItemValue}>{emp.salary.toLocaleString('ar-SA')} ج.س</Text>
                     </View>
                     <View style={styles.payrollRow}>
                       <Text style={[styles.payrollItemLabel, { color: Colors.danger }]}>خصم الغياب ({emp.daysAbsent} أيام)</Text>
                       <Text style={[styles.payrollItemValue, { color: Colors.danger }]}>
-                        -{deduction > 0 ? deduction.toLocaleString('ar-SA') : '0'} ر.س
+                        -{deduction > 0 ? deduction.toLocaleString('ar-SA') : '0'} ج.س
                       </Text>
                     </View>
                     <View style={[styles.payrollRow, styles.payrollTotal]}>
                       <Text style={styles.payrollTotalLabel}>صافي الراتب</Text>
-                      <Text style={styles.payrollTotalValue}>{earned.toLocaleString('ar-SA')} ر.س</Text>
+                      <Text style={styles.payrollTotalValue}>{earned.toLocaleString('ar-SA')} ج.س</Text>
                     </View>
                   </View>
                 );
