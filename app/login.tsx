@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, Pressable, TextInput,
-  KeyboardAvoidingView, Platform, ScrollView, Alert,
+  KeyboardAvoidingView, Platform, ScrollView, Alert, Linking,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -18,7 +18,7 @@ const ROLES: { id: UserRole; label: string; subtitle: string; icon: string; colo
 ];
 
 const DEMO_ACCOUNTS = {
-  admin: { id: 'admin_1', name: 'أ. سلمى القحطاني', role: 'admin' as UserRole },
+  admin: { id: 'admin_1', name: 'أ. سلوى أحمد داموس', role: 'admin' as UserRole },
   teacher: { id: 'teacher_1', name: 'أ. نورة السبيعي', role: 'teacher' as UserRole, teacherClass: 'KG2' },
   parent: { id: 'parent_s1', name: 'محمد العمري', role: 'parent' as UserRole, studentId: 's1' },
 };
@@ -174,7 +174,17 @@ export default function LoginScreen() {
             </Pressable>
           </View>
 
-          <Text style={styles.hint}>تجربة: اختر دوراً وسيتم ملء البيانات تلقائياً</Text>
+          <Pressable
+            style={({ pressed }) => [styles.whatsappCard, { opacity: pressed ? 0.85 : 1 }]}
+            onPress={() => Linking.openURL('https://wa.me/249917545129')}
+          >
+            <MaterialCommunityIcons name="whatsapp" size={22} color="#25D366" />
+            <View style={styles.whatsappInfo}>
+              <Text style={styles.whatsappName}>أ. سلوى أحمد داموس</Text>
+              <Text style={styles.whatsappLabel}>إدارة الروضة — واتساب</Text>
+            </View>
+            <Text style={styles.whatsappNumber}>+249917545129</Text>
+          </Pressable>
         </ScrollView>
       </KeyboardAvoidingView>
     </View>
@@ -311,11 +321,38 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     backgroundColor: '#FFFFFF',
   },
-  hint: {
-    marginTop: 20,
-    fontSize: 12,
+  whatsappCard: {
+    marginTop: 24,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(37,211,102,0.1)',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(37,211,102,0.25)',
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    width: '100%',
+    gap: 10,
+  },
+  whatsappInfo: {
+    flex: 1,
+    alignItems: 'flex-end',
+  },
+  whatsappName: {
+    fontSize: 13,
+    fontFamily: 'Inter_600SemiBold',
+    color: '#FFFFFF',
+  },
+  whatsappLabel: {
+    fontSize: 10,
     fontFamily: 'Inter_400Regular',
-    color: 'rgba(255,255,255,0.35)',
-    textAlign: 'center',
+    color: 'rgba(255,255,255,0.5)',
+    marginTop: 1,
+  },
+  whatsappNumber: {
+    fontSize: 12,
+    fontFamily: 'Inter_500Medium',
+    color: '#25D366',
+    writingDirection: 'ltr',
   },
 });

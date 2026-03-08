@@ -71,6 +71,7 @@ export default function AdminDashboard() {
             <View style={styles.headerText}>
               <Text style={styles.schoolName}>روضة أحباب الله</Text>
               <Text style={styles.schoolLocation}>صفيتة الغنوماب</Text>
+              <Text style={styles.adminTitle}>أ. سلوى أحمد داموس — المديرة</Text>
               <Text style={styles.greeting}>مرحباً، {user?.name}</Text>
             </View>
             <View style={styles.avatarCircle}>
@@ -149,7 +150,8 @@ const styles = StyleSheet.create({
   headerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
   headerText: { flex: 1, alignItems: 'flex-end' },
   schoolName: { fontSize: 17, color: '#FFFFFF', fontFamily: 'Inter_700Bold' },
-  schoolLocation: { fontSize: 11, color: Colors.accent, fontFamily: 'Inter_500Medium', marginBottom: 2 },
+  schoolLocation: { fontSize: 11, color: Colors.accent, fontFamily: 'Inter_500Medium', marginBottom: 1 },
+  adminTitle: { fontSize: 10, color: 'rgba(255,255,255,0.55)', fontFamily: 'Inter_400Regular', marginBottom: 2 },
   greeting: { fontSize: 12, color: 'rgba(255,255,255,0.6)', fontFamily: 'Inter_400Regular' },
   userName: { fontSize: 20, color: '#FFFFFF', fontFamily: 'Inter_700Bold' },
   avatarCircle: {

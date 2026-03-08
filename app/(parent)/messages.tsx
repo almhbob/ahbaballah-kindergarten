@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, FlatList, Pressable,
-  TextInput, KeyboardAvoidingView, Platform,
+  TextInput, KeyboardAvoidingView, Platform, Linking,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Colors } from '@/constants/colors';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAppData, Message } from '@/contexts/AppDataContext';
@@ -63,13 +63,15 @@ export default function MessagesScreen() {
     <View style={styles.container}>
       <View style={[styles.header, { paddingTop: topPadding + 12 }]}>
         <View style={styles.headerRow}>
-          <View style={styles.adminIndicator}>
-            <View style={styles.onlineDot} />
-            <Text style={styles.adminIndicatorText}>متاح</Text>
-          </View>
+          <Pressable
+            style={({ pressed }) => [styles.whatsappBtn, { opacity: pressed ? 0.8 : 1 }]}
+            onPress={() => Linking.openURL('https://wa.me/249917545129')}
+          >
+            <MaterialCommunityIcons name="whatsapp" size={20} color="#25D366" />
+          </Pressable>
           <View style={styles.headerInfo}>
-            <Text style={styles.headerTitle}>التواصل مع الإدارة</Text>
-            <Text style={styles.headerSub}>روضة أحباب الله — صفيتة الغنوماب</Text>
+            <Text style={styles.headerTitle}>أ. سلوى أحمد داموس</Text>
+            <Text style={styles.headerSub}>إدارة الروضة — التواصل المباشر</Text>
           </View>
           <View style={styles.adminAvatar}>
             <Ionicons name="shield-checkmark" size={20} color={PARENT_COLOR} />
@@ -131,6 +133,7 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: 16, fontFamily: 'Inter_700Bold', color: '#FFFFFF' },
   headerSub: { fontSize: 11, fontFamily: 'Inter_400Regular', color: 'rgba(255,255,255,0.7)', marginTop: 2 },
   adminIndicator: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(255,255,255,0.1)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 10 },
+  whatsappBtn: { width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(37,211,102,0.12)', borderWidth: 1, borderColor: 'rgba(37,211,102,0.3)', alignItems: 'center', justifyContent: 'center' },
   onlineDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#6EE7B7' },
   adminIndicatorText: { fontSize: 10, fontFamily: 'Inter_500Medium', color: '#6EE7B7' },
   messageList: { padding: 16, gap: 12, flexGrow: 1 },
