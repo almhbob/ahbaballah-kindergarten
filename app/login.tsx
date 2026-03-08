@@ -21,7 +21,7 @@ const ROLES: {
 }[] = [
   {
     id: 'admin',
-    label: 'المديرة',
+    label: 'الإدارة',
     subtitle: 'وصول كامل',
     icon: 'shield-check',
     grad: ['#0c1155', '#1e2480', '#2a33a0'],

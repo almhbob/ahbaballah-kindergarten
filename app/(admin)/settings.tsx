@@ -221,7 +221,7 @@ export default function SettingsScreen() {
         <SectionHeader title="حسابات الدخول التجريبية" />
         <View style={styles.section}>
           {[
-            { role: 'المديرة',   credLabel: 'مستخدم',  user: 'admin',                   pass: '1234', color: '#3B82F6', icon: 'shield-check' },
+            { role: 'الإدارة',   credLabel: 'مستخدم',  user: 'admin',                   pass: '1234', color: '#3B82F6', icon: 'shield-check' },
             { role: 'المعلمة',  credLabel: 'إيميل',   user: 'noura@ahbaballah.edu',     pass: '1234', color: Colors.teacher, icon: 'school' },
             { role: 'أولياء الأمور', credLabel: 'هاتف', user: '+249912345678',            pass: '1234', color: Colors.parent, icon: 'account-heart' },
           ].map((acc, i) => (
