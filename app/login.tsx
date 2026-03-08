@@ -34,7 +34,7 @@ const ROLES: {
   },
   {
     id: 'teacher',
-    label: 'المعلمة',
+    label: 'معلمة',
     subtitle: 'إدارة الفصل',
     icon: 'school',
     grad: ['#0d3d35', '#1A6B5C', '#22866f'],
@@ -47,7 +47,7 @@ const ROLES: {
   },
   {
     id: 'parent',
-    label: 'أولياء الأمور',
+    label: 'ولي أمر',
     subtitle: 'متابعة الطفل',
     icon: 'account-heart',
     grad: ['#3b1660', '#7B3FA0', '#9250bc'],

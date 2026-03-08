@@ -222,8 +222,8 @@ export default function SettingsScreen() {
         <View style={styles.section}>
           {[
             { role: 'الإدارة',   credLabel: 'مستخدم',  user: 'admin',                   pass: '1234', color: '#3B82F6', icon: 'shield-check' },
-            { role: 'المعلمة',  credLabel: 'إيميل',   user: 'noura@ahbaballah.edu',     pass: '1234', color: Colors.teacher, icon: 'school' },
-            { role: 'أولياء الأمور', credLabel: 'هاتف', user: '+249912345678',            pass: '1234', color: Colors.parent, icon: 'account-heart' },
+            { role: 'معلمة',    credLabel: 'إيميل',   user: 'noura@ahbaballah.edu',     pass: '1234', color: Colors.teacher, icon: 'school' },
+            { role: 'ولي أمر',  credLabel: 'هاتف',    user: '+249912345678',            pass: '1234', color: Colors.parent, icon: 'account-heart' },
           ].map((acc, i) => (
             <React.Fragment key={acc.role}>
               {i > 0 && <View style={styles.rowDivider} />}

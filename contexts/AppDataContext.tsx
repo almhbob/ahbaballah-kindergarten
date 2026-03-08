@@ -82,6 +82,74 @@ export interface SchedulePeriod {
   type: 'lesson' | 'break' | 'activity';
 }
 
+export interface AnnualPlanEvent {
+  id: string;
+  month: number;
+  title: string;
+  type: 'exam' | 'holiday' | 'activity' | 'event';
+  date: string;
+  note: string;
+}
+
+export interface GraduationTask {
+  id: string;
+  year: string;
+  title: string;
+  done: boolean;
+  targetDate: string;
+  note: string;
+}
+
+export const ACADEMIC_MONTHS: { num: number; ar: string }[] = [
+  { num: 9,  ar: 'سبتمبر'  },
+  { num: 10, ar: 'أكتوبر'  },
+  { num: 11, ar: 'نوفمبر'  },
+  { num: 12, ar: 'ديسمبر'  },
+  { num: 1,  ar: 'يناير'   },
+  { num: 2,  ar: 'فبراير'  },
+  { num: 3,  ar: 'مارس'    },
+  { num: 4,  ar: 'أبريل'   },
+  { num: 5,  ar: 'مايو'    },
+  { num: 6,  ar: 'يونيو'   },
+];
+
+const DEFAULT_ANNUAL_PLAN: AnnualPlanEvent[] = [
+  { id: 'ap1',  month: 9,  title: 'افتتاح العام الدراسي',           type: 'event',    date: '', note: '' },
+  { id: 'ap2',  month: 9,  title: 'أسبوع التأهيل والتعارف',         type: 'activity', date: '', note: '' },
+  { id: 'ap3',  month: 10, title: 'بدء التدريس الرسمي',              type: 'event',    date: '', note: '' },
+  { id: 'ap4',  month: 10, title: 'اختبار تشخيصي',                   type: 'exam',     date: '', note: '' },
+  { id: 'ap5',  month: 11, title: 'تقييمات منتصف الفصل الأول',       type: 'exam',     date: '', note: '' },
+  { id: 'ap6',  month: 11, title: 'رحلة ترفيهية',                    type: 'activity', date: '', note: '' },
+  { id: 'ap7',  month: 12, title: 'اختبارات نهاية الفصل الأول',      type: 'exam',     date: '', note: '' },
+  { id: 'ap8',  month: 12, title: 'توزيع شهادات الفصل الأول',         type: 'event',    date: '', note: '' },
+  { id: 'ap9',  month: 12, title: 'إجازة نصف العام',                  type: 'holiday',  date: '', note: '' },
+  { id: 'ap10', month: 1,  title: 'بدء الفصل الدراسي الثاني',         type: 'event',    date: '', note: '' },
+  { id: 'ap11', month: 2,  title: 'تقييمات منتصف الفصل الثاني',       type: 'exam',     date: '', note: '' },
+  { id: 'ap12', month: 3,  title: 'رحلة ترفيهية الفصل الثاني',        type: 'activity', date: '', note: '' },
+  { id: 'ap13', month: 3,  title: 'أسبوع القرآن الكريم',              type: 'activity', date: '', note: '' },
+  { id: 'ap14', month: 4,  title: 'اختبارات الفصل الثاني',            type: 'exam',     date: '', note: '' },
+  { id: 'ap15', month: 5,  title: 'التحضير لحفل التخرج',              type: 'event',    date: '', note: '' },
+  { id: 'ap16', month: 5,  title: 'الاختبارات النهائية',               type: 'exam',     date: '', note: '' },
+  { id: 'ap17', month: 6,  title: 'حفل التخرج',                       type: 'event',    date: '', note: '' },
+  { id: 'ap18', month: 6,  title: 'توزيع شهادات التخرج',              type: 'event',    date: '', note: '' },
+  { id: 'ap19', month: 6,  title: 'إغلاق العام الدراسي',              type: 'holiday',  date: '', note: '' },
+];
+
+const DEFAULT_GRADUATION_TASKS: GraduationTask[] = [
+  { id: 'gt1',  year: '2025-2026', title: 'تحديد تاريخ حفل التخرج',         done: false, targetDate: '', note: '' },
+  { id: 'gt2',  year: '2025-2026', title: 'إرسال الدعوات لأولياء الأمور',   done: false, targetDate: '', note: '' },
+  { id: 'gt3',  year: '2025-2026', title: 'تجهيز شهادات التخرج',             done: false, targetDate: '', note: '' },
+  { id: 'gt4',  year: '2025-2026', title: 'تصوير التخرج الرسمي',             done: false, targetDate: '', note: '' },
+  { id: 'gt5',  year: '2025-2026', title: 'تجهيز ملابس التخرج',              done: false, targetDate: '', note: '' },
+  { id: 'gt6',  year: '2025-2026', title: 'البروفة الأولى للحفل',            done: false, targetDate: '', note: '' },
+  { id: 'gt7',  year: '2025-2026', title: 'البروفة النهائية للحفل',           done: false, targetDate: '', note: '' },
+  { id: 'gt8',  year: '2025-2026', title: 'تجهيز الهدايا التذكارية',         done: false, targetDate: '', note: '' },
+  { id: 'gt9',  year: '2025-2026', title: 'تنظيم وتزيين قاعة الحفل',         done: false, targetDate: '', note: '' },
+  { id: 'gt10', year: '2025-2026', title: 'تجهيز البرنامج الفني',            done: false, targetDate: '', note: '' },
+  { id: 'gt11', year: '2025-2026', title: 'إعداد كلمة التخرج',               done: false, targetDate: '', note: '' },
+  { id: 'gt12', year: '2025-2026', title: 'حفل التخرج',                      done: false, targetDate: '', note: '' },
+];
+
 export const DEFAULT_SCHOOL_INFO: SchoolInfo = {
   name: 'روضة أحباب الله — الخاصة',
   principalName: 'أ. سلوى أحمد داموس',
@@ -201,6 +269,14 @@ interface AppDataContextValue {
   addPeriod: (p: SchedulePeriod) => void;
   updatePeriod: (id: string, data: Partial<SchedulePeriod>) => void;
   removePeriod: (id: string) => void;
+  annualPlan: AnnualPlanEvent[];
+  graduationTasks: GraduationTask[];
+  addAnnualEvent: (e: AnnualPlanEvent) => void;
+  removeAnnualEvent: (id: string) => void;
+  addGraduationTask: (t: GraduationTask) => void;
+  updateGraduationTask: (id: string, data: Partial<GraduationTask>) => void;
+  removeGraduationTask: (id: string) => void;
+  addGraduationYear: (year: string) => void;
   resetAllData: () => void;
 }
 
@@ -305,6 +381,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const [welcomeMessage, setWelcomeMessageState] = useState<string>(DEFAULT_WELCOME_MSG);
   const [schoolInfo, setSchoolInfoState] = useState<SchoolInfo>(DEFAULT_SCHOOL_INFO);
   const [honorWeights, setHonorWeightsState] = useState<HonorWeights>(DEFAULT_HONOR_WEIGHTS);
+  const [annualPlan, setAnnualPlan] = useState<AnnualPlanEvent[]>(DEFAULT_ANNUAL_PLAN);
+  const [graduationTasks, setGraduationTasks] = useState<GraduationTask[]>(DEFAULT_GRADUATION_TASKS);
   const welcomeRef = useRef<string>(DEFAULT_WELCOME_MSG);
 
   useEffect(() => {
@@ -332,6 +410,10 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       }
       if (savedSchoolInfo) setSchoolInfoState(JSON.parse(savedSchoolInfo));
       if (savedHonorWeights) setHonorWeightsState(JSON.parse(savedHonorWeights));
+      const savedAnnualPlan = await AsyncStorage.getItem('app_annual_plan');
+      const savedGradTasks  = await AsyncStorage.getItem('app_grad_tasks');
+      if (savedAnnualPlan) setAnnualPlan(JSON.parse(savedAnnualPlan));
+      if (savedGradTasks)  setGraduationTasks(JSON.parse(savedGradTasks));
     };
     load();
   }, []);
@@ -412,10 +494,13 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     welcomeRef.current = DEFAULT_WELCOME_MSG;
     setSchoolInfoState(DEFAULT_SCHOOL_INFO);
     setHonorWeightsState(DEFAULT_HONOR_WEIGHTS);
+    setAnnualPlan(DEFAULT_ANNUAL_PLAN);
+    setGraduationTasks(DEFAULT_GRADUATION_TASKS);
     AsyncStorage.multiRemove([
       'app_students', 'app_employees', 'app_news', 'app_inbox',
       'app_messages', 'app_meetings', 'app_schedule',
       'app_welcome_msg', 'app_school_info', 'app_honor_weights',
+      'app_annual_plan', 'app_grad_tasks',
     ]);
   };
 
@@ -529,16 +614,73 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  const addAnnualEvent = (e: AnnualPlanEvent) => {
+    setAnnualPlan(prev => {
+      const updated = [...prev, e];
+      AsyncStorage.setItem('app_annual_plan', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const removeAnnualEvent = (id: string) => {
+    setAnnualPlan(prev => {
+      const updated = prev.filter(e => e.id !== id);
+      AsyncStorage.setItem('app_annual_plan', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const addGraduationTask = (t: GraduationTask) => {
+    setGraduationTasks(prev => {
+      const updated = [...prev, t];
+      AsyncStorage.setItem('app_grad_tasks', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const updateGraduationTask = (id: string, data: Partial<GraduationTask>) => {
+    setGraduationTasks(prev => {
+      const updated = prev.map(t => t.id === id ? { ...t, ...data } : t);
+      AsyncStorage.setItem('app_grad_tasks', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const removeGraduationTask = (id: string) => {
+    setGraduationTasks(prev => {
+      const updated = prev.filter(t => t.id !== id);
+      AsyncStorage.setItem('app_grad_tasks', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const addGraduationYear = (year: string) => {
+    const newTasks: GraduationTask[] = DEFAULT_GRADUATION_TASKS.map(t => ({
+      ...t,
+      id: Date.now().toString() + Math.random().toString(36).substr(2, 6) + t.id,
+      year,
+      done: false,
+    }));
+    setGraduationTasks(prev => {
+      const updated = [...prev, ...newTasks];
+      AsyncStorage.setItem('app_grad_tasks', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
   const value = useMemo(() => ({
     students, employees, news, inbox, messages, meetings, schedule,
     welcomeMessage, schoolInfo, honorWeights,
+    annualPlan, graduationTasks,
     setWelcomeMessage, setSchoolInfo, setHonorWeights, resetAllData,
     updateStudent, addStudent, removeStudent,
     addNews, removeNews, replyInbox, markInboxRead, sendMessage,
     addEmployee, removeEmployee, updateEmployee,
     addMeeting, updateMeeting, removeMeeting,
     addPeriod, updatePeriod, removePeriod,
-  }), [students, employees, news, inbox, messages, meetings, schedule, welcomeMessage, schoolInfo, honorWeights]);
+    addAnnualEvent, removeAnnualEvent,
+    addGraduationTask, updateGraduationTask, removeGraduationTask, addGraduationYear,
+  }), [students, employees, news, inbox, messages, meetings, schedule, welcomeMessage, schoolInfo, honorWeights, annualPlan, graduationTasks]);
 
   return <AppDataContext.Provider value={value}>{children}</AppDataContext.Provider>;
 }
