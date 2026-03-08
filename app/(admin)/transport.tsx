@@ -109,8 +109,15 @@ export default function TransportScreen() {
     ]);
   }
 
-  function callDriver(phone: string) {
-    Linking.openURL(`tel:${phone}`);
+  async function callDriver(phone: string) {
+    try {
+      const url = `tel:${phone}`;
+      const can = await Linking.canOpenURL(url);
+      if (can) { await Linking.openURL(url); }
+      else { Alert.alert('اتصال', `رقم السائق: ${phone}`); }
+    } catch {
+      Alert.alert('اتصال', `رقم السائق: ${phone}`);
+    }
   }
 
   return (
@@ -314,7 +321,16 @@ export default function TransportScreen() {
                         <Text style={s.subStudentName}>{student.name}</Text>
                         <Text style={s.subStudentLevel}>{student.level} · {student.parentName}</Text>
                       </View>
-                      <Pressable onPress={() => Linking.openURL(`tel:${student.parentPhone}`)}>
+                      <Pressable onPress={async () => {
+                        try {
+                          const url = `tel:${student.parentPhone}`;
+                          const can = await Linking.canOpenURL(url);
+                          if (can) { await Linking.openURL(url); }
+                          else { Alert.alert('اتصال', `هاتف ولي أمر ${student.name}: ${student.parentPhone}`); }
+                        } catch {
+                          Alert.alert('اتصال', `هاتف ولي أمر ${student.name}: ${student.parentPhone}`);
+                        }
+                      }}>
                         <Ionicons name="call-outline" size={18} color={TRANSPORT_COLOR} />
                       </Pressable>
                     </View>

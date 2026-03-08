@@ -1,0 +1,78 @@
+const express = require("express");
+const session = require("express-session");
+const bcrypt = require("bcryptjs");
+const sqlite3 = require("sqlite3").verbose();
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// =========================
+// Database
+// =========================
+const db = new sqlite3.Database("./school.db");
+
+db.serialize(() => {
+  db.run(`
+    CREATE TABLE IF NOT EXISTS users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      full_name TEXT NOT NULL,
+      email TEXT NOT NULL UNIQUE,
+      password_hash TEXT NOT NULL,
+      role TEXT NOT NULL CHECK(role IN ('admin','teacher','parent')),
+      phone TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+});
+
+// =========================
+// Middleware
+// =========================
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
+
+app.use(
+  session({
+    secret: "change-this-secret-in-production",
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      httpOnly: true,
+      sameSite: "lax",
+      maxAge: 1000 * 60 * 60 * 24, // 1 day
+    },
+  })
+);
+
+// =========================
+// Helpers
+// =========================
+function layout(title, content, user = null, error = "") {
+  return `
+  <!doctype html>
+  <html lang="ar" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>${title}</title>
+    <style>
+      body{font-family:Tahoma,Arial,sans-serif;background:#f4f7fb;margin:0;padding:0;color:#1f2937}
+      .wrap{max-width:780px;margin:40px auto;padding:20px}
+      .card{background:#fff;border-radius:16px;padding:24px;box-shadow:0 10px 30px rgba(0,0,0,.08)}
+      h1,h2,h3{margin-top:0}
+      input,select,button,a.btn{
+        width:100%;padding:12px 14px;margin:8px 0;border:1px solid #d1d5db;
+        border-radius:10px;font-size:16px;box-sizing:border-box
+      }
+      button,.btn{
+        background:#2563eb;color:#fff;border:none;cursor:pointer;text-decoration:none;display:inline-block;text-align:center
+      }
+      .btn.secondary{background:#64748b}
+      .btn.danger{background:#dc2626}
+      .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+      .topbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+      .muted{color:#6b7280;font-size:14px}
+      .error{background:#fee2e2;color:#991b1b;padding:10px 12px;border-radius:10px;margin-bottom:12px}
+      .success{background:#dcfce7;color:#166534;padding:10px 12px;border-radius:10px;margin-bottom:12px}
+      .pill{display:inline-block;background:#e0e7ff;color:#3730a3;padding:6px 10px;border-radius:999px;font-size:13px}
+      ul{padding-right:

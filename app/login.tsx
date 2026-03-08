@@ -356,10 +356,31 @@ export default function LoginScreen() {
             </LinearGradient>
           </Pressable>
 
+          {/* ── Create Account ── */}
+          <Pressable
+            style={({ pressed }) => [s.signupLink, { opacity: pressed ? 0.8 : 1 }]}
+            onPress={() => router.push('/register')}
+          >
+            <Ionicons name="person-add-outline" size={15} color="rgba(201,149,42,0.8)" />
+            <Text style={s.signupLinkTxt}>
+              لا تملك حساباً؟{'  '}
+              <Text style={s.signupLinkBold}>إنشاء حساب جديد</Text>
+            </Text>
+          </Pressable>
+
           {/* ── WhatsApp ── */}
           <Pressable
             style={({ pressed }) => [s.waCard, { opacity: pressed ? 0.82 : 1 }]}
-            onPress={() => Linking.openURL('https://wa.me/249917545129')}
+            onPress={async () => {
+              try {
+                const url = 'https://wa.me/249917545129';
+                const can = await Linking.canOpenURL(url);
+                if (can) { await Linking.openURL(url); }
+                else { Alert.alert('واتساب', 'تعذّر فتح واتساب. الرقم: +249917545129'); }
+              } catch {
+                Alert.alert('واتساب', 'تعذّر فتح واتساب. الرقم: +249917545129');
+              }
+            }}
           >
             <HexFrame size={38} fill="rgba(37,211,102,0.15)" stroke="rgba(37,211,102,0.35)" strokeWidth={1.5}>
               <MaterialCommunityIcons name="whatsapp" size={18} color="#25D366" />
@@ -466,6 +487,13 @@ const s = StyleSheet.create({
   waName: { fontSize: 13, fontFamily: 'Inter_600SemiBold', color: '#fff' },
   waSub: { fontSize: 10, fontFamily: 'Inter_400Regular', color: 'rgba(255,255,255,0.40)', marginTop: 1 },
   waNum: { fontSize: 11, fontFamily: 'Inter_500Medium', color: '#25D366' },
+
+  signupLink: {
+    width: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: 6, paddingVertical: 10, marginBottom: 10,
+  },
+  signupLinkTxt: { fontSize: 13, fontFamily: 'Inter_400Regular', color: 'rgba(255,255,255,0.45)' },
+  signupLinkBold: { fontFamily: 'Inter_700Bold', color: '#dfb04a' },
 
   versionRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   versionTxt: { fontSize: 9, fontFamily: 'Inter_400Regular', color: 'rgba(255,255,255,0.22)', letterSpacing: 0.3 },

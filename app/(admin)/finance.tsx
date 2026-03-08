@@ -1,12 +1,13 @@
 import React, { useMemo, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Pressable, Platform,
+  Modal, TextInput, Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/colors';
-import { useAppData } from '@/contexts/AppDataContext';
+import { useAppData, Student } from '@/contexts/AppDataContext';
 import * as Haptics from 'expo-haptics';
 
 const LEVEL_FEES: Record<string, number> = {
@@ -17,19 +18,19 @@ const LEVEL_FEES: Record<string, number> = {
 
 export default function FinanceScreen() {
   const insets = useSafeAreaInsets();
-  const { employees, students } = useAppData();
+  const { employees, students, updateStudent } = useAppData();
   const [activeTab, setActiveTab] = useState<'fees' | 'payroll'>('fees');
+  const [editingStudent, setEditingStudent] = useState<Student | null>(null);
+  const [payAmount, setPayAmount] = useState('');
+  const [payNote, setPayNote] = useState('');
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
 
   const FEES = useMemo(() => students.map(s => {
     const total = LEVEL_FEES[s.level] ?? 10000;
-    const paid = s.attendance >= 90
-      ? total
-      : s.attendance >= 75
-        ? Math.round(total * 0.625)
-        : 0;
+    const paid = s.paidFees ?? 0;
+    const pct = total > 0 ? Math.min(100, Math.round((paid / total) * 100)) : 0;
     const status = paid >= total ? 'مسدد' as const : paid > 0 ? 'جزئي' as const : 'متأخر' as const;
-    return { id: s.id, studentName: s.name, level: s.level, total, paid, status };
+    return { id: s.id, studentName: s.name, level: s.level, total, paid, pct, status, student: s };
   }), [students]);
 
   const totalFees = FEES.reduce((a, f) => a + f.total, 0);
@@ -39,6 +40,46 @@ export default function FinanceScreen() {
 
   const statusColor = { 'مسدد': Colors.success, 'جزئي': Colors.warning, 'متأخر': Colors.danger };
   const statusBg = { 'مسدد': '#ECFDF5', 'جزئي': '#FFFBEB', 'متأخر': '#FEF2F2' };
+
+  function openPayModal(s: Student) {
+    setEditingStudent(s);
+    const total = LEVEL_FEES[s.level] ?? 10000;
+    const remaining = total - (s.paidFees ?? 0);
+    setPayAmount(remaining > 0 ? String(remaining) : '');
+    setPayNote('');
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  }
+
+  function handleSavePayment() {
+    if (!editingStudent) return;
+    const amount = parseInt(payAmount);
+    if (isNaN(amount) || amount < 0) {
+      Alert.alert('تنبيه', 'الرجاء إدخال مبلغ صحيح');
+      return;
+    }
+    const total = LEVEL_FEES[editingStudent.level] ?? 10000;
+    const newPaid = Math.min(total, amount);
+    updateStudent(editingStudent.id, { paidFees: newPaid });
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setEditingStudent(null);
+  }
+
+  function handleResetFees(studentId: string, name: string) {
+    Alert.alert(
+      'إعادة تعيين الرسوم',
+      `هل تريد إعادة تعيين رسوم "${name}" إلى صفر؟`,
+      [
+        { text: 'إلغاء', style: 'cancel' },
+        {
+          text: 'تأكيد', style: 'destructive',
+          onPress: () => {
+            updateStudent(studentId, { paidFees: 0 });
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+          },
+        },
+      ]
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -78,10 +119,16 @@ export default function FinanceScreen() {
         </View>
       </LinearGradient>
 
-      <ScrollView contentInsetAdjustmentBehavior="automatic" showsVerticalScrollIndicator={false}>
+      <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.body}>
           {activeTab === 'fees' ? (
             <>
+              {FEES.length === 0 && (
+                <View style={styles.emptyCard}>
+                  <MaterialCommunityIcons name="cash-remove" size={44} color={Colors.textLight} />
+                  <Text style={styles.emptyTxt}>لا توجد بيانات طلاب</Text>
+                </View>
+              )}
               {FEES.map(fee => (
                 <View key={fee.id} style={styles.feeCard}>
                   <View style={styles.feeHeader}>
@@ -96,11 +143,11 @@ export default function FinanceScreen() {
                   <View style={styles.feeProgress}>
                     <View style={styles.feeProgressBg}>
                       <View style={[styles.feeProgressFill, {
-                        width: `${(fee.paid / fee.total) * 100}%` as any,
+                        width: `${fee.pct}%` as any,
                         backgroundColor: statusColor[fee.status]
                       }]} />
                     </View>
-                    <Text style={styles.feePercent}>{Math.round((fee.paid / fee.total) * 100)}%</Text>
+                    <Text style={styles.feePercent}>{fee.pct}%</Text>
                   </View>
                   <View style={styles.feeAmounts}>
                     <Text style={styles.feeAmountLabel}>
@@ -113,6 +160,31 @@ export default function FinanceScreen() {
                         {fee.paid.toLocaleString('ar-SA')} ج.س
                       </Text>
                     </Text>
+                  </View>
+                  <View style={styles.feeActions}>
+                    <Pressable
+                      style={styles.resetBtn}
+                      onPress={() => handleResetFees(fee.id, fee.studentName)}
+                    >
+                      <Ionicons name="refresh-outline" size={14} color={Colors.textSecondary} />
+                      <Text style={styles.resetBtnTxt}>إعادة</Text>
+                    </Pressable>
+                    <Pressable
+                      style={[styles.payBtn, fee.status === 'مسدد' && styles.payBtnDisabled]}
+                      disabled={fee.status === 'مسدد'}
+                      onPress={() => openPayModal(fee.student)}
+                    >
+                      <LinearGradient
+                        colors={fee.status === 'مسدد' ? [Colors.border, Colors.border] : [Colors.primary, Colors.primaryLight]}
+                        style={styles.payBtnGrad}
+                        start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+                      >
+                        <Ionicons name="cash-outline" size={14} color={fee.status === 'مسدد' ? Colors.textLight : '#fff'} />
+                        <Text style={[styles.payBtnTxt, fee.status === 'مسدد' && { color: Colors.textLight }]}>
+                          {fee.status === 'مسدد' ? 'مسدد بالكامل' : 'تسجيل دفعة'}
+                        </Text>
+                      </LinearGradient>
+                    </Pressable>
                   </View>
                 </View>
               ))}
@@ -158,6 +230,55 @@ export default function FinanceScreen() {
           )}
         </View>
       </ScrollView>
+
+      {/* ── Payment Modal ── */}
+      <Modal visible={!!editingStudent} transparent animationType="slide">
+        <View style={styles.overlay}>
+          <View style={[styles.sheet, { paddingBottom: insets.bottom + 24 }]}>
+            <View style={styles.sheetHandle} />
+            <Text style={styles.sheetTitle}>تسجيل دفعة</Text>
+            <Text style={styles.sheetSub}>{editingStudent?.name} — {editingStudent?.level}</Text>
+
+            {editingStudent && (() => {
+              const total = LEVEL_FEES[editingStudent.level] ?? 10000;
+              const alreadyPaid = editingStudent.paidFees ?? 0;
+              return (
+                <View style={styles.feeInfoRow}>
+                  <View style={styles.feeInfoBox}>
+                    <Text style={styles.feeInfoVal}>{alreadyPaid.toLocaleString('ar-SA')}</Text>
+                    <Text style={styles.feeInfoLbl}>محصّل ج.س</Text>
+                  </View>
+                  <View style={[styles.feeInfoBox, { backgroundColor: '#FEF2F250' }]}>
+                    <Text style={[styles.feeInfoVal, { color: Colors.danger }]}>{(total - alreadyPaid).toLocaleString('ar-SA')}</Text>
+                    <Text style={styles.feeInfoLbl}>المتبقي ج.س</Text>
+                  </View>
+                </View>
+              );
+            })()}
+
+            <Text style={styles.modalLabel}>المبلغ المدفوع الإجمالي (ج.س)</Text>
+            <TextInput
+              style={styles.modalInput}
+              value={payAmount}
+              onChangeText={setPayAmount}
+              keyboardType="numeric"
+              placeholder="أدخل إجمالي المبلغ المدفوع"
+              placeholderTextColor={Colors.textLight}
+              textAlign="right"
+            />
+            <Text style={styles.modalHint}>سيُحدَّث المبلغ المدفوع للطالب بالقيمة المدخلة</Text>
+
+            <View style={styles.modalActions}>
+              <Pressable style={[styles.modalBtn, styles.cancelBtn]} onPress={() => setEditingStudent(null)}>
+                <Text style={styles.cancelBtnTxt}>إلغاء</Text>
+              </Pressable>
+              <Pressable style={[styles.modalBtn, styles.saveBtn]} onPress={handleSavePayment}>
+                <Text style={styles.saveBtnTxt}>حفظ</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -177,6 +298,8 @@ const styles = StyleSheet.create({
   tabText: { fontSize: 13, fontFamily: 'Inter_500Medium', color: 'rgba(255,255,255,0.6)' },
   tabTextActive: { color: '#FFFFFF', fontFamily: 'Inter_700Bold' },
   body: { padding: 16, gap: 12 },
+  emptyCard: { backgroundColor: Colors.surface, borderRadius: 16, padding: 40, alignItems: 'center', gap: 10 },
+  emptyTxt: { fontSize: 14, fontFamily: 'Inter_500Medium', color: Colors.textLight },
   feeCard: { backgroundColor: Colors.surface, borderRadius: 16, padding: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 3 },
   feeHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
   feeStudentInfo: { alignItems: 'flex-end' },
@@ -188,9 +311,16 @@ const styles = StyleSheet.create({
   feeProgressBg: { flex: 1, height: 8, backgroundColor: Colors.borderLight, borderRadius: 4 },
   feeProgressFill: { height: 8, borderRadius: 4 },
   feePercent: { fontSize: 12, fontFamily: 'Inter_700Bold', color: Colors.text, width: 36, textAlign: 'right' },
-  feeAmounts: { flexDirection: 'row', justifyContent: 'space-between' },
+  feeAmounts: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
   feeAmountLabel: { fontSize: 11, fontFamily: 'Inter_400Regular', color: Colors.textSecondary },
   feeAmountValue: { fontFamily: 'Inter_600SemiBold' },
+  feeActions: { flexDirection: 'row', gap: 8 },
+  resetBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.surfaceAlt },
+  resetBtnTxt: { fontSize: 12, fontFamily: 'Inter_500Medium', color: Colors.textSecondary },
+  payBtn: { flex: 1, borderRadius: 10, overflow: 'hidden' },
+  payBtnDisabled: { opacity: 0.6 },
+  payBtnGrad: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 9 },
+  payBtnTxt: { fontSize: 13, fontFamily: 'Inter_600SemiBold', color: '#fff' },
   payrollSummary: { backgroundColor: Colors.primary, borderRadius: 16, padding: 20, alignItems: 'center', marginBottom: 4 },
   payrollSummaryLabel: { fontSize: 13, fontFamily: 'Inter_400Regular', color: 'rgba(255,255,255,0.7)' },
   payrollSummaryValue: { fontSize: 28, fontFamily: 'Inter_700Bold', color: Colors.accent, marginTop: 4 },
@@ -207,4 +337,22 @@ const styles = StyleSheet.create({
   payrollTotal: { borderTopWidth: 1, borderTopColor: Colors.borderLight, marginTop: 8, paddingTop: 8 },
   payrollTotalLabel: { fontSize: 13, fontFamily: 'Inter_600SemiBold', color: Colors.text },
   payrollTotalValue: { fontSize: 15, fontFamily: 'Inter_700Bold', color: Colors.success },
+  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+  sheet: { backgroundColor: Colors.surface, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 24 },
+  sheetHandle: { width: 36, height: 4, backgroundColor: Colors.border, borderRadius: 2, alignSelf: 'center', marginBottom: 16 },
+  sheetTitle: { fontSize: 18, fontFamily: 'Inter_700Bold', color: Colors.text, textAlign: 'right', marginBottom: 4 },
+  sheetSub: { fontSize: 13, fontFamily: 'Inter_400Regular', color: Colors.textSecondary, textAlign: 'right', marginBottom: 14 },
+  feeInfoRow: { flexDirection: 'row', gap: 10, marginBottom: 16 },
+  feeInfoBox: { flex: 1, backgroundColor: Colors.surfaceAlt, borderRadius: 12, padding: 12, alignItems: 'center', gap: 4 },
+  feeInfoVal: { fontSize: 18, fontFamily: 'Inter_700Bold', color: Colors.text },
+  feeInfoLbl: { fontSize: 11, fontFamily: 'Inter_400Regular', color: Colors.textSecondary },
+  modalLabel: { fontSize: 13, fontFamily: 'Inter_600SemiBold', color: Colors.textSecondary, textAlign: 'right', marginBottom: 8 },
+  modalInput: { backgroundColor: Colors.surfaceAlt, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 18, fontFamily: 'Inter_700Bold', color: Colors.text, borderWidth: 1, borderColor: Colors.border, marginBottom: 8 },
+  modalHint: { fontSize: 11, fontFamily: 'Inter_400Regular', color: Colors.textLight, textAlign: 'right', marginBottom: 16 },
+  modalActions: { flexDirection: 'row', gap: 12 },
+  modalBtn: { flex: 1, height: 50, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
+  cancelBtn: { backgroundColor: Colors.surfaceAlt },
+  cancelBtnTxt: { fontSize: 15, fontFamily: 'Inter_600SemiBold', color: Colors.textSecondary },
+  saveBtn: { backgroundColor: Colors.primary },
+  saveBtnTxt: { fontSize: 15, fontFamily: 'Inter_600SemiBold', color: '#fff' },
 });

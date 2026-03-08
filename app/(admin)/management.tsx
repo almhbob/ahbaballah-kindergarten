@@ -12,6 +12,16 @@ import { useAppData, Employee, Student, AttendanceRecord, EmployeeWarning } from
 import HexFrame from '@/components/HexFrame';
 import * as Haptics from 'expo-haptics';
 
+async function openLink(url: string, fallbackLabel?: string) {
+  try {
+    const can = await Linking.canOpenURL(url);
+    if (can) { await Linking.openURL(url); }
+    else { Alert.alert('تعذّر الفتح', fallbackLabel ?? url); }
+  } catch {
+    Alert.alert('تعذّر الفتح', fallbackLabel ?? url);
+  }
+}
+
 const LEVELS = ['براعم', 'مستوى أول', 'مستوى ثاني'];
 const ROLES_LIST = ['معلمة', 'معلم', 'مساعدة معلمة', 'إشراف', 'إدارة', 'مستقبلة', 'أخصائي'];
 const LEVEL_COLORS: Record<string, string> = {
@@ -756,7 +766,7 @@ function StudentProfileSheet({ student, onClose }: { student: Student | null; on
                   {student.parentPhone ? (
                     <Pressable
                       style={pStyles.contactLine}
-                      onPress={() => Linking.openURL(`tel:${student.parentPhone}`)}
+                      onPress={() => openLink(`tel:${student.parentPhone}`, `الاتصال بـ ${student.parentName}: ${student.parentPhone}`)}
                     >
                       <Text style={[pStyles.contactVal, { color: '#3B82F6' }]}>{student.parentPhone}</Text>
                       <View style={[pStyles.contactIcon, { backgroundColor: '#3B82F620' }]}>
@@ -991,7 +1001,7 @@ function StudentProfileSheet({ student, onClose }: { student: Student | null; on
                 <View style={pStyles.emptyTab}>
                   <MaterialCommunityIcons name="star-outline" size={48} color={Colors.textLight} />
                   <Text style={pStyles.emptyTabTxt}>لم يُجرَ تقييم لهذا الطالب بعد</Text>
-                  <Text style={pStyles.emptyTabSub}>يمكن للمعلمة إجراء تقييم من شاشة التقييمات</Text>
+                  <Text style={pStyles.emptyTabSub}>يمكن للمعلمة إجراء تقييم من شاشة الدرجات ← التقييمات</Text>
                 </View>
               ) : (
                 <View style={pStyles.section}>
@@ -1197,7 +1207,7 @@ function TeacherProfileSheet({ teacher: teacherProp, onClose }: { teacher: Emplo
             <>
               <View style={pStyles.section}>
                 <Text style={pStyles.sectionTitle}>معلومات التواصل</Text>
-                <Pressable style={pStyles.contactRow} onPress={() => teacher.phone ? Linking.openURL(`tel:${teacher.phone}`) : null}>
+                <Pressable style={pStyles.contactRow} onPress={() => teacher.phone ? openLink(`tel:${teacher.phone}`, `الاتصال بـ ${teacher.name}: ${teacher.phone}`) : null}>
                   <View style={[pStyles.contactIcon, { backgroundColor: '#10B98120' }]}>
                     <Ionicons name="call" size={20} color="#10B981" />
                   </View>

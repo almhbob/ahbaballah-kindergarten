@@ -27,6 +27,7 @@ export interface Student {
   behavior: 'ممتاز' | 'جيد' | 'مقبول' | 'يحتاج متابعة';
   homework: 'منجز' | 'ناقص' | 'لم ينجز';
   notes: string;
+  paidFees?: number;
   grades: { subject: string; score: number; total: number; date: string }[];
   dailyReports: { date: string; ate: string; learned: string; behaviorNote: string; mood: string }[];
   assessments: AssessmentResult[];

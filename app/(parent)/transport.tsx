@@ -24,7 +24,7 @@ export default function ParentTransportScreen() {
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
   const bottomPad = Platform.OS === 'web' ? 34 : insets.bottom;
 
-  const child = students.find(s => s.id === user?.studentId) || students[0];
+  const child = students.find(s => s.id === user?.studentId) ?? null;
 
   const mySubscription = useMemo(() =>
     transportSubscriptions.find(sub => sub.studentId === child?.id),
@@ -181,7 +181,14 @@ export default function ParentTransportScreen() {
                   </View>
                   <Pressable
                     style={s.callBtn}
-                    onPress={() => Linking.openURL(`tel:${myRoute.driverPhone}`)}
+                    onPress={async () => {
+                      try {
+                        const url = `tel:${myRoute.driverPhone}`;
+                        const can = await Linking.canOpenURL(url);
+                        if (can) { await Linking.openURL(url); }
+                        else { Alert.alert('اتصال', `رقم السائق: ${myRoute.driverPhone}`); }
+                      } catch { Alert.alert('اتصال', `رقم السائق: ${myRoute.driverPhone}`); }
+                    }}
                   >
                     <Ionicons name="call" size={16} color="#fff" />
                     <Text style={s.callBtnTxt}>اتصال</Text>
@@ -276,7 +283,14 @@ export default function ParentTransportScreen() {
                   <View style={s.routeDriverRow}>
                     <Ionicons name="person-circle-outline" size={14} color={Colors.textSecondary} />
                     <Text style={s.routeDriverTxt}>{route.driverName}</Text>
-                    <Pressable onPress={() => Linking.openURL(`tel:${route.driverPhone}`)} style={s.miniCallBtn}>
+                    <Pressable onPress={async () => {
+                    try {
+                      const url = `tel:${route.driverPhone}`;
+                      const can = await Linking.canOpenURL(url);
+                      if (can) { await Linking.openURL(url); }
+                      else { Alert.alert('اتصال', `رقم السائق: ${route.driverPhone}`); }
+                    } catch { Alert.alert('اتصال', `رقم السائق: ${route.driverPhone}`); }
+                  }} style={s.miniCallBtn}>
                       <Ionicons name="call-outline" size={12} color={BUS_GREEN} />
                     </Pressable>
                   </View>

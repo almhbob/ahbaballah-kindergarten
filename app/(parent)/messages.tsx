@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, FlatList, Pressable,
-  TextInput, KeyboardAvoidingView, Platform, Linking,
+  TextInput, KeyboardAvoidingView, Platform, Linking, Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -65,7 +65,14 @@ export default function MessagesScreen() {
         <View style={styles.headerRow}>
           <Pressable
             style={({ pressed }) => [styles.whatsappBtn, { opacity: pressed ? 0.8 : 1 }]}
-            onPress={() => Linking.openURL('https://wa.me/249917545129')}
+            onPress={async () => {
+              try {
+                const url = 'https://wa.me/249917545129';
+                const can = await Linking.canOpenURL(url);
+                if (can) { await Linking.openURL(url); }
+                else { Alert.alert('واتساب', 'الرقم: +249917545129'); }
+              } catch { Alert.alert('واتساب', 'الرقم: +249917545129'); }
+            }}
           >
             <MaterialCommunityIcons name="whatsapp" size={20} color="#25D366" />
           </Pressable>

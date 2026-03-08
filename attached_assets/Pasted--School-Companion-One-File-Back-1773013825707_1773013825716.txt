@@ -1,0 +1,651 @@
+/**
+ * =========================================================
+ * School Companion - One File Backend + Simple UI
+ * =========================================================
+ * قبل التشغيل:
+ *
+ * 1) npm init -y
+ * 2) npm install express express-session bcryptjs multer dotenv @supabase/supabase-js
+ *
+ * 3) أنشئ ملف .env بهذا الشكل:
+ *
+ * PORT=3000
+ * SESSION_SECRET=change_this_secret
+ * SUPABASE_URL=https://YOUR_PROJECT.supabase.co
+ * SUPABASE_SERVICE_ROLE_KEY=YOUR_SERVICE_ROLE_KEY
+ * SUPABASE_BUCKET=school-files
+ * CREDLY_URL=https://www.credly.com/users/asim-abdulrahman
+ *
+ * 4) في Supabase نفّذ هذا SQL مرة واحدة:
+ *
+ * create table if not exists public.users (
+ *   id bigint generated always as identity primary key,
+ *   full_name text not null,
+ *   email text not null unique,
+ *   phone text,
+ *   role text not null check (role in ('admin', 'teacher', 'parent')),
+ *   password_hash text not null,
+ *   created_at timestamptz not null default now()
+ * );
+ *
+ * create table if not exists public.files (
+ *   id bigint generated always as identity primary key,
+ *   user_id bigint not null references public.users(id) on delete cascade,
+ *   role text not null check (role in ('admin', 'teacher', 'parent')),
+ *   file_name text not null,
+ *   file_path text not null unique,
+ *   mime_type text,
+ *   size_bytes bigint,
+ *   public_url text,
+ *   created_at timestamptz not null default now()
+ * );
+ *
+ * 5) أنشئ Bucket في Supabase Storage باسم:
+ * school-files
+ * واجعله Public إذا أردت روابط مباشرة للملفات.
+ *
+ * 6) شغّل:
+ * node server.js
+ *
+ * 7) افتح:
+ * http://localhost:3000
+ */
+
+require("dotenv").config();
+
+const express = require("express");
+const session = require("express-session");
+const bcrypt = require("bcryptjs");
+const multer = require("multer");
+const { createClient } = require("@supabase/supabase-js");
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+const SESSION_SECRET = process.env.SESSION_SECRET || "change_this_secret";
+const CREDLY_URL =
+  process.env.CREDLY_URL || "https://www.credly.com/users/asim-abdulrahman";
+const BUCKET = process.env.SUPABASE_BUCKET || "school-files";
+
+if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  console.error("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY in .env");
+  process.exit(1);
+}
+
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY,
+  {
+    auth: { autoRefreshToken: false, persistSession: false },
+  }
+);
+
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
+
+app.use(
+  session({
+    secret: SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      httpOnly: true,
+      sameSite: "lax",
+      maxAge: 1000 * 60 * 60 * 24, // يوم كامل
+    },
+  })
+);
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+});
+
+const ROLES = ["admin", "teacher", "parent"];
+
+/* ---------------- Helpers ---------------- */
+
+function roleLabel(role) {
+  if (role === "admin") return "إدارة";
+  if (role === "teacher") return "معلم";
+  if (role === "parent") return "ولي أمر";
+  return role;
+}
+
+function escapeHtml(str = "") {
+  return String(str)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function sanitizeEmail(email) {
+  return String(email || "").trim().toLowerCase();
+}
+
+function safeFileName(name) {
+  return String(name || "file")
+    .replace(/[^\w.\-]+/g, "_")
+    .replace(/_+/g, "_");
+}
+
+function buildStoragePath(role, userId, originalName) {
+  return `${role}/${userId}/${Date.now()}_${safeFileName(originalName)}`;
+}
+
+function layout(title, content, user = null, error = "", success = "") {
+  return `
+  <!doctype html>
+  <html lang="ar" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>${escapeHtml(title)}</title>
+    <style>
+      body{font-family:Tahoma,Arial,sans-serif;background:#f3f6fb;margin:0;color:#1f2937}
+      .wrap{max-width:950px;margin:24px auto;padding:16px}
+      .card{background:#fff;border-radius:18px;padding:22px;box-shadow:0 10px 30px rgba(0,0,0,.08)}
+      h1,h2,h3{margin-top:0}
+      input,select,button,textarea{
+        width:100%;padding:12px 14px;margin:8px 0;border:1px solid #d1d5db;
+        border-radius:12px;font-size:16px;box-sizing:border-box;background:#fff
+      }
+      button{background:#2563eb;color:#fff;border:none;cursor:pointer}
+      button:hover{opacity:.95}
+      a.btn{
+        display:inline-block;text-decoration:none;background:#2563eb;color:#fff;
+        padding:11px 16px;border-radius:12px
+      }
+      .btn-secondary{background:#64748b}
+      .btn-danger{background:#dc2626}
+      .btn-success{background:#16a34a}
+      .row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+      .topbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:18px}
+      .pill{background:#e0e7ff;color:#3730a3;padding:7px 12px;border-radius:999px;font-size:13px}
+      .muted{color:#6b7280;font-size:14px}
+      .error{background:#fee2e2;color:#991b1b;padding:12px;border-radius:12px;margin-bottom:12px}
+      .success{background:#dcfce7;color:#166534;padding:12px;border-radius:12px;margin-bottom:12px}
+      table{width:100%;border-collapse:collapse;margin-top:14px}
+      th,td{border-bottom:1px solid #e5e7eb;padding:10px;text-align:right;vertical-align:top}
+      .actions{display:flex;gap:10px;flex-wrap:wrap}
+      form.inline{display:inline-block;width:auto;margin:0}
+      .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+      .box{background:#f8fafc;border:1px solid #e5e7eb;border-radius:14px;padding:14px}
+      @media (max-width:768px){
+        .row,.grid-3{grid-template-columns:1fr}
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="card">
+        ${
+          user
+            ? `
+          <div class="topbar">
+            <span class="pill">المستخدم: ${escapeHtml(user.full_name)}</span>
+            <span class="pill">الدور: ${escapeHtml(roleLabel(user.role))}</span>
+            <a class="btn btn-secondary" href="/dashboard">الرئيسية</a>
+            <a class="btn btn-success" href="/credly" target="_blank" rel="noopener noreferrer">Credly</a>
+            <form class="inline" action="/logout" method="post">
+              <button class="btn-danger" type="submit">تسجيل الخروج</button>
+            </form>
+          </div>
+        `
+            : ""
+        }
+        ${error ? `<div class="error">${escapeHtml(error)}</div>` : ""}
+        ${success ? `<div class="success">${escapeHtml(success)}</div>` : ""}
+        ${content}
+      </div>
+    </div>
+  </body>
+  </html>
+  `;
+}
+
+function requireAuth(req, res, next) {
+  if (!req.session.user) return res.redirect("/login");
+  next();
+}
+
+function requireRole(...roles) {
+  return (req, res, next) => {
+    if (!req.session.user) return res.redirect("/login");
+    if (!roles.includes(req.session.user.role)) {
+      return res
+        .status(403)
+        .send(
+          layout(
+            "غير مصرح",
+            "<h2>غير مسموح</h2><p>ليس لديك صلاحية لهذه الصفحة.</p>",
+            req.session.user
+          )
+        );
+    }
+    next();
+  };
+}
+
+async function getUserByEmail(email) {
+  const { data, error } = await supabase
+    .from("users")
+    .select("*")
+    .eq("email", sanitizeEmail(email))
+    .maybeSingle();
+
+  if (error) throw error;
+  return data;
+}
+
+async function getUserById(id) {
+  const { data, error } = await supabase
+    .from("users")
+    .select("id, full_name, email, phone, role, created_at")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data;
+}
+
+/* ---------------- Public Pages ---------------- */
+
+app.get("/", (req, res) => {
+  if (req.session.user) return res.redirect("/dashboard");
+
+  res.send(
+    layout(
+      "School Companion",
+      `
+      <h1>نظام مدرسي سحابي</h1>
+      <p class="muted">إنشاء حسابات حقيقية، تسجيل دخول وخروج، وتخزين ملفات مجاني على Supabase.</p>
+      <div class="row">
+        <a class="btn" href="/register">إنشاء حساب</a>
+        <a class="btn btn-secondary" href="/login">تسجيل الدخول</a>
+      </div>
+      `
+    )
+  );
+});
+
+app.get("/register", (req, res) => {
+  res.send(
+    layout(
+      "إنشاء حساب",
+      `
+      <h2>إنشاء حساب جديد</h2>
+      <form action="/register" method="post">
+        <div class="row">
+          <input name="full_name" placeholder="الاسم الكامل" required />
+          <input name="email" type="email" placeholder="البريد الإلكتروني" required />
+        </div>
+        <div class="row">
+          <input name="phone" placeholder="رقم الهاتف" />
+          <select name="role" required>
+            <option value="">اختر نوع الحساب</option>
+            <option value="admin">إدارة</option>
+            <option value="teacher">معلم</option>
+            <option value="parent">ولي أمر</option>
+          </select>
+        </div>
+        <input name="password" type="password" placeholder="كلمة المرور" minlength="6" required />
+        <button type="submit">إنشاء الحساب</button>
+      </form>
+      <p class="muted">لديك حساب؟ <a href="/login">سجّل الدخول</a></p>
+      `
+    )
+  );
+});
+
+app.post("/register", async (req, res) => {
+  try {
+    const full_name = String(req.body.full_name || "").trim();
+    const email = sanitizeEmail(req.body.email);
+    const phone = String(req.body.phone || "").trim() || null;
+    const role = String(req.body.role || "").trim();
+    const password = String(req.body.password || "");
+
+    if (!full_name || !email || !role || !password) {
+      return res.send(
+        layout(
+          "إنشاء حساب",
+          "<h2>بيانات ناقصة</h2><p>أكمل الحقول المطلوبة.</p>",
+          null,
+          "جميع الحقول الأساسية مطلوبة."
+        )
+      );
+    }
+
+    if (!ROLES.includes(role)) {
+      return res.send(
+        layout("إنشاء حساب", "<h2>خطأ</h2>", null, "نوع الحساب غير صالح.")
+      );
+    }
+
+    if (password.length < 6) {
+      return res.send(
+        layout(
+          "إنشاء حساب",
+          "<h2>كلمة المرور قصيرة</h2>",
+          null,
+          "الحد الأدنى 6 أحرف."
+        )
+      );
+    }
+
+    const existing = await getUserByEmail(email);
+    if (existing) {
+      return res.send(
+        layout(
+          "إنشاء حساب",
+          `<h2>هذا البريد مستخدم بالفعل</h2><a class="btn" href="/login">تسجيل الدخول</a>`,
+          null,
+          "البريد الإلكتروني موجود مسبقًا."
+        )
+      );
+    }
+
+    const password_hash = await bcrypt.hash(password, 10);
+
+    const { data, error } = await supabase
+      .from("users")
+      .insert([{ full_name, email, phone, role, password_hash }])
+      .select("id, full_name, email, phone, role, created_at")
+      .single();
+
+    if (error) throw error;
+
+    req.session.user = data;
+    return res.redirect("/dashboard");
+  } catch (err) {
+    console.error(err);
+    return res
+      .status(500)
+      .send(
+        layout(
+          "خطأ",
+          "<h2>تعذر إنشاء الحساب</h2>",
+          null,
+          err.message || "حدث خطأ داخلي."
+        )
+      );
+  }
+});
+
+app.get("/login", (req, res) => {
+  res.send(
+    layout(
+      "تسجيل الدخول",
+      `
+      <h2>تسجيل الدخول</h2>
+      <form action="/login" method="post">
+        <input name="email" type="email" placeholder="البريد الإلكتروني" required />
+        <input name="password" type="password" placeholder="كلمة المرور" required />
+        <button type="submit">دخول</button>
+      </form>
+      <p class="muted">ليس لديك حساب؟ <a href="/register">أنشئ حسابًا</a></p>
+      `
+    )
+  );
+});
+
+app.post("/login", async (req, res) => {
+  try {
+    const email = sanitizeEmail(req.body.email);
+    const password = String(req.body.password || "");
+
+    if (!email || !password) {
+      return res.send(
+        layout(
+          "تسجيل الدخول",
+          "<h2>بيانات ناقصة</h2>",
+          null,
+          "أدخل البريد وكلمة المرور."
+        )
+      );
+    }
+
+    const user = await getUserByEmail(email);
+    if (!user) {
+      return res.send(
+        layout(
+          "تسجيل الدخول",
+          "<h2>تعذر تسجيل الدخول</h2>",
+          null,
+          "الحساب غير موجود."
+        )
+      );
+    }
+
+    const ok = await bcrypt.compare(password, user.password_hash);
+    if (!ok) {
+      return res.send(
+        layout(
+          "تسجيل الدخول",
+          "<h2>تعذر تسجيل الدخول</h2>",
+          null,
+          "كلمة المرور غير صحيحة."
+        )
+      );
+    }
+
+    req.session.user = {
+      id: user.id,
+      full_name: user.full_name,
+      email: user.email,
+      phone: user.phone,
+      role: user.role,
+      created_at: user.created_at,
+    };
+
+    return res.redirect("/dashboard");
+  } catch (err) {
+    console.error(err);
+    return res
+      .status(500)
+      .send(
+        layout(
+          "خطأ",
+          "<h2>تعذر تسجيل الدخول</h2>",
+          null,
+          err.message || "حدث خطأ داخلي."
+        )
+      );
+  }
+});
+
+app.post("/logout", requireAuth, (req, res) => {
+  req.session.destroy((err) => {
+    if (err) {
+      console.error(err);
+      return res
+        .status(500)
+        .send(
+          layout(
+            "خطأ",
+            "<h2>تعذر تسجيل الخروج</h2>",
+            req.session.user,
+            "حدث خطأ أثناء تسجيل الخروج."
+          )
+        );
+    }
+    res.clearCookie("connect.sid");
+    return res.redirect("/login");
+  });
+});
+
+app.get("/credly", requireAuth, (req, res) => {
+  return res.redirect(CREDLY_URL);
+});
+
+/* ---------------- Dashboard ---------------- */
+
+app.get("/dashboard", requireAuth, async (req, res) => {
+  try {
+    const user = req.session.user;
+
+    const { count: fileCount, error: countError } = await supabase
+      .from("files")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", user.id);
+
+    if (countError) throw countError;
+
+    let roleBox = "";
+    if (user.role === "admin") {
+      roleBox = `
+        <div class="box">
+          <h3>لوحة الإدارة</h3>
+          <p>إدارة المعلمين، أولياء الأمور، والطلاب.</p>
+          <a class="btn" href="/admin">فتح لوحة الإدارة</a>
+        </div>
+      `;
+    } else if (user.role === "teacher") {
+      roleBox = `
+        <div class="box">
+          <h3>لوحة المعلم</h3>
+          <p>إدارة الأنشطة والملفات والدروس.</p>
+          <a class="btn" href="/teacher">فتح لوحة المعلم</a>
+        </div>
+      `;
+    } else {
+      roleBox = `
+        <div class="box">
+          <h3>لوحة ولي الأمر</h3>
+          <p>عرض ملفات الطفل والمرفقات المرسلة.</p>
+          <a class="btn" href="/parent">فتح لوحة ولي الأمر</a>
+        </div>
+      `;
+    }
+
+    res.send(
+      layout(
+        "لوحة التحكم",
+        `
+        <h1>مرحبًا ${escapeHtml(user.full_name)}</h1>
+        <p class="muted">هذه جلسة حقيقية محفوظة، مع تخزين سحابي مجاني للملفات.</p>
+
+        <div class="grid-3">
+          <div class="box">
+            <h3>البريد</h3>
+            <p>${escapeHtml(user.email)}</p>
+          </div>
+          <div class="box">
+            <h3>الدور</h3>
+            <p>${escapeHtml(roleLabel(user.role))}</p>
+          </div>
+          <div class="box">
+            <h3>عدد الملفات</h3>
+            <p>${fileCount || 0}</p>
+          </div>
+        </div>
+
+        <br />
+        ${roleBox}
+
+        <br />
+        <div class="actions">
+          <a class="btn btn-secondary" href="/files">إدارة ملفاتي السحابية</a>
+        </div>
+        `,
+        user
+      )
+    );
+  } catch (err) {
+    console.error(err);
+    res
+      .status(500)
+      .send(
+        layout(
+          "خطأ",
+          "<h2>تعذر تحميل لوحة التحكم</h2>",
+          req.session.user,
+          err.message || "حدث خطأ."
+        )
+      );
+  }
+});
+
+app.get("/admin", requireRole("admin"), async (req, res) => {
+  try {
+    const { data: users, error } = await supabase
+      .from("users")
+      .select("id, full_name, email, phone, role, created_at")
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+
+    const rows = (users || [])
+      .map(
+        (u) => `
+      <tr>
+        <td>${u.id}</td>
+        <td>${escapeHtml(u.full_name)}</td>
+        <td>${escapeHtml(u.email)}</td>
+        <td>${escapeHtml(u.phone || "-")}</td>
+        <td>${escapeHtml(roleLabel(u.role))}</td>
+      </tr>
+    `
+      )
+      .join("");
+
+    res.send(
+      layout(
+        "لوحة الإدارة",
+        `
+        <h2>لوحة الإدارة</h2>
+        <p class="muted">عرض المستخدمين المسجلين.</p>
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>الاسم</th>
+              <th>البريد</th>
+              <th>الهاتف</th>
+              <th>الدور</th>
+            </tr>
+          </thead>
+          <tbody>${rows || `<tr><td colspan="5">لا توجد بيانات</td></tr>`}</tbody>
+        </table>
+        `,
+        req.session.user
+      )
+    );
+  } catch (err) {
+    console.error(err);
+    res
+      .status(500)
+      .send(
+        layout(
+          "خطأ",
+          "<h2>تعذر تحميل لوحة الإدارة</h2>",
+          req.session.user,
+          err.message
+        )
+      );
+  }
+});
+
+app.get("/teacher", requireRole("teacher"), (req, res) => {
+  res.send(
+    layout(
+      "لوحة المعلم",
+      `
+      <h2>لوحة المعلم</h2>
+      <p>يمكنك رفع الملفات التعليمية ومتابعة محتواك من صفحة الملفات.</p>
+      <a class="btn" href="/files">فتح الملفات السحابية</a>
+      `,
+      req.session.user
+    )
+  );
+});
+
+app.get("/parent", requireRole("parent"), (req, res) => {
+  res.send(
+    layout(
+      "لوحة ولي الأمر",
+      `
+      <h2>لوحة ولي الأمر</h2>
+      <p>يمكنك استعراض
