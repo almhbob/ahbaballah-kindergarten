@@ -69,8 +69,9 @@ export default function AdminDashboard() {
               <Ionicons name="log-out-outline" size={22} color="rgba(255,255,255,0.7)" />
             </Pressable>
             <View style={styles.headerText}>
-              <Text style={styles.greeting}>مرحباً،</Text>
-              <Text style={styles.userName}>{user?.name}</Text>
+              <Text style={styles.schoolName}>روضة أحباب الله</Text>
+              <Text style={styles.schoolLocation}>صفيتة الغنوماب</Text>
+              <Text style={styles.greeting}>مرحباً، {user?.name}</Text>
             </View>
             <View style={styles.avatarCircle}>
               <MaterialCommunityIcons name="shield-check" size={24} color={Colors.accent} />
@@ -147,7 +148,9 @@ const styles = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingBottom: 24 },
   headerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
   headerText: { flex: 1, alignItems: 'flex-end' },
-  greeting: { fontSize: 13, color: 'rgba(255,255,255,0.6)', fontFamily: 'Inter_400Regular' },
+  schoolName: { fontSize: 17, color: '#FFFFFF', fontFamily: 'Inter_700Bold' },
+  schoolLocation: { fontSize: 11, color: Colors.accent, fontFamily: 'Inter_500Medium', marginBottom: 2 },
+  greeting: { fontSize: 12, color: 'rgba(255,255,255,0.6)', fontFamily: 'Inter_400Regular' },
   userName: { fontSize: 20, color: '#FFFFFF', fontFamily: 'Inter_700Bold' },
   avatarCircle: {
     width: 44, height: 44, borderRadius: 22,

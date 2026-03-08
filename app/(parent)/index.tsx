@@ -37,8 +37,9 @@ export default function ParentHomeScreen() {
               <Ionicons name="log-out-outline" size={22} color="rgba(255,255,255,0.7)" />
             </Pressable>
             <View style={styles.headerText}>
+              <Text style={styles.schoolName}>روضة أحباب الله</Text>
+              <Text style={styles.schoolLocation}>صفيتة الغنوماب</Text>
               <Text style={styles.greeting}>مرحباً، {user?.name}</Text>
-              <Text style={styles.tagline}>متابعة طفلك بين يديك</Text>
             </View>
             <View style={styles.avatarCircle}>
               <MaterialCommunityIcons name="account-heart" size={24} color="#E9B8FF" />
@@ -159,7 +160,9 @@ const styles = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingBottom: 24 },
   headerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
   headerText: { flex: 1, alignItems: 'flex-end' },
-  greeting: { fontSize: 15, color: '#FFFFFF', fontFamily: 'Inter_600SemiBold' },
+  schoolName: { fontSize: 16, color: '#FFFFFF', fontFamily: 'Inter_700Bold' },
+  schoolLocation: { fontSize: 11, color: '#E9B8FF', fontFamily: 'Inter_500Medium', marginBottom: 2 },
+  greeting: { fontSize: 12, color: 'rgba(255,255,255,0.7)', fontFamily: 'Inter_400Regular' },
   tagline: { fontSize: 12, color: 'rgba(255,255,255,0.6)', fontFamily: 'Inter_400Regular', marginTop: 2 },
   avatarCircle: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.1)', justifyContent: 'center', alignItems: 'center', marginRight: 12 },
   logoutBtn: { padding: 8 },

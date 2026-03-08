@@ -1,7 +1,7 @@
-# مدرستي - School Management App
+# روضة أحباب الله - الخاصة
 
 ## Overview
-A comprehensive Arabic school management app for kindergartens (Nursery, KG1, KG2) built with Expo React Native.
+A comprehensive Arabic school management app for "روضة أحباب الله الخاصة" kindergarten located in صفيتة الغنوماب, built with Expo React Native.
 
 ## Architecture
 - **Frontend**: Expo Router with file-based routing, React Native

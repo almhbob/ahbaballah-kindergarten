@@ -69,7 +69,7 @@ export default function MessagesScreen() {
           </View>
           <View style={styles.headerInfo}>
             <Text style={styles.headerTitle}>التواصل مع الإدارة</Text>
-            <Text style={styles.headerSub}>مدرسة الروضة</Text>
+            <Text style={styles.headerSub}>روضة أحباب الله — صفيتة الغنوماب</Text>
           </View>
           <View style={styles.adminAvatar}>
             <Ionicons name="shield-checkmark" size={20} color={PARENT_COLOR} />

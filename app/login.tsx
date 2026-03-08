@@ -82,8 +82,8 @@ export default function LoginScreen() {
             <View style={styles.logoContainer}>
               <MaterialCommunityIcons name="school" size={48} color={Colors.accent} />
             </View>
-            <Text style={styles.appName}>مدرستي</Text>
-            <Text style={styles.tagline}>نظام إدارة الروضة الذكي</Text>
+            <Text style={styles.appName}>روضة أحباب الله</Text>
+            <Text style={styles.tagline}>الخاصة — صفيتة الغنوماب</Text>
           </View>
 
           <Text style={styles.sectionLabel}>اختر نوع حسابك</Text>
