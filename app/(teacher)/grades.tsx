@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Colors } from '@/constants/colors';
 import { useAppData, Student } from '@/contexts/AppDataContext';
+import HexFrame from '@/components/HexFrame';
 import * as Haptics from 'expo-haptics';
 
 const SUBJECTS = ['الرياضيات', 'اللغة العربية', 'العلوم', 'التربية الفنية', 'الأنشطة'];
@@ -79,9 +80,9 @@ export default function GradesScreen() {
                     <Text style={styles.studentName}>{student.name}</Text>
                     <Text style={styles.studentLevel}>{student.level}</Text>
                   </View>
-                  <View style={styles.studentAvatar}>
+                  <HexFrame size={42} fill="#14532d" stroke="#4ADE80" strokeWidth={1.5} style={{ marginLeft: 10 }}>
                     <Text style={styles.avatarText}>{student.name.charAt(0)}</Text>
-                  </View>
+                  </HexFrame>
                   <Ionicons
                     name={selectedStudent?.id === student.id ? 'chevron-up' : 'chevron-down'}
                     size={18} color={Colors.textLight}

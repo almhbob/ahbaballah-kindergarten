@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import HexFrame from '@/components/HexFrame';
 import {
   View, Text, StyleSheet, ScrollView, Pressable,
   Platform, FlatList,
@@ -54,17 +55,16 @@ function Podium({ entries, isParent = false }: {
         return (
           <View key={pos} style={podStyles.col}>
             <Text style={podStyles.medal}>{medals[pos]}</Text>
-            <View style={[podStyles.avatar, {
-              backgroundColor: badgeColors[pos] + '22',
-              borderColor: badgeColors[pos],
-              width: pos === 1 ? 60 : 50,
-              height: pos === 1 ? 60 : 50,
-              borderRadius: pos === 1 ? 30 : 25,
-            }]}>
+            <HexFrame
+              size={pos === 1 ? 62 : 52}
+              fill={badgeColors[pos] + '22'}
+              stroke={badgeColors[pos]}
+              strokeWidth={2}
+            >
               <Text style={[podStyles.initials, { fontSize: pos === 1 ? 20 : 16, color: badgeColors[pos] }]}>
                 {initials}
               </Text>
-            </View>
+            </HexFrame>
             <Text style={[podStyles.name, { fontSize: pos === 1 ? 12 : 10 }]} numberOfLines={2}>
               {getName(entry).split(' ').slice(0, 2).join('\n')}
             </Text>
@@ -124,9 +124,14 @@ function StudentRow({ entry, rank }: { entry: HonorEntry; rank: number }) {
           {rank <= 3 ? ['🥇', '🥈', '🥉'][rank - 1] : `#${rank}`}
         </Text>
       </View>
-      <View style={[rowStyles.avatar, { backgroundColor: (LEVEL_META[entry.level]?.color ?? '#888') + '18' }]}>
+      <HexFrame
+        size={46}
+        fill={(LEVEL_META[entry.level]?.color ?? '#888') + '18'}
+        stroke={(LEVEL_META[entry.level]?.color ?? '#888') + '50'}
+        strokeWidth={1.5}
+      >
         <Text style={[rowStyles.avatarText, { color: LEVEL_META[entry.level]?.color ?? '#888' }]}>{initials}</Text>
-      </View>
+      </HexFrame>
       <View style={rowStyles.info}>
         <Text style={rowStyles.name}>{entry.studentName}</Text>
         <View style={rowStyles.pillRow}>
@@ -168,9 +173,9 @@ function ParentRow({ entry, rank }: { entry: ParentHonorEntry; rank: number }) {
           {rank <= 3 ? ['🥇', '🥈', '🥉'][rank - 1] : `#${rank}`}
         </Text>
       </View>
-      <View style={[rowStyles.avatar, { backgroundColor: '#FCE4FF' }]}>
+      <HexFrame size={46} fill="#FCE4FF" stroke="#9C27B080" strokeWidth={1.5}>
         <Text style={[rowStyles.avatarText, { color: '#9C27B0' }]}>{initials}</Text>
-      </View>
+      </HexFrame>
       <View style={rowStyles.info}>
         <Text style={rowStyles.name}>{entry.parentName}</Text>
         <Text style={rowStyles.subText}>طفل: {entry.studentName.split(' ').slice(0, 2).join(' ')}</Text>
@@ -338,7 +343,7 @@ export default function HonorScreen() {
           ) : (
             <View style={styles.infoRows}>
               <InfoRow icon="school" color="#3B82F6" label="متوسط الدرجات الأكاديمية" value="45 نقطة" />
-              <InfoRow icon="calendar-check" color={Colors.success} label="نسبة الحضور" value="30 نقطة" />
+              <InfoRow icon="calendar-outline" color={Colors.success} label="نسبة الحضور" value="30 نقطة" />
               <InfoRow icon="happy" color="#F59E0B" label="تقييم السلوك" value="15 نقطة" />
               <InfoRow icon="book" color="#8B5CF6" label="إنجاز الواجبات" value="10 نقطة" />
             </View>

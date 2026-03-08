@@ -8,6 +8,7 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Colors } from '@/constants/colors';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAppData, buildHonorBoard } from '@/contexts/AppDataContext';
+import HexFrame from '@/components/HexFrame';
 import * as Haptics from 'expo-haptics';
 
 const PARENT_COLOR = '#7B3FA0';
@@ -43,11 +44,15 @@ export default function ParentHomeScreen() {
     <View style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false} contentInsetAdjustmentBehavior="automatic">
         <LinearGradient colors={['#1a0830', '#3d1a5c', '#7B3FA0']} style={[styles.header, { paddingTop: topPadding + 16 }]}>
-          <Image
-            source={require('@/assets/images/logo_new.jpg')}
-            style={styles.watermark}
-            resizeMode="contain"
-          />
+          {/* Hex decorations */}
+          <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+            <View style={{ position: 'absolute', right: -30, top: -25, opacity: 0.10 }}>
+              <HexFrame size={130} fill="transparent" stroke="#A855F7" strokeWidth={1.5} />
+            </View>
+            <View style={{ position: 'absolute', left: -20, bottom: -15, opacity: 0.07 }}>
+              <HexFrame size={90} fill="transparent" stroke="#E9B8FF" strokeWidth={1} />
+            </View>
+          </View>
           <View style={styles.headerRow}>
             <Pressable onPress={logout} style={styles.logoutBtn}>
               <Ionicons name="log-out-outline" size={22} color="rgba(255,255,255,0.7)" />
@@ -57,15 +62,15 @@ export default function ParentHomeScreen() {
               <Text style={styles.schoolLocation}>صفيتة الغنوماب</Text>
               <Text style={styles.greeting}>مرحباً، {user?.name}</Text>
             </View>
-            <View style={styles.avatarCircle}>
+            <HexFrame size={52} fill="rgba(255,255,255,0.10)" stroke="#E9B8FF" strokeWidth={1.5} style={{ marginRight: 12 }}>
               <MaterialCommunityIcons name="account-heart" size={24} color="#E9B8FF" />
-            </View>
+            </HexFrame>
           </View>
 
           <View style={styles.childCard}>
-            <View style={styles.childAvatar}>
+            <HexFrame size={52} fill="#7B3FA0" stroke="#E9B8FF" strokeWidth={1.5}>
               <Text style={styles.childAvatarText}>{child.name.charAt(0)}</Text>
-            </View>
+            </HexFrame>
             <View style={styles.childInfo}>
               <Text style={styles.childName}>{child.name}</Text>
               <Text style={styles.childLevel}>المستوى: {child.level}</Text>

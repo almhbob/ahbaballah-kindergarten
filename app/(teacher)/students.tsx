@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Colors } from '@/constants/colors';
 import { useAppData, Student } from '@/contexts/AppDataContext';
+import HexFrame from '@/components/HexFrame';
 import * as Haptics from 'expo-haptics';
 
 const BEHAVIOR_COLORS = {
@@ -40,9 +41,9 @@ function StudentCard({ student, onPress }: { student: Student; onPress: () => vo
           <Text style={styles.studentName}>{student.name}</Text>
           <Text style={styles.studentLevel}>{student.level}</Text>
         </View>
-        <View style={styles.avatar}>
+        <HexFrame size={44} fill="#0c4a6e" stroke="#38BDF8" strokeWidth={1.5} style={{ marginLeft: 10 }}>
           <Text style={styles.avatarText}>{student.name.charAt(0)}</Text>
-        </View>
+        </HexFrame>
       </View>
       <View style={styles.cardBadges}>
         <View style={[styles.badge, { backgroundColor: hw.bg }]}>

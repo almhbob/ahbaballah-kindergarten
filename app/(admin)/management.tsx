@@ -8,6 +8,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Colors } from '@/constants/colors';
 import { useAppData, Employee, Student } from '@/contexts/AppDataContext';
+import HexFrame from '@/components/HexFrame';
 import * as Haptics from 'expo-haptics';
 
 const LEVELS = ['براعم', 'مستوى أول', 'مستوى ثاني'];
@@ -235,9 +236,9 @@ function TeachersSection({ teachers, onAdd, onEdit, onView, onDelete }: {
               </Pressable>
             </View>
             <View style={styles.cardRight}>
-              <View style={[styles.avatarCircle, { backgroundColor: item.level ? LEVEL_COLORS[item.level] ?? Colors.primary : Colors.primary }]}>
+              <HexFrame size={48} fill={item.level ? LEVEL_COLORS[item.level] ?? Colors.primary : Colors.primary} stroke="rgba(255,255,255,0.35)" strokeWidth={1.5}>
                 <MaterialCommunityIcons name="account" size={22} color="#fff" />
-              </View>
+              </HexFrame>
               <View style={styles.cardInfo}>
                 <Text style={styles.cardName}>{item.name}</Text>
                 <Text style={styles.cardSub}>{item.role}{item.level ? ` — ${item.level}` : ''}</Text>
@@ -302,9 +303,9 @@ function StudentsSection({ students, onAdd, onEdit, onView, onDelete }: {
               </Pressable>
             </View>
             <View style={styles.cardRight}>
-              <View style={[styles.avatarCircle, { backgroundColor: LEVEL_COLORS[item.level] ?? '#8B5CF6' }]}>
+              <HexFrame size={48} fill={LEVEL_COLORS[item.level] ?? '#8B5CF6'} stroke="rgba(255,255,255,0.35)" strokeWidth={1.5}>
                 <MaterialCommunityIcons name="account-school" size={22} color="#fff" />
-              </View>
+              </HexFrame>
               <View style={styles.cardInfo}>
                 <Text style={styles.cardName}>{item.name}</Text>
                 <Text style={styles.cardSub}>ولي الأمر: {item.parentName}</Text>
@@ -546,9 +547,9 @@ function StudentProfileSheet({ student, onClose }: { student: Student | null; on
           <Pressable onPress={onClose} style={pStyles.closeBtn}>
             <Ionicons name="chevron-down" size={24} color="#fff" />
           </Pressable>
-          <View style={pStyles.profileAvatar}>
-            <MaterialCommunityIcons name="account-school" size={44} color="#fff" />
-          </View>
+          <HexFrame size={86} fill="rgba(255,255,255,0.15)" stroke="rgba(255,255,255,0.45)" strokeWidth={2} style={{ marginBottom: 10 }}>
+            <MaterialCommunityIcons name="account-school" size={40} color="#fff" />
+          </HexFrame>
           <Text style={pStyles.profileName}>{student.name}</Text>
           <View style={pStyles.profileBadgeRow}>
             <View style={[pStyles.profileBadge, { backgroundColor: levelColor }]}>
@@ -690,9 +691,9 @@ function TeacherProfileSheet({ teacher, onClose }: { teacher: Employee | null; o
           <Pressable onPress={onClose} style={pStyles.closeBtn}>
             <Ionicons name="chevron-down" size={24} color="#fff" />
           </Pressable>
-          <View style={pStyles.profileAvatar}>
-            <MaterialCommunityIcons name="account-tie" size={44} color="#fff" />
-          </View>
+          <HexFrame size={86} fill="rgba(255,255,255,0.15)" stroke="rgba(255,255,255,0.45)" strokeWidth={2} style={{ marginBottom: 10 }}>
+            <MaterialCommunityIcons name="account-tie" size={40} color="#fff" />
+          </HexFrame>
           <Text style={pStyles.profileName}>{teacher.name}</Text>
           <View style={pStyles.profileBadgeRow}>
             <View style={[pStyles.profileBadge, { backgroundColor: Colors.accent + 'CC' }]}>

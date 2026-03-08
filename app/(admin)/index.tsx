@@ -9,6 +9,7 @@ import { router } from 'expo-router';
 import { Colors } from '@/constants/colors';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAppData } from '@/contexts/AppDataContext';
+import HexFrame from '@/components/HexFrame';
 import * as Haptics from 'expo-haptics';
 
 function StatCard({ label, value, sub, icon, color, bg }: {
@@ -16,9 +17,9 @@ function StatCard({ label, value, sub, icon, color, bg }: {
 }) {
   return (
     <View style={[styles.statCard, { backgroundColor: 'rgba(255,255,255,0.09)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)' }]}>
-      <View style={[styles.statIcon, { backgroundColor: bg }]}>
-        <MaterialCommunityIcons name={icon as any} size={22} color={color} />
-      </View>
+      <HexFrame size={44} fill={bg} stroke={color + '50'} strokeWidth={1.5} style={{ marginBottom: 8 }}>
+        <MaterialCommunityIcons name={icon as any} size={20} color={color} />
+      </HexFrame>
       <Text style={styles.statValue}>{value}</Text>
       <Text style={styles.statLabel}>{label}</Text>
       {sub && <Text style={styles.statSub}>{sub}</Text>}
@@ -34,9 +35,9 @@ function QuickAction({ icon, label, color, onPress }: {
       style={({ pressed }) => [styles.quickAction, { opacity: pressed ? 0.75 : 1 }]}
       onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onPress(); }}
     >
-      <View style={[styles.quickActionIcon, { backgroundColor: color + '18' }]}>
-        <MaterialCommunityIcons name={icon as any} size={26} color={color} />
-      </View>
+      <HexFrame size={56} fill={color + '15'} stroke={color + '40'} strokeWidth={1.5}>
+        <MaterialCommunityIcons name={icon as any} size={24} color={color} />
+      </HexFrame>
       <Text style={styles.quickActionLabel}>{label}</Text>
     </Pressable>
   );
@@ -64,12 +65,18 @@ export default function AdminDashboard() {
           colors={['#030612', '#050c38', '#0d1463']}
           style={[styles.header, { paddingTop: topPadding + 16 }]}
         >
-          {/* Watermark */}
-          <Image
-            source={require('@/assets/images/logo_new.jpg')}
-            style={styles.watermark}
-            resizeMode="contain"
-          />
+          {/* Hex decorations */}
+          <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+            <View style={{ position: 'absolute', right: -35, top: -30, opacity: 0.10 }}>
+              <HexFrame size={140} fill="transparent" stroke="#c9952a" strokeWidth={1.5} />
+            </View>
+            <View style={{ position: 'absolute', right: 30, top: 20, opacity: 0.06 }}>
+              <HexFrame size={70} fill="transparent" stroke="#ffffff" strokeWidth={1} />
+            </View>
+            <View style={{ position: 'absolute', left: -25, bottom: -20, opacity: 0.08 }}>
+              <HexFrame size={100} fill="transparent" stroke="#c9952a" strokeWidth={1} />
+            </View>
+          </View>
           <View style={styles.headerRow}>
             <Pressable onPress={logout} style={styles.logoutBtn}>
               <Ionicons name="log-out-outline" size={22} color="rgba(255,255,255,0.7)" />
@@ -80,13 +87,13 @@ export default function AdminDashboard() {
               <Text style={styles.adminTitle}>أ. سلوى أحمد داموس — المديرة</Text>
               <Text style={styles.greeting}>مرحباً، {user?.name}</Text>
             </View>
-            <View style={styles.avatarCircle}>
+            <HexFrame size={56} fill="#FFFFFF" stroke={Colors.accent} strokeWidth={2} style={{ marginRight: 12 }}>
               <Image
                 source={require('@/assets/images/logo_new.jpg')}
                 style={styles.logoSmall}
                 resizeMode="contain"
               />
-            </View>
+            </HexFrame>
           </View>
 
           <View style={styles.statsGrid}>
@@ -153,7 +160,9 @@ export default function AdminDashboard() {
           <Text style={styles.sectionTitle}>عن التطبيق</Text>
           <View style={styles.designerCard}>
             <LinearGradient colors={['#030612', '#050c38', '#0d1463']} style={styles.designerGrad}>
-              <Image source={require('@/assets/images/logo_new.jpg')} style={styles.designerLogo} resizeMode="contain" />
+              <HexFrame size={80} fill="#FFFFFF" stroke={Colors.accent} strokeWidth={2.5} style={{ marginBottom: 12 }}>
+                <Image source={require('@/assets/images/logo_new.jpg')} style={styles.designerLogo} resizeMode="contain" />
+              </HexFrame>
               <View style={styles.designerBadge}>
                 <Text style={styles.designerBadgeText}>روضة أحباب الله — الخاصة</Text>
               </View>
@@ -270,7 +279,7 @@ const styles = StyleSheet.create({
   financeSubValue: { fontSize: 16, color: '#FFFFFF', fontFamily: 'Inter_600SemiBold', textAlign: 'right' },
   designerCard: { borderRadius: 20, overflow: 'hidden', marginBottom: 32 },
   designerGrad: { padding: 24, alignItems: 'center' },
-  designerLogo: { width: 72, height: 72, marginBottom: 12 },
+  designerLogo: { width: 58, height: 58 },
   designerBadge: { backgroundColor: Colors.accent + '30', paddingHorizontal: 14, paddingVertical: 4, borderRadius: 20, marginBottom: 16, borderWidth: 1, borderColor: Colors.accent + '50' },
   designerBadgeText: { fontSize: 11, fontFamily: 'Inter_500Medium', color: Colors.accent },
   designerBy: { fontSize: 11, fontFamily: 'Inter_400Regular', color: 'rgba(255,255,255,0.5)', marginBottom: 4 },

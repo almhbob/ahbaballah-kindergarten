@@ -8,6 +8,7 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Colors } from '@/constants/colors';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAppData } from '@/contexts/AppDataContext';
+import HexFrame from '@/components/HexFrame';
 import * as Haptics from 'expo-haptics';
 
 const SCHEDULE = [
@@ -39,11 +40,15 @@ export default function TeacherScheduleScreen() {
     <View style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false} contentInsetAdjustmentBehavior="automatic">
         <LinearGradient colors={['#061e1a', '#0d3d35', '#1A6B5C']} style={[styles.header, { paddingTop: topPadding + 16 }]}>
-          <Image
-            source={require('@/assets/images/logo_new.jpg')}
-            style={styles.watermark}
-            resizeMode="contain"
-          />
+          {/* Hex decorations */}
+          <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+            <View style={{ position: 'absolute', right: -30, top: -25, opacity: 0.10 }}>
+              <HexFrame size={130} fill="transparent" stroke="#10B981" strokeWidth={1.5} />
+            </View>
+            <View style={{ position: 'absolute', left: -20, bottom: -15, opacity: 0.07 }}>
+              <HexFrame size={90} fill="transparent" stroke="#6EE7B7" strokeWidth={1} />
+            </View>
+          </View>
           <View style={styles.headerRow}>
             <Pressable onPress={logout} style={styles.logoutBtn}>
               <Ionicons name="log-out-outline" size={22} color="rgba(255,255,255,0.7)" />
@@ -53,9 +58,9 @@ export default function TeacherScheduleScreen() {
               <Text style={styles.schoolLocation}>صفيتة الغنوماب</Text>
               <Text style={styles.greeting}>مرحباً، {user?.name}</Text>
             </View>
-            <View style={styles.avatarCircle}>
+            <HexFrame size={52} fill="rgba(255,255,255,0.10)" stroke="#6EE7B7" strokeWidth={1.5} style={{ marginRight: 12 }}>
               <MaterialCommunityIcons name="school" size={24} color="#A7F3D0" />
-            </View>
+            </HexFrame>
           </View>
 
           <View style={styles.todayCard}>
