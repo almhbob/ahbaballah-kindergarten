@@ -125,18 +125,27 @@ const CertificateLuxury = forwardRef<View, Props>(function CertificateLuxury(
 
               {/* ─── Header ─── */}
               <View style={lx.header}>
-                {/* School logo in golden ring */}
-                <LinearGradient
-                  colors={[t.outer[0], t.gold, t.outer[0]]}
-                  style={[lx.logoRing, { width: sz(80), height: sz(80), borderRadius: sz(40), padding: sz(3) }]}
-                  start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-                >
+                {/* School logo — hexagonal shape preserved */}
+                <View style={[lx.logoWrap, {
+                  width: sz(88), height: sz(88),
+                  shadowColor: t.gold,
+                  shadowOffset: { width: 0, height: 0 },
+                  shadowOpacity: 0.6,
+                  shadowRadius: sz(8),
+                  elevation: 8,
+                }]}>
+                  {/* Soft golden glow ring */}
+                  <View style={[lx.logoGlowRing, {
+                    width: sz(88), height: sz(88),
+                    borderColor: t.gold,
+                    borderRadius: sz(6),
+                  }]} />
                   <Image
                     source={require('@/assets/images/logo_new.jpg')}
-                    style={{ width: sz(74), height: sz(74), borderRadius: sz(37) }}
-                    resizeMode="cover"
+                    style={{ width: sz(82), height: sz(82) }}
+                    resizeMode="contain"
                   />
-                </LinearGradient>
+                </View>
 
                 <Text style={[lx.schoolName, { color: t.accent, fontSize: fs(12) }]}>{schoolName}</Text>
                 <Text style={[lx.schoolSub, { color: t.gold + 'BB', fontSize: fs(8) }]}>روضة أطفال معتمدة — السودان</Text>
@@ -263,7 +272,8 @@ const lx = StyleSheet.create({
   corner: { position: 'absolute' },
 
   header: { alignItems: 'center', width: '100%', marginBottom: 4 },
-  logoRing: { alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
+  logoWrap: { alignItems: 'center', justifyContent: 'center', marginBottom: 10, position: 'relative' },
+  logoGlowRing: { position: 'absolute', borderWidth: 1.5, top: 0, left: 0 },
   schoolName: { fontFamily: 'Inter_700Bold', textAlign: 'center', letterSpacing: 0.4, marginBottom: 2 },
   schoolSub: { fontFamily: 'Inter_400Regular', textAlign: 'center', letterSpacing: 0.8, marginBottom: 8 },
   typeBanner: {},
