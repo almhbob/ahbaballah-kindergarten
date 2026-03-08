@@ -1,11 +1,11 @@
 {
   "expo": {
     "name": "روضة أحباب الله",
-    "slug": "my-app",
+    "slug": "ahbaballah-kindergarten",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "myapp",
+    "scheme": "ahbaballah",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
@@ -15,10 +15,11 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.myapp"
+      "bundleIdentifier": "com.ahbaballah.kindergarten"
     },
     "android": {
-      "package": "com.myapp",
+      "package": "com.ahbaballah.kindergarten",
+      "versionCode": 1,
       "adaptiveIcon": {
         "backgroundColor": "#0F2B4E",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
