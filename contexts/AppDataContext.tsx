@@ -318,6 +318,10 @@ interface AppDataContextValue {
   updateGraduationTask: (id: string, data: Partial<GraduationTask>) => void;
   removeGraduationTask: (id: string) => void;
   addGraduationYear: (year: string) => void;
+  certificates: Certificate[];
+  addCertificate: (cert: Certificate) => void;
+  updateCertificate: (id: string, data: Partial<Certificate>) => void;
+  removeCertificate: (id: string) => void;
   resetAllData: () => void;
 }
 
