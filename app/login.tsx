@@ -90,7 +90,7 @@ export default function LoginScreen() {
     }
     if (selectedRole === 'parent') {
       const s = students.find(s => s.parentPhone);
-      return s ? { cred: s.parentPhone, pass: '1234' } : null;
+      return s ? { cred: s.parentPhone, pass: s.parentPassword || '1234' } : null;
     }
     return null;
   }, [selectedRole, employees, students]);
@@ -144,7 +144,7 @@ export default function LoginScreen() {
     } else if (selectedRole === 'parent') {
       const rawCred = credential.trim();
       const stu = students.find(s => s.parentPhone && s.parentPhone.replace(/\s/g, '') === rawCred.replace(/\s/g, ''));
-      if (stu && trimPass === '1234') {
+      if (stu && (stu.parentPassword || '1234') === trimPass) {
         if (stu.parentDisabled) {
           setIsLoading(false);
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
