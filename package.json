@@ -16,6 +16,8 @@
     "lint:fix": "npx expo lint --fix"
   },
   "dependencies": {
+    "@capacitor/cli": "^8.2.0",
+    "@capacitor/core": "^8.2.0",
     "@expo-google-fonts/inter": "^0.4.0",
     "@expo/vector-icons": "^15.0.3",
     "@octokit/rest": "^21.1.1",
