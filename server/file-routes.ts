@@ -1,121 +1,111 @@
 import { Router, Request, Response } from 'express';
 import multer from 'multer';
-import { getSupabaseClient, BUCKET } from './supabase-client';
+import path from 'path';
+import fs from 'fs';
+import pool from './db';
 
 const router = Router();
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
+
+const UPLOADS_DIR = path.join(process.cwd(), 'uploads');
+if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+
+const storage = multer.diskStorage({
+  destination: (req, _file, cb) => {
+    const user = (req as any).session?.user;
+    const dir = path.join(UPLOADS_DIR, user?.role || 'misc', String(user?.id || '0'));
+    fs.mkdirSync(dir, { recursive: true });
+    cb(null, dir);
+  },
+  filename: (_req, file, cb) => {
+    const safe = file.originalname.replace(/[^\w.\-]+/g, '_');
+    cb(null, `${Date.now()}_${safe}`);
+  },
+});
+
+const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } });
 
 function requireAuth(req: Request, res: Response, next: Function) {
-  if (!req.session.user) return res.status(401).json({ error: 'يجب تسجيل الدخول أولاً' });
+  if (!req.session.user) return res.status(401).json({ ok: false, error: 'يجب تسجيل الدخول أولاً' });
   next();
-}
-
-function safeFileName(name: string): string {
-  return String(name || 'file').replace(/[^\w.\-]+/g, '_').replace(/_+/g, '_');
-}
-
-function buildStoragePath(role: string, userId: number, originalName: string): string {
-  return `${role}/${userId}/${Date.now()}_${safeFileName(originalName)}`;
 }
 
 router.get('/', requireAuth, async (req: Request, res: Response) => {
   try {
-    const sb = getSupabaseClient();
-    const { data, error } = await sb
-      .from('files')
-      .select('id, file_name, file_path, mime_type, size_bytes, public_url, created_at')
-      .eq('user_id', req.session.user!.id)
-      .order('created_at', { ascending: false });
-
-    if (error) throw error;
-    return res.json({ ok: true, files: data || [] });
+    const { rows } = await pool.query(
+      `SELECT id, file_name, file_path, mime_type, size_bytes, public_url, created_at
+       FROM files WHERE user_id = $1 ORDER BY created_at DESC`,
+      [req.session.user!.id]
+    );
+    return res.json({ ok: true, files: rows });
   } catch (err: any) {
     console.error('[files/list]', err);
-    return res.status(500).json({ error: err?.message || 'خطأ في جلب الملفات' });
+    return res.status(500).json({ ok: false, error: err?.message || 'خطأ في جلب الملفات' });
   }
 });
 
 router.post('/upload', requireAuth, upload.single('file'), async (req: Request, res: Response) => {
   try {
-    if (!req.file) return res.status(400).json({ error: 'لم يُرسَل أي ملف' });
+    if (!req.file) return res.status(400).json({ ok: false, error: 'لم يُرسَل أي ملف' });
 
-    const sb = getSupabaseClient();
     const user = req.session.user!;
-    const filePath = buildStoragePath(user.role, user.id, req.file.originalname);
+    const relativePath = path.relative(process.cwd(), req.file.path).replace(/\\/g, '/');
+    const parts = relativePath.split('/');
+    const role = parts[1] || user.role;
+    const userId = parts[2] || String(user.id);
+    const filename = parts[3] || path.basename(req.file.path);
+    const publicUrl = `/api/files/serve/${role}/${userId}/${filename}`;
 
-    const { error: uploadError } = await sb.storage
-      .from(BUCKET)
-      .upload(filePath, req.file.buffer, {
-        contentType: req.file.mimetype,
-        upsert: false,
-      });
+    const { rows } = await pool.query(
+      `INSERT INTO files (user_id, role, file_name, file_path, mime_type, size_bytes, public_url)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       RETURNING id, file_name, file_path, mime_type, size_bytes, public_url, created_at`,
+      [user.id, user.role, req.file.originalname, relativePath, req.file.mimetype, req.file.size, publicUrl]
+    );
 
-    if (uploadError) throw uploadError;
-
-    const { data: urlData } = sb.storage.from(BUCKET).getPublicUrl(filePath);
-    const publicUrl = urlData?.publicUrl || null;
-
-    const { data, error: dbError } = await sb
-      .from('files')
-      .insert([{
-        user_id: user.id,
-        role: user.role,
-        file_name: req.file.originalname,
-        file_path: filePath,
-        mime_type: req.file.mimetype,
-        size_bytes: req.file.size,
-        public_url: publicUrl,
-      }])
-      .select('id, file_name, file_path, mime_type, size_bytes, public_url, created_at')
-      .single();
-
-    if (dbError) throw dbError;
-
-    return res.json({ ok: true, file: data });
+    return res.json({ ok: true, file: rows[0] });
   } catch (err: any) {
     console.error('[files/upload]', err);
-    return res.status(500).json({ error: err?.message || 'فشل رفع الملف' });
+    return res.status(500).json({ ok: false, error: err?.message || 'فشل رفع الملف' });
+  }
+});
+
+router.get('/serve/:role/:userId/:filename', async (req: Request, res: Response) => {
+  try {
+    const { role, userId, filename } = req.params;
+    const filePath = path.join(UPLOADS_DIR, role, userId, filename);
+    if (!filePath.startsWith(UPLOADS_DIR)) return res.status(403).json({ ok: false, error: 'غير مسموح' });
+    if (!fs.existsSync(filePath)) return res.status(404).json({ ok: false, error: 'الملف غير موجود' });
+    return res.sendFile(filePath);
+  } catch (err: any) {
+    return res.status(500).json({ ok: false, error: err?.message });
   }
 });
 
 router.delete('/:id', requireAuth, async (req: Request, res: Response) => {
   try {
-    const sb = getSupabaseClient();
-    const { id } = req.params;
+    const { rows } = await pool.query(
+      'SELECT file_path, user_id FROM files WHERE id = $1 AND user_id = $2 LIMIT 1',
+      [req.params.id, req.session.user!.id]
+    );
+    if (!rows[0]) return res.status(404).json({ ok: false, error: 'الملف غير موجود' });
 
-    const { data: file, error: fetchError } = await sb
-      .from('files')
-      .select('file_path, user_id')
-      .eq('id', id)
-      .eq('user_id', req.session.user!.id)
-      .maybeSingle();
+    const fullPath = path.join(process.cwd(), rows[0].file_path);
+    if (fs.existsSync(fullPath)) fs.unlinkSync(fullPath);
 
-    if (fetchError) throw fetchError;
-    if (!file) return res.status(404).json({ error: 'الملف غير موجود' });
-
-    await sb.storage.from(BUCKET).remove([file.file_path]);
-
-    const { error: deleteError } = await sb.from('files').delete().eq('id', id);
-    if (deleteError) throw deleteError;
-
+    await pool.query('DELETE FROM files WHERE id = $1', [req.params.id]);
     return res.json({ ok: true });
   } catch (err: any) {
     console.error('[files/delete]', err);
-    return res.status(500).json({ error: err?.message || 'فشل حذف الملف' });
+    return res.status(500).json({ ok: false, error: err?.message || 'فشل حذف الملف' });
   }
 });
 
 router.get('/count', requireAuth, async (req: Request, res: Response) => {
   try {
-    const sb = getSupabaseClient();
-    const { count, error } = await sb
-      .from('files')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', req.session.user!.id);
-    if (error) throw error;
-    return res.json({ ok: true, count: count || 0 });
+    const { rows } = await pool.query('SELECT COUNT(*) as count FROM files WHERE user_id = $1', [req.session.user!.id]);
+    return res.json({ ok: true, count: parseInt(rows[0].count, 10) });
   } catch (err: any) {
-    return res.status(500).json({ error: err?.message });
+    return res.status(500).json({ ok: false, error: err?.message });
   }
 });
 

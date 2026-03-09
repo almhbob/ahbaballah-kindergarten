@@ -4,7 +4,6 @@ import session from "express-session";
 import { registerRoutes } from "./routes";
 import * as fs from "fs";
 import * as path from "path";
-import "./session.d";
 
 const app = express();
 const log = console.log;
