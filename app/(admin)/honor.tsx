@@ -1,299 +1,534 @@
-import React, { useMemo, useState } from 'react';
-import HexFrame from '@/components/HexFrame';
+import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Pressable,
-  Platform, FlatList,
+  Platform, Animated, Easing,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { Colors, Shadows } from '@/constants/colors';
+import { Colors } from '@/constants/colors';
 import { useAppData, buildHonorBoard, HonorEntry, ParentHonorEntry } from '@/contexts/AppDataContext';
-
-const LEVELS = ['مستوى ثاني', 'مستوى أول', 'براعم'];
-
-const LEVEL_META: Record<string, { label: string; color: string; bg: string; icon: string }> = {
-  'مستوى ثاني': { label: 'مستوى ثاني', color: '#3B82F6', bg: '#EFF6FF', icon: 'star-circle' },
-  'مستوى أول':  { label: 'مستوى أول',  color: '#10B981', bg: '#ECFDF5', icon: 'leaf-circle' },
-  'براعم':      { label: 'براعم',      color: '#F59E0B', bg: '#FFFBEB', icon: 'heart-circle' },
-};
-
-const BADGE_META = {
-  ذهبي:   { color: '#FFD700', bg: '#FFF8DC', icon: 'trophy',       rank: '🥇' },
-  فضي:    { color: '#A8B8C8', bg: '#F0F4F8', icon: 'medal',        rank: '🥈' },
-  برونزي: { color: '#CD7F32', bg: '#FDF5EC', icon: 'medal-outline', rank: '🥉' },
-};
+import HexFrame from '@/components/HexFrame';
+import * as Haptics from 'expo-haptics';
 
 type Tab = 'مستوى ثاني' | 'مستوى أول' | 'براعم' | 'parents';
 
-// ─── Podium component ──────────────────────────────────────────────────────
-function Podium({ entries, isParent = false }: {
+const LEVEL_META: Record<string, { color: string; grad: readonly [string, string] }> = {
+  'مستوى ثاني': { color: '#3B82F6', grad: ['#1D4ED8', '#3B82F6'] },
+  'مستوى أول':  { color: '#10B981', grad: ['#059669', '#10B981'] },
+  'براعم':      { color: '#F59E0B', grad: ['#D97706', '#F59E0B'] },
+};
+
+const BADGE_COLORS = ['#FFD700', '#A8B8C8', '#CD7F32'];
+const MEDALS = ['🥇', '🥈', '🥉'];
+
+// ─── Sparkle particle (one animated dot) ──────────────────────────────────
+function Sparkle({ delay, x, y, size, color }: {
+  delay: number; x: number; y: number; size: number; color: string;
+}) {
+  const anim = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.delay(delay),
+        Animated.timing(anim, { toValue: 1, duration: 1400, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+        Animated.timing(anim, { toValue: 0, duration: 800, useNativeDriver: true }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, []);
+
+  const opacity = anim.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0, 1, 0] });
+  const scale  = anim.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0.2, 1.4, 0.4] });
+  const translateY = anim.interpolate({ inputRange: [0, 1], outputRange: [0, -18] });
+
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={{
+        position: 'absolute', left: x, top: y,
+        width: size, height: size, borderRadius: size / 2,
+        backgroundColor: color,
+        opacity, transform: [{ scale }, { translateY }],
+      }}
+    />
+  );
+}
+
+// ─── Pulsing glow ring around the #1 avatar ───────────────────────────────
+function GlowRing({ color, size }: { color: string; size: number }) {
+  const pulse = useRef(new Animated.Value(0.8)).current;
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulse, { toValue: 1.18, duration: 900, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+        Animated.timing(pulse, { toValue: 0.8, duration: 900, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, []);
+
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={{
+        position: 'absolute',
+        width: size + 20, height: size + 20,
+        borderRadius: (size + 20) / 2,
+        backgroundColor: color + '30',
+        transform: [{ scale: pulse }],
+        alignSelf: 'center',
+      }}
+    />
+  );
+}
+
+// ─── Animated score counter ────────────────────────────────────────────────
+function AnimatedScore({ target, color }: { target: number; color: string }) {
+  const anim = useRef(new Animated.Value(0)).current;
+  const [display, setDisplay] = useState(0);
+
+  useEffect(() => {
+    anim.setValue(0);
+    const listener = anim.addListener(({ value }) => setDisplay(Math.round(value)));
+    Animated.timing(anim, {
+      toValue: target,
+      duration: 1000,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: false,
+    }).start();
+    return () => anim.removeListener(listener);
+  }, [target]);
+
+  return (
+    <Text style={[scoreCounterStyles.score, { color }]}>{display}</Text>
+  );
+}
+const scoreCounterStyles = StyleSheet.create({
+  score: { fontSize: 20, fontFamily: 'Inter_700Bold' },
+});
+
+// ─── Single podium column (extracted to avoid hook-in-map) ─────────────────
+function PodiumColumn({
+  entry, pos, isParent, height, medal, badgeColor, isFirst,
+}: {
+  entry: HonorEntry | ParentHonorEntry;
+  pos: number; isParent: boolean;
+  height: number; medal: string; badgeColor: string; isFirst: boolean;
+}) {
+  const slideAnim = useRef(new Animated.Value(60)).current;
+  const fadeAnim  = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(slideAnim, { toValue: 0, duration: 500, delay: pos * 120, easing: Easing.out(Easing.back(1.5)), useNativeDriver: true }),
+      Animated.timing(fadeAnim, { toValue: 1, duration: 400, delay: pos * 120, useNativeDriver: true }),
+    ]).start();
+  }, []);
+
+  const getName = () => isParent
+    ? (entry as ParentHonorEntry).parentName
+    : (entry as HonorEntry).studentName;
+  const getSub = () => isParent
+    ? `طفل: ${(entry as ParentHonorEntry).studentName.split(' ')[0]}`
+    : `${(entry as HonorEntry).gradeAvg}%`;
+
+  const initials = getName().split(' ').slice(0, 2).map((w: string) => w[0]).join('');
+  const hexSize = isFirst ? 64 : 52;
+
+  return (
+    <Animated.View style={[podStyles.col, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+      {isFirst && <GlowRing color={badgeColor} size={hexSize + 12} />}
+      <Text style={podStyles.medal}>{medal}</Text>
+      <HexFrame
+        size={hexSize}
+        fill={badgeColor + '25'}
+        stroke={badgeColor}
+        strokeWidth={isFirst ? 2.5 : 2}
+      >
+        <Text style={[podStyles.initials, { fontSize: isFirst ? 20 : 15, color: badgeColor }]}>{initials}</Text>
+      </HexFrame>
+      <Text style={[podStyles.name, { fontSize: isFirst ? 11 : 10 }]} numberOfLines={2}>
+        {getName().split(' ').slice(0, 2).join('\n')}
+      </Text>
+      <Text style={podStyles.sub}>{getSub()}</Text>
+      <View style={[podStyles.block, {
+        height,
+        backgroundColor: badgeColor + '18',
+        borderTopColor: badgeColor,
+      }]}>
+        <AnimatedScore target={entry.score} color={badgeColor} />
+        <Text style={podStyles.blockLabel}>نقطة</Text>
+      </View>
+    </Animated.View>
+  );
+}
+
+const podStyles = StyleSheet.create({
+  wrap: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'center', marginBottom: 20, paddingHorizontal: 12 },
+  col: { flex: 1, alignItems: 'center', gap: 4, position: 'relative' },
+  medal: { fontSize: 24 },
+  initials: { fontFamily: 'Inter_700Bold' },
+  name: { fontFamily: 'Inter_600SemiBold', color: Colors.text, textAlign: 'center', lineHeight: 15 },
+  sub: { fontSize: 9, fontFamily: 'Inter_400Regular', color: Colors.textSecondary, textAlign: 'center' },
+  block: {
+    width: '88%', borderTopWidth: 3,
+    borderTopLeftRadius: 8, borderTopRightRadius: 8,
+    alignItems: 'center', justifyContent: 'center', paddingTop: 8,
+  },
+  blockLabel: { fontSize: 9, fontFamily: 'Inter_400Regular', color: Colors.textSecondary },
+});
+
+// ─── Podium (3 columns, order: 2nd, 1st, 3rd) ─────────────────────────────
+function Podium({ entries, isParent }: {
   entries: (HonorEntry | ParentHonorEntry)[];
-  isParent?: boolean;
+  isParent: boolean;
 }) {
   const top3 = entries.slice(0, 3);
-  const order = [1, 0, 2]; // show 2nd, 1st, 3rd
-  const heights = [90, 120, 70];
-  const badgeColors = ['#A8B8C8', '#FFD700', '#CD7F32'];
-  const medals = ['🥈', '🥇', '🥉'];
+  if (top3.length < 2) return null;
 
-  if (top3.length === 0) return null;
-
-  const getName = (e: HonorEntry | ParentHonorEntry) =>
-    isParent ? (e as ParentHonorEntry).parentName : (e as HonorEntry).studentName;
-  const getSub = (e: HonorEntry | ParentHonorEntry) =>
-    isParent
-      ? `طفل: ${(e as ParentHonorEntry).studentName.split(' ')[0]}`
-      : `${(e as HonorEntry).level} • ${(e as HonorEntry).gradeAvg}%`;
+  const ORDER = [1, 0, 2];
+  const HEIGHTS = [90, 124, 70];
 
   return (
     <View style={podStyles.wrap}>
-      {order.map((idx, pos) => {
+      {ORDER.map((idx, pos) => {
         const entry = top3[idx];
         if (!entry) return <View key={pos} style={{ flex: 1 }} />;
-        const initials = getName(entry).split(' ').slice(0, 2).map(w => w[0]).join('');
         return (
-          <View key={pos} style={podStyles.col}>
-            <Text style={podStyles.medal}>{medals[pos]}</Text>
-            <HexFrame
-              size={pos === 1 ? 62 : 52}
-              fill={badgeColors[pos] + '22'}
-              stroke={badgeColors[pos]}
-              strokeWidth={2}
-            >
-              <Text style={[podStyles.initials, { fontSize: pos === 1 ? 20 : 16, color: badgeColors[pos] }]}>
-                {initials}
-              </Text>
-            </HexFrame>
-            <Text style={[podStyles.name, { fontSize: pos === 1 ? 12 : 10 }]} numberOfLines={2}>
-              {getName(entry).split(' ').slice(0, 2).join('\n')}
-            </Text>
-            <Text style={podStyles.subName}>{getSub(entry)}</Text>
-            <View style={[podStyles.podiumBlock, {
-              height: heights[pos],
-              backgroundColor: badgeColors[pos] + '22',
-              borderTopColor: badgeColors[pos],
-            }]}>
-              <Text style={[podStyles.scoreText, { color: badgeColors[pos] }]}>{entry.score}</Text>
-              <Text style={podStyles.scoreLabel}>نقطة</Text>
-            </View>
-          </View>
+          <PodiumColumn
+            key={idx}
+            entry={entry}
+            pos={pos}
+            isParent={isParent}
+            height={HEIGHTS[pos]}
+            medal={MEDALS[pos]}
+            badgeColor={BADGE_COLORS[pos]}
+            isFirst={pos === 1}
+          />
         );
       })}
     </View>
   );
 }
 
-const podStyles = StyleSheet.create({
-  wrap: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'center', marginBottom: 20, paddingHorizontal: 16 },
-  col: { flex: 1, alignItems: 'center', gap: 4 },
-  medal: { fontSize: 22 },
-  avatar: { borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
-  initials: { fontFamily: 'Inter_700Bold' },
-  name: { fontFamily: 'Inter_600SemiBold', color: Colors.text, textAlign: 'center', lineHeight: 16 },
-  subName: { fontSize: 9, fontFamily: 'Inter_400Regular', color: Colors.textSecondary, textAlign: 'center' },
-  podiumBlock: {
-    width: '90%', borderTopWidth: 3, borderTopLeftRadius: 8, borderTopRightRadius: 8,
-    alignItems: 'center', justifyContent: 'center', paddingTop: 8,
-  },
-  scoreText: { fontSize: 18, fontFamily: 'Inter_700Bold' },
-  scoreLabel: { fontSize: 9, fontFamily: 'Inter_400Regular', color: Colors.textSecondary },
-});
+// ─── Animated leaderboard row ──────────────────────────────────────────────
+function AnimatedRow({ children, index }: { children: React.ReactNode; index: number }) {
+  const slideAnim = useRef(new Animated.Value(40)).current;
+  const fadeAnim  = useRef(new Animated.Value(0)).current;
 
-// ─── Score bar ────────────────────────────────────────────────────────────
-function ScoreBar({ value, color }: { value: number; color: string }) {
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(slideAnim, { toValue: 0, duration: 350, delay: index * 60, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+      Animated.timing(fadeAnim,  { toValue: 1, duration: 300, delay: index * 60, useNativeDriver: true }),
+    ]).start();
+  }, []);
+
   return (
-    <View style={barStyles.track}>
-      <View style={[barStyles.fill, { width: `${value}%` as any, backgroundColor: color }]} />
-    </View>
+    <Animated.View style={{ opacity: fadeAnim, transform: [{ translateX: slideAnim }] }}>
+      {children}
+    </Animated.View>
   );
 }
-const barStyles = StyleSheet.create({
-  track: { flex: 1, height: 5, backgroundColor: '#E8EDF8', borderRadius: 3, overflow: 'hidden', marginTop: 2 },
-  fill: { height: 5, borderRadius: 3 },
-});
 
-// ─── Student honor row ────────────────────────────────────────────────────
+// ─── Student honor row ─────────────────────────────────────────────────────
 function StudentRow({ entry, rank }: { entry: HonorEntry; rank: number }) {
-  const meta = entry.badge ? BADGE_META[entry.badge] : null;
   const initials = entry.studentName.split(' ').slice(0, 2).map(w => w[0]).join('');
+  const color = LEVEL_META[entry.level]?.color ?? Colors.primary;
+  const isTop = rank <= 3;
+  const medalOrRank = isTop ? MEDALS[rank - 1] : `#${rank}`;
+
   return (
-    <View style={rowStyles.card}>
-      <View style={[rowStyles.rankBadge, meta ? { backgroundColor: meta.bg } : { backgroundColor: Colors.surfaceAlt }]}>
-        <Text style={[rowStyles.rankNum, { color: meta ? meta.color : Colors.textSecondary }]}>
-          {rank <= 3 ? ['🥇', '🥈', '🥉'][rank - 1] : `#${rank}`}
+    <View style={[rowStyles.card, isTop && { borderWidth: 1, borderColor: BADGE_COLORS[rank - 1] + '50' }]}>
+      <View style={[rowStyles.rankBox, { backgroundColor: isTop ? BADGE_COLORS[rank - 1] + '20' : Colors.surfaceAlt }]}>
+        <Text style={[rowStyles.rankTxt, { color: isTop ? BADGE_COLORS[rank - 1] : Colors.textSecondary }]}>
+          {medalOrRank}
         </Text>
       </View>
-      <HexFrame
-        size={46}
-        fill={(LEVEL_META[entry.level]?.color ?? '#888') + '18'}
-        stroke={(LEVEL_META[entry.level]?.color ?? '#888') + '50'}
-        strokeWidth={1.5}
-      >
-        <Text style={[rowStyles.avatarText, { color: LEVEL_META[entry.level]?.color ?? '#888' }]}>{initials}</Text>
+      <HexFrame size={46} fill={color + '18'} stroke={color + '55'} strokeWidth={1.5}>
+        <Text style={[rowStyles.avatarTxt, { color }]}>{initials}</Text>
       </HexFrame>
       <View style={rowStyles.info}>
         <Text style={rowStyles.name}>{entry.studentName}</Text>
-        <View style={rowStyles.pillRow}>
-          <View style={[rowStyles.pill, { backgroundColor: Colors.surfaceAlt }]}>
-            <Ionicons name="school-outline" size={9} color={Colors.textSecondary} />
-            <Text style={rowStyles.pillTxt}>{entry.gradeAvg}%</Text>
-          </View>
-          <View style={[rowStyles.pill, { backgroundColor: Colors.surfaceAlt }]}>
-            <Ionicons name="calendar-outline" size={9} color={Colors.textSecondary} />
-            <Text style={rowStyles.pillTxt}>{entry.attendance}%</Text>
-          </View>
-          <View style={[rowStyles.pill, {
-            backgroundColor:
-              entry.behavior === 'ممتاز' ? '#ECFDF5' : entry.behavior === 'جيد' ? '#EFF6FF' : '#FFF8DC',
-          }]}>
-            <Text style={[rowStyles.pillTxt, {
-              color: entry.behavior === 'ممتاز' ? Colors.success : entry.behavior === 'جيد' ? '#3B82F6' : Colors.warning,
-            }]}>{entry.behavior}</Text>
-          </View>
+        <View style={rowStyles.pills}>
+          <Pill icon="school-outline" color={Colors.info}    text={`${entry.gradeAvg}%`} />
+          <Pill icon="calendar-outline" color={Colors.success} text={`${entry.attendance}%`} />
+          <BehaviorPill behavior={entry.behavior} />
         </View>
-        <ScoreBar value={entry.score} color={LEVEL_META[entry.level]?.color ?? '#888'} />
+        <ScoreTrack value={entry.score} color={color} />
       </View>
-      <View style={rowStyles.scoreBox}>
-        <Text style={rowStyles.score}>{entry.score}</Text>
-        <Text style={rowStyles.scoreLabel}>نقطة</Text>
+      <View style={rowStyles.scoreWrap}>
+        <AnimatedScore target={entry.score} color={color} />
+        <Text style={rowStyles.scoreLbl}>نقطة</Text>
       </View>
     </View>
   );
 }
 
-// ─── Parent honor row ─────────────────────────────────────────────────────
+// ─── Parent honor row ──────────────────────────────────────────────────────
 function ParentRow({ entry, rank }: { entry: ParentHonorEntry; rank: number }) {
-  const meta = entry.badge ? BADGE_META[entry.badge] : null;
   const initials = entry.parentName.split(' ').slice(0, 2).map(w => w[0]).join('');
+  const color = '#9C27B0';
+  const isTop = rank <= 3;
+  const medalOrRank = isTop ? MEDALS[rank - 1] : `#${rank}`;
+
   return (
-    <View style={rowStyles.card}>
-      <View style={[rowStyles.rankBadge, meta ? { backgroundColor: meta.bg } : { backgroundColor: Colors.surfaceAlt }]}>
-        <Text style={[rowStyles.rankNum, { color: meta ? meta.color : Colors.textSecondary }]}>
-          {rank <= 3 ? ['🥇', '🥈', '🥉'][rank - 1] : `#${rank}`}
+    <View style={[rowStyles.card, isTop && { borderWidth: 1, borderColor: BADGE_COLORS[rank - 1] + '50' }]}>
+      <View style={[rowStyles.rankBox, { backgroundColor: isTop ? BADGE_COLORS[rank - 1] + '20' : Colors.surfaceAlt }]}>
+        <Text style={[rowStyles.rankTxt, { color: isTop ? BADGE_COLORS[rank - 1] : Colors.textSecondary }]}>
+          {medalOrRank}
         </Text>
       </View>
       <HexFrame size={46} fill="#FCE4FF" stroke="#9C27B080" strokeWidth={1.5}>
-        <Text style={[rowStyles.avatarText, { color: '#9C27B0' }]}>{initials}</Text>
+        <Text style={[rowStyles.avatarTxt, { color }]}>{initials}</Text>
       </HexFrame>
       <View style={rowStyles.info}>
         <Text style={rowStyles.name}>{entry.parentName}</Text>
-        <Text style={rowStyles.subText}>طفل: {entry.studentName.split(' ').slice(0, 2).join(' ')}</Text>
-        <View style={rowStyles.pillRow}>
-          <View style={[rowStyles.pill, { backgroundColor: '#FFF8DC' }]}>
-            <Ionicons name="star-outline" size={9} color="#F59E0B" />
-            <Text style={[rowStyles.pillTxt, { color: '#92680B' }]}>أداء الطفل {entry.childScore}</Text>
-          </View>
-          <View style={[rowStyles.pill, { backgroundColor: '#EFF6FF' }]}>
-            <Ionicons name="chatbubbles-outline" size={9} color="#3B82F6" />
-            <Text style={[rowStyles.pillTxt, { color: '#1D4ED8' }]}>{entry.messageCount} رسالة</Text>
-          </View>
+        <Text style={rowStyles.sub}>طفل: {entry.studentName.split(' ').slice(0, 2).join(' ')}</Text>
+        <View style={rowStyles.pills}>
+          <Pill icon="star-outline"       color="#F59E0B" text={`طفل ${entry.childScore}`} />
+          <Pill icon="chatbubbles-outline" color="#3B82F6" text={`${entry.messageCount} رسالة`} />
         </View>
-        <ScoreBar value={entry.score} color="#9C27B0" />
+        <ScoreTrack value={entry.score} color={color} />
       </View>
-      <View style={rowStyles.scoreBox}>
-        <Text style={[rowStyles.score, { color: '#9C27B0' }]}>{entry.score}</Text>
-        <Text style={rowStyles.scoreLabel}>نقطة</Text>
+      <View style={rowStyles.scoreWrap}>
+        <AnimatedScore target={entry.score} color={color} />
+        <Text style={rowStyles.scoreLbl}>نقطة</Text>
       </View>
     </View>
   );
 }
 
-const rowStyles = StyleSheet.create({
-  card: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.surface,
-    borderRadius: 16, padding: 12, gap: 10,
-    ...(Platform.OS === 'web'
-      ? { boxShadow: '0px 1px 6px rgba(26,31,92,0.07)' }
-      : { shadowColor: '#1a1f5c', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.07, shadowRadius: 4, elevation: 2 }),
-  },
-  rankBadge: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-  rankNum: { fontSize: 14, fontFamily: 'Inter_700Bold' },
-  avatar: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
-  avatarText: { fontSize: 15, fontFamily: 'Inter_700Bold' },
-  info: { flex: 1 },
-  name: { fontSize: 13, fontFamily: 'Inter_600SemiBold', color: Colors.text, marginBottom: 3, textAlign: 'right' },
-  subText: { fontSize: 10, fontFamily: 'Inter_400Regular', color: Colors.textSecondary, textAlign: 'right', marginBottom: 3 },
-  pillRow: { flexDirection: 'row', gap: 4, justifyContent: 'flex-end', marginBottom: 4, flexWrap: 'wrap' },
-  pill: { flexDirection: 'row', alignItems: 'center', gap: 2, paddingHorizontal: 5, paddingVertical: 2, borderRadius: 6 },
-  pillTxt: { fontSize: 9, fontFamily: 'Inter_500Medium', color: Colors.textSecondary },
-  scoreBox: { alignItems: 'center', minWidth: 44 },
-  score: { fontSize: 18, fontFamily: 'Inter_700Bold', color: Colors.primary },
-  scoreLabel: { fontSize: 9, fontFamily: 'Inter_400Regular', color: Colors.textSecondary },
+function Pill({ icon, color, text }: { icon: string; color: string; text: string }) {
+  return (
+    <View style={[rowStyles.pill, { backgroundColor: color + '15' }]}>
+      <Ionicons name={icon as any} size={9} color={color} />
+      <Text style={[rowStyles.pillTxt, { color }]}>{text}</Text>
+    </View>
+  );
+}
+
+function BehaviorPill({ behavior }: { behavior: string }) {
+  const map: Record<string, { color: string; bg: string }> = {
+    'ممتاز': { color: Colors.success, bg: '#ECFDF5' },
+    'جيد':   { color: Colors.info,    bg: '#EFF6FF' },
+    'مقبول': { color: Colors.warning,  bg: '#FFFBEB' },
+    'يحتاج متابعة': { color: Colors.danger, bg: '#FEF2F2' },
+  };
+  const m = map[behavior] ?? { color: Colors.textSecondary, bg: Colors.surfaceAlt };
+  return (
+    <View style={[rowStyles.pill, { backgroundColor: m.bg }]}>
+      <Text style={[rowStyles.pillTxt, { color: m.color }]}>{behavior}</Text>
+    </View>
+  );
+}
+
+function ScoreTrack({ value, color }: { value: number; color: string }) {
+  const widthAnim = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.timing(widthAnim, { toValue: value, duration: 900, easing: Easing.out(Easing.cubic), useNativeDriver: false }).start();
+  }, [value]);
+  const width = widthAnim.interpolate({ inputRange: [0, 100], outputRange: ['0%', '100%'] });
+  return (
+    <View style={trackStyles.track}>
+      <Animated.View style={[trackStyles.fill, { width, backgroundColor: color }]} />
+    </View>
+  );
+}
+const trackStyles = StyleSheet.create({
+  track: { height: 4, backgroundColor: Colors.borderLight, borderRadius: 2, overflow: 'hidden', marginTop: 4 },
+  fill: { height: 4, borderRadius: 2 },
 });
 
-// ─── Main screen ──────────────────────────────────────────────────────────
+const rowStyles = StyleSheet.create({
+  card: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: Colors.surface, borderRadius: 16, padding: 12, gap: 10,
+    ...(Platform.OS === 'web'
+      ? { boxShadow: '0px 2px 8px rgba(12,17,85,0.07)' }
+      : { shadowColor: '#0c1155', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.07, shadowRadius: 6, elevation: 2 }),
+  },
+  rankBox: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  rankTxt: { fontSize: 13, fontFamily: 'Inter_700Bold' },
+  avatarTxt: { fontSize: 15, fontFamily: 'Inter_700Bold' },
+  info: { flex: 1 },
+  name: { fontSize: 13, fontFamily: 'Inter_600SemiBold', color: Colors.text, textAlign: 'right', marginBottom: 3 },
+  sub: { fontSize: 10, fontFamily: 'Inter_400Regular', color: Colors.textSecondary, textAlign: 'right', marginBottom: 3 },
+  pills: { flexDirection: 'row', gap: 4, justifyContent: 'flex-end', flexWrap: 'wrap', marginBottom: 2 },
+  pill: { flexDirection: 'row', alignItems: 'center', gap: 3, paddingHorizontal: 5, paddingVertical: 2, borderRadius: 6 },
+  pillTxt: { fontSize: 9, fontFamily: 'Inter_500Medium' },
+  scoreWrap: { alignItems: 'center', minWidth: 44 },
+  scoreLbl: { fontSize: 9, fontFamily: 'Inter_400Regular', color: Colors.textSecondary },
+});
+
+// ─── Congratulations banner (top 1 celebration) ───────────────────────────
+function CongratsBanner({ name, score, color }: { name: string; score: number; color: string }) {
+  const scaleAnim = useRef(new Animated.Value(0.7)).current;
+  const fadeAnim  = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.spring(scaleAnim, { toValue: 1, friction: 5, tension: 80, useNativeDriver: true }),
+      Animated.timing(fadeAnim, { toValue: 1, duration: 400, useNativeDriver: true }),
+    ]).start();
+  }, [name]);
+
+  const firstName = name.split(' ')[0];
+
+  return (
+    <Animated.View style={[bannerStyles.wrap, { opacity: fadeAnim, transform: [{ scale: scaleAnim }] }]}>
+      <LinearGradient
+        colors={['rgba(255,215,0,0.15)', 'rgba(255,215,0,0.05)']}
+        style={bannerStyles.grad}
+        start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+      >
+        <Text style={bannerStyles.emoji}>🎉</Text>
+        <View style={bannerStyles.textWrap}>
+          <Text style={bannerStyles.congrats}>تهانينا!</Text>
+          <Text style={bannerStyles.name}>{firstName} في المركز الأول</Text>
+          <Text style={bannerStyles.score}>بمجموع {score} نقطة</Text>
+        </View>
+        <Text style={bannerStyles.emoji}>🌟</Text>
+      </LinearGradient>
+    </Animated.View>
+  );
+}
+const bannerStyles = StyleSheet.create({
+  wrap: { marginHorizontal: 16, marginBottom: 12, borderRadius: 16, overflow: 'hidden', borderWidth: 1, borderColor: '#FFD70040' },
+  grad: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12 },
+  emoji: { fontSize: 28 },
+  textWrap: { alignItems: 'center', flex: 1 },
+  congrats: { fontSize: 14, fontFamily: 'Inter_700Bold', color: '#B8860B' },
+  name: { fontSize: 13, fontFamily: 'Inter_600SemiBold', color: Colors.text, textAlign: 'center', marginTop: 2 },
+  score: { fontSize: 11, fontFamily: 'Inter_400Regular', color: Colors.textSecondary },
+});
+
+// ─── Sparkle overlay ───────────────────────────────────────────────────────
+const SPARKLE_CONFIGS = [
+  { delay: 0,    x: 20,  y: 30, size: 7,  color: '#FFD700' },
+  { delay: 200,  x: 120, y: 10, size: 5,  color: '#FFA500' },
+  { delay: 400,  x: 220, y: 40, size: 8,  color: '#FFD700' },
+  { delay: 600,  x: 300, y: 15, size: 5,  color: '#FFF8DC' },
+  { delay: 150,  x: 60,  y: 60, size: 4,  color: '#FFD700' },
+  { delay: 350,  x: 170, y: 55, size: 6,  color: '#FFA500' },
+  { delay: 550,  x: 270, y: 35, size: 4,  color: '#FFD700' },
+  { delay: 750,  x: 340, y: 60, size: 7,  color: '#FFF8DC' },
+];
+
+// ─── Trophy shimmer ────────────────────────────────────────────────────────
+function TrophyShimmer() {
+  const rotate = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(rotate, { toValue: 1, duration: 1800, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+        Animated.timing(rotate, { toValue: 0, duration: 1800, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, []);
+
+  const rotateDeg = rotate.interpolate({ inputRange: [0, 1], outputRange: ['-10deg', '10deg'] });
+  const scale = rotate.interpolate({ inputRange: [0, 0.5, 1], outputRange: [1, 1.12, 1] });
+
+  return (
+    <Animated.View style={{ transform: [{ rotate: rotateDeg }, { scale }] }}>
+      <Text style={{ fontSize: 36 }}>🏆</Text>
+    </Animated.View>
+  );
+}
+
+// ─── Main screen ───────────────────────────────────────────────────────────
 export default function HonorScreen() {
   const insets = useSafeAreaInsets();
   const { students, messages } = useAppData();
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
   const bottomPadding = Platform.OS === 'web' ? 34 : insets.bottom;
   const [tab, setTab] = useState<Tab>('مستوى ثاني');
+  const [listKey, setListKey] = useState(0);
 
   const { byLevel, parents } = useMemo(
     () => buildHonorBoard(students, messages),
     [students, messages]
   );
 
-  const tabs: { key: Tab; label: string; icon: string; color: string }[] = [
-    { key: 'مستوى ثاني',     label: 'مستوى ثاني',     icon: 'star',        color: '#3B82F6' },
-    { key: 'مستوى أول',     label: 'مستوى أول',     icon: 'leaf',        color: '#10B981' },
-    { key: 'براعم', label: 'براعم',    icon: 'heart',       color: '#F59E0B' },
-    { key: 'parents', label: 'الأم المثالية', icon: 'ribbon', color: '#9C27B0' },
+  const handleTab = useCallback((t: Tab) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setTab(t);
+    setListKey(k => k + 1);
+  }, []);
+
+  const TABS: { key: Tab; label: string; icon: string; color: string }[] = [
+    { key: 'مستوى ثاني', label: 'مستوى ثاني', icon: 'star',    color: '#3B82F6' },
+    { key: 'مستوى أول',  label: 'مستوى أول',  icon: 'leaf',    color: '#10B981' },
+    { key: 'براعم',      label: 'براعم',       icon: 'heart',   color: '#F59E0B' },
+    { key: 'parents',    label: 'الأم المثالية', icon: 'ribbon', color: '#9C27B0' },
   ];
 
-  const currentStudents = tab !== 'parents' ? (byLevel[tab] ?? []) : [];
   const isParentTab = tab === 'parents';
-  const activeColor = isParentTab ? '#9C27B0'
-    : LEVEL_META[tab]?.color ?? Colors.primary;
+  const currentList = isParentTab ? parents : (byLevel[tab] ?? []);
+  const activeColor = isParentTab ? '#9C27B0' : LEVEL_META[tab]?.color ?? Colors.primary;
+  const headerGrad: readonly [string, string, string] = isParentTab
+    ? ['#3b1660', '#7B3FA0', '#9C27B0']
+    : ['#030c38', '#0d1463', '#1a1f6e'];
+  const topEntry = currentList[0];
 
   return (
     <View style={{ flex: 1, backgroundColor: Colors.background }}>
-      {/* Header */}
-      <LinearGradient
-        colors={isParentTab ? ['#3b1660', '#7B3FA0', '#9C27B0'] : ['#0d1143', '#1a1f5c', '#252b7a']}
-        style={[styles.header, { paddingTop: topPadding + 10 }]}
-      >
-        <View style={styles.headerRow}>
-          <MaterialCommunityIcons name="trophy" size={28} color="#FFD700" />
-          <View style={styles.headerText}>
-            <Text style={styles.headerTitle}>
-              {isParentTab ? 'لوحة الأم المثالية' : `لوحة شرف ${LEVEL_META[tab]?.label ?? tab}`}
+      {/* ── Animated Header ── */}
+      <LinearGradient colors={headerGrad} style={[styles.header, { paddingTop: topPadding + 10 }]}>
+
+        {/* Sparkles overlay */}
+        <View style={styles.sparkleContainer} pointerEvents="none">
+          {SPARKLE_CONFIGS.map((s, i) => (
+            <Sparkle key={i} {...s} />
+          ))}
+        </View>
+
+        {/* Title row */}
+        <View style={styles.titleRow}>
+          <TrophyShimmer />
+          <View style={styles.titleText}>
+            <Text style={styles.title}>لوحة الشرف</Text>
+            <Text style={styles.subtitle}>
+              {isParentTab ? 'أكثر الأمهات تفاعلاً ومتابعةً' : `أبطال ${tab}`}
             </Text>
-            <Text style={styles.headerSub}>تقييم تلقائي • يُحدَّث فورياً</Text>
           </View>
-          <View style={styles.trophyBadge}>
-            <Text style={styles.trophyEmoji}>🏆</Text>
+          <View style={styles.crownBadge}>
+            <Text style={{ fontSize: 22 }}>👑</Text>
           </View>
         </View>
 
-        {/* Score criteria legend */}
+        {/* Criteria chips */}
         <View style={styles.criteriaRow}>
           {isParentTab ? (
             <>
-              <CriteriaChip label="أداء الطفل" value="80%" />
-              <CriteriaChip label="المتابعة" value="20%" />
+              <CriteriaChip label="أداء الطفل" value="80%" color="#FFD700" />
+              <CriteriaChip label="المتابعة" value="20%" color="#A8B8C8" />
             </>
           ) : (
             <>
-              <CriteriaChip label="الدرجات" value="45%" />
-              <CriteriaChip label="الحضور" value="30%" />
-              <CriteriaChip label="السلوك" value="15%" />
-              <CriteriaChip label="الواجبات" value="10%" />
+              <CriteriaChip label="الدرجات" value="45%" color="#FFD700" />
+              <CriteriaChip label="الحضور" value="30%" color="#10B981" />
+              <CriteriaChip label="السلوك" value="15%" color="#F59E0B" />
+              <CriteriaChip label="الواجبات" value="10%" color="#A8B8C8" />
             </>
           )}
         </View>
 
         {/* Tabs */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabScroll} contentContainerStyle={styles.tabRow}>
-          {tabs.map(t => (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabRow}>
+          {TABS.map(t => (
             <Pressable
               key={t.key}
               style={[styles.tabBtn, tab === t.key && { backgroundColor: t.color, borderColor: t.color }]}
-              onPress={() => setTab(t.key)}
+              onPress={() => handleTab(t.key)}
             >
-              <Ionicons name={t.icon as any} size={13} color={tab === t.key ? '#fff' : 'rgba(255,255,255,0.6)'} />
-              <Text style={[styles.tabLabel, tab === t.key && styles.tabLabelActive]}>{t.label}</Text>
+              <Ionicons name={t.icon as any} size={13} color={tab === t.key ? '#fff' : 'rgba(255,255,255,0.55)'} />
+              <Text style={[styles.tabLbl, tab === t.key && styles.tabLblActive]}>{t.label}</Text>
             </Pressable>
           ))}
         </ScrollView>
@@ -303,61 +538,82 @@ export default function HonorScreen() {
         contentContainerStyle={[styles.body, { paddingBottom: bottomPadding + 90 }]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Podium */}
-        {(isParentTab ? parents : currentStudents).length >= 2 && (
-          <Podium entries={isParentTab ? parents : currentStudents} isParent={isParentTab} />
+        {/* Congratulations banner for #1 */}
+        {topEntry && (
+          <CongratsBanner
+            key={`banner-${tab}`}
+            name={isParentTab ? (topEntry as ParentHonorEntry).parentName : (topEntry as HonorEntry).studentName}
+            score={topEntry.score}
+            color={activeColor}
+          />
         )}
 
-        {/* Full leaderboard */}
-        <Text style={styles.sectionTitle}>
-          {isParentTab ? 'القائمة التنافسية الكاملة' : 'ترتيب الطلاب'}
-        </Text>
+        {/* Animated podium */}
+        <Podium key={`podium-${tab}`} entries={currentList} isParent={isParentTab} />
 
-        {(isParentTab ? parents : currentStudents).length === 0 ? (
+        {/* Leaderboard section title */}
+        {currentList.length > 0 && (
+          <View style={styles.sectionHeader}>
+            <View style={[styles.sectionLine, { backgroundColor: activeColor }]} />
+            <Text style={[styles.sectionTitle, { color: activeColor }]}>القائمة التنافسية</Text>
+            <View style={[styles.sectionLine, { backgroundColor: activeColor }]} />
+          </View>
+        )}
+
+        {/* Animated list */}
+        {currentList.length === 0 ? (
           <View style={styles.empty}>
-            <MaterialCommunityIcons name="trophy-outline" size={52} color={Colors.textLight} />
-            <Text style={styles.emptyText}>لا توجد بيانات كافية للترتيب</Text>
-            <Text style={styles.emptySubText}>أضف طلاباً وأولياء أمور لتفعيل لوحة الشرف</Text>
+            <Text style={{ fontSize: 52 }}>🏅</Text>
+            <Text style={styles.emptyTitle}>لا توجد بيانات كافية</Text>
+            <Text style={styles.emptySub}>أضف طلاباً وأولياء أمور لتفعيل لوحة الشرف</Text>
           </View>
         ) : (
-          <View style={styles.list}>
-            {isParentTab
-              ? parents.map((e, i) => <ParentRow key={e.studentId} entry={e} rank={i + 1} />)
-              : currentStudents.map((e, i) => <StudentRow key={e.studentId} entry={e} rank={i + 1} />)
-            }
+          <View style={{ gap: 10 }} key={listKey}>
+            {currentList.map((entry, i) =>
+              isParentTab ? (
+                <AnimatedRow key={(entry as ParentHonorEntry).studentId + 'p'} index={i}>
+                  <ParentRow entry={entry as ParentHonorEntry} rank={i + 1} />
+                </AnimatedRow>
+              ) : (
+                <AnimatedRow key={(entry as HonorEntry).studentId} index={i}>
+                  <StudentRow entry={entry as HonorEntry} rank={i + 1} />
+                </AnimatedRow>
+              )
+            )}
           </View>
         )}
 
-        {/* Scoring info card */}
-        <View style={[styles.infoCard, { borderColor: activeColor + '30' }]}>
-          <View style={styles.infoHeader}>
-            <Ionicons name="information-circle" size={18} color={activeColor} />
-            <Text style={[styles.infoTitle, { color: activeColor }]}>كيف يُحسب التقييم؟</Text>
+        {/* Info card */}
+        {currentList.length > 0 && (
+          <View style={[styles.infoCard, { borderColor: activeColor + '30' }]}>
+            <View style={styles.infoHeaderRow}>
+              <Ionicons name="information-circle" size={18} color={activeColor} />
+              <Text style={[styles.infoTitle, { color: activeColor }]}>كيف يُحسب التقييم؟</Text>
+            </View>
+            {isParentTab ? (
+              <>
+                <InfoRow icon="star"        color="#F59E0B" label="أداء الطفل الأكاديمي والسلوكي" value="80 نقطة" />
+                <InfoRow icon="chatbubbles" color="#3B82F6" label="عدد رسائل المتابعة"             value="20 نقطة" />
+              </>
+            ) : (
+              <>
+                <InfoRow icon="school"          color="#3B82F6" label="متوسط الدرجات"          value="45 نقطة" />
+                <InfoRow icon="calendar-outline" color={Colors.success} label="نسبة الحضور"    value="30 نقطة" />
+                <InfoRow icon="happy"            color="#F59E0B" label="تقييم السلوك"          value="15 نقطة" />
+                <InfoRow icon="book"             color="#8B5CF6" label="إنجاز الواجبات"        value="10 نقطة" />
+              </>
+            )}
           </View>
-          {isParentTab ? (
-            <View style={styles.infoRows}>
-              <InfoRow icon="star" color="#F59E0B" label="أداء الطفل الأكاديمي والسلوكي" value="80 نقطة" />
-              <InfoRow icon="chatbubbles" color="#3B82F6" label="عدد رسائل المتابعة" value="20 نقطة" />
-              <InfoRow icon="trophy" color="#FFD700" label="الحد الأقصى للتقييم" value="100 نقطة" />
-            </View>
-          ) : (
-            <View style={styles.infoRows}>
-              <InfoRow icon="school" color="#3B82F6" label="متوسط الدرجات الأكاديمية" value="45 نقطة" />
-              <InfoRow icon="calendar-outline" color={Colors.success} label="نسبة الحضور" value="30 نقطة" />
-              <InfoRow icon="happy" color="#F59E0B" label="تقييم السلوك" value="15 نقطة" />
-              <InfoRow icon="book" color="#8B5CF6" label="إنجاز الواجبات" value="10 نقطة" />
-            </View>
-          )}
-        </View>
+        )}
       </ScrollView>
     </View>
   );
 }
 
-function CriteriaChip({ label, value }: { label: string; value: string }) {
+function CriteriaChip({ label, value, color }: { label: string; value: string; color: string }) {
   return (
     <View style={styles.criteriaChip}>
-      <Text style={styles.criteriaVal}>{value}</Text>
+      <Text style={[styles.criteriaVal, { color }]}>{value}</Text>
       <Text style={styles.criteriaLbl}>{label}</Text>
     </View>
   );
@@ -367,7 +623,7 @@ function InfoRow({ icon, color, label, value }: { icon: string; color: string; l
   return (
     <View style={styles.infoRow}>
       <View style={[styles.infoIconBg, { backgroundColor: color + '18' }]}>
-        <Ionicons name={icon as any} size={14} color={color} />
+        <Ionicons name={icon as any} size={13} color={color} />
       </View>
       <Text style={styles.infoLabel}>{label}</Text>
       <Text style={[styles.infoValue, { color }]}>{value}</Text>
@@ -376,52 +632,49 @@ function InfoRow({ icon, color, label, value }: { icon: string; color: string; l
 }
 
 const styles = StyleSheet.create({
-  header: { paddingHorizontal: 18, paddingBottom: 12 },
-  headerRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 },
-  headerText: { flex: 1, alignItems: 'flex-end' },
-  headerTitle: { fontSize: 18, fontFamily: 'Inter_700Bold', color: '#fff' },
-  headerSub: { fontSize: 10, fontFamily: 'Inter_400Regular', color: 'rgba(255,255,255,0.55)', marginTop: 2 },
-  trophyBadge: {
-    width: 48, height: 48, borderRadius: 24,
+  header: { paddingHorizontal: 18, paddingBottom: 12, overflow: 'hidden' },
+  sparkleContainer: { position: 'absolute', top: 0, left: 0, right: 0, height: 90 },
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 14 },
+  titleText: { flex: 1, alignItems: 'flex-end' },
+  title: { fontSize: 20, fontFamily: 'Inter_700Bold', color: '#FFFFFF' },
+  subtitle: { fontSize: 11, fontFamily: 'Inter_400Regular', color: 'rgba(255,255,255,0.6)', marginTop: 2, textAlign: 'right' },
+  crownBadge: {
+    width: 50, height: 50, borderRadius: 25,
     backgroundColor: 'rgba(255,215,0,0.15)',
+    borderWidth: 1, borderColor: 'rgba(255,215,0,0.30)',
     alignItems: 'center', justifyContent: 'center',
   },
-  trophyEmoji: { fontSize: 24 },
-  criteriaRow: { flexDirection: 'row', gap: 6, justifyContent: 'flex-end', marginBottom: 12 },
+  criteriaRow: { flexDirection: 'row', gap: 6, justifyContent: 'flex-end', marginBottom: 12, flexWrap: 'wrap' },
   criteriaChip: {
-    backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: 8,
+    backgroundColor: 'rgba(255,255,255,0.10)', borderRadius: 8,
     paddingHorizontal: 8, paddingVertical: 4, alignItems: 'center',
   },
-  criteriaVal: { fontSize: 12, fontFamily: 'Inter_700Bold', color: '#FFD700' },
-  criteriaLbl: { fontSize: 9, fontFamily: 'Inter_400Regular', color: 'rgba(255,255,255,0.6)' },
-  tabScroll: { marginHorizontal: -4 },
-  tabRow: { flexDirection: 'row', gap: 8, paddingHorizontal: 4 },
+  criteriaVal: { fontSize: 12, fontFamily: 'Inter_700Bold' },
+  criteriaLbl: { fontSize: 9, fontFamily: 'Inter_400Regular', color: 'rgba(255,255,255,0.55)' },
+  tabRow: { flexDirection: 'row', gap: 8, paddingBottom: 4 },
   tabBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 5,
     paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)',
+    backgroundColor: 'rgba(255,255,255,0.10)',
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)',
   },
-  tabLabel: { fontSize: 11, fontFamily: 'Inter_500Medium', color: 'rgba(255,255,255,0.65)' },
-  tabLabelActive: { color: '#fff', fontFamily: 'Inter_600SemiBold' },
-  body: { padding: 16 },
-  sectionTitle: {
-    fontSize: 15, fontFamily: 'Inter_700Bold', color: Colors.text,
-    textAlign: 'right', marginBottom: 12,
-  },
-  list: { gap: 10 },
+  tabLbl: { fontSize: 11, fontFamily: 'Inter_500Medium', color: 'rgba(255,255,255,0.6)' },
+  tabLblActive: { color: '#fff', fontFamily: 'Inter_600SemiBold' },
+  body: { padding: 16, gap: 0 },
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12, marginTop: 4 },
+  sectionLine: { flex: 1, height: 1.5, opacity: 0.4 },
+  sectionTitle: { fontSize: 13, fontFamily: 'Inter_700Bold' },
   empty: { alignItems: 'center', paddingVertical: 48, gap: 10 },
-  emptyText: { fontSize: 15, fontFamily: 'Inter_600SemiBold', color: Colors.textSecondary },
-  emptySubText: { fontSize: 12, fontFamily: 'Inter_400Regular', color: Colors.textLight, textAlign: 'center' },
+  emptyTitle: { fontSize: 16, fontFamily: 'Inter_600SemiBold', color: Colors.textSecondary },
+  emptySub: { fontSize: 12, fontFamily: 'Inter_400Regular', color: Colors.textLight, textAlign: 'center', paddingHorizontal: 20 },
   infoCard: {
     marginTop: 20, backgroundColor: Colors.surface,
-    borderRadius: 18, padding: 16, borderWidth: 1,
+    borderRadius: 18, padding: 16, borderWidth: 1, gap: 10,
   },
-  infoHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, justifyContent: 'flex-end', marginBottom: 14 },
+  infoHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: 6, justifyContent: 'flex-end', marginBottom: 4 },
   infoTitle: { fontSize: 13, fontFamily: 'Inter_600SemiBold' },
-  infoRows: { gap: 10 },
   infoRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   infoIconBg: { width: 28, height: 28, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
   infoLabel: { flex: 1, fontSize: 12, fontFamily: 'Inter_400Regular', color: Colors.textSecondary, textAlign: 'right' },
-  infoValue: { fontSize: 12, fontFamily: 'Inter_700Bold', minWidth: 58, textAlign: 'left' },
+  infoValue: { fontSize: 12, fontFamily: 'Inter_700Bold', minWidth: 60, textAlign: 'left' },
 });

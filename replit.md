@@ -17,7 +17,8 @@ A comprehensive Arabic school management app for "روضة أحباب الله �
 ## Key Features
 - Role-based login with three account types
 - Admin dashboard with stats, employee management, payroll calculation, financial tracking
-- Honor Board (لوحة الشرف): per-level student boards + Perfect Mother (الأم المثالية) competitive leaderboard with automatic scoring
+- Honor Board (لوحة الشرف): animated luxury leaderboard — sparkle particles, pulsing podium, animated score counters, congratulations banner, staggered row entrance. Per-level + Perfect Mother tabs
+- Finance: real payment tracking via `paidFees` field on Student; modal for recording payments; progress bar per student
 - Teacher interface with daily schedule, student follow-up notebook, grade entry, curriculum planning
 - Parent portal with child profile, daily reports (food/learning/mood), direct messaging, news/notifications
 - Automatic payroll calculation based on attendance/absence
