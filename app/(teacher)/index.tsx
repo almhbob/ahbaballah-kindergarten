@@ -21,7 +21,7 @@ const PERIOD_COLORS: Record<string, string> = {
 
 export default function TeacherScheduleScreen() {
   const insets = useSafeAreaInsets();
-  const { user, logout } = useAuth();
+  const { user, logout, apiLogout } = useAuth();
   const { students, schedule } = useAppData();
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
 
@@ -60,6 +60,7 @@ export default function TeacherScheduleScreen() {
             <Pressable
               onPress={async () => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                await apiLogout();
                 await logout();
                 router.replace('/login');
               }}

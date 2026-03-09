@@ -1,8 +1,10 @@
 import express from "express";
 import type { Request, Response, NextFunction } from "express";
+import session from "express-session";
 import { registerRoutes } from "./routes";
 import * as fs from "fs";
 import * as path from "path";
+import "./session.d";
 
 const app = express();
 const log = console.log;
@@ -228,6 +230,18 @@ function setupErrorHandler(app: express.Application) {
 (async () => {
   setupCors(app);
   setupBodyParsing(app);
+
+  app.use(session({
+    secret: process.env.SESSION_SECRET || 'ahbaballah-fallback-secret',
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      httpOnly: true,
+      sameSite: 'lax',
+      maxAge: 1000 * 60 * 60 * 24,
+    },
+  }));
+
   setupRequestLogging(app);
 
   configureExpoAndLanding(app);

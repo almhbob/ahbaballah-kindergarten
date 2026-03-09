@@ -16,7 +16,7 @@ const PARENT_COLOR = '#7B3FA0';
 
 export default function ParentHomeScreen() {
   const insets = useSafeAreaInsets();
-  const { user, logout } = useAuth();
+  const { user, logout, apiLogout } = useAuth();
   const { students, messages } = useAppData();
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
 
@@ -58,6 +58,7 @@ export default function ParentHomeScreen() {
             <Pressable
               onPress={async () => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                await apiLogout();
                 await logout();
                 router.replace('/login');
               }}

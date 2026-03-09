@@ -58,7 +58,7 @@ function QuickAction({ icon, label, color, onPress }: {
 
 export default function AdminDashboard() {
   const insets = useSafeAreaInsets();
-  const { user, logout } = useAuth();
+  const { user, logout, apiLogout } = useAuth();
   const { students, employees, news, inbox } = useAppData();
 
   const unreadInbox = inbox.filter(m => !m.read).length;
@@ -96,6 +96,7 @@ export default function AdminDashboard() {
             <Pressable
               onPress={async () => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                await apiLogout();
                 await logout();
                 router.replace('/login');
               }}

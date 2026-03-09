@@ -70,7 +70,7 @@ function HexDecor({ size, x, y, opacity }: { size: number; x: number; y: number;
 
 export default function LoginScreen() {
   const insets = useSafeAreaInsets();
-  const { login } = useAuth();
+  const { login, apiLogin } = useAuth();
   const { students, employees } = useAppData();
 
   const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
@@ -177,6 +177,7 @@ export default function LoginScreen() {
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     await login(authUser);
+    apiLogin(selectedRole, credential.trim(), password.trim()).catch(() => {});
     if (selectedRole === 'admin') router.replace('/(admin)');
     else if (selectedRole === 'teacher') router.replace('/(teacher)');
     else router.replace('/(parent)');

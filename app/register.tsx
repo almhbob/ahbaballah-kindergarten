@@ -8,6 +8,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useAppData } from '@/contexts/AppDataContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { Colors } from '@/constants/colors';
 import HexFrame from '@/components/HexFrame';
 import * as Haptics from 'expo-haptics';
@@ -21,6 +22,7 @@ const ROLES: { id: RegRole; label: string; icon: string; color: string; grad: re
 
 export default function RegisterScreen() {
   const insets = useSafeAreaInsets();
+  const { apiRegister } = useAuth();
   const { students, updateStudent, employees, updateEmployee } = useAppData();
 
   const [role, setRole] = useState<RegRole>('parent');
@@ -65,6 +67,13 @@ export default function RegisterScreen() {
         return;
       }
       updateStudent(stu.id, { parentPassword: pass });
+      apiRegister({
+        full_name: stu.parentName,
+        phone: cred.replace(/\s/g, ''),
+        role: 'parent',
+        password: pass,
+        linked_id: stu.id,
+      }).catch(() => {});
     } else {
       const emp = employees.find(e => e.email && e.email.toLowerCase() === cred.toLowerCase());
       if (!emp) {
@@ -74,6 +83,13 @@ export default function RegisterScreen() {
         return;
       }
       updateEmployee(emp.id, { password: pass });
+      apiRegister({
+        full_name: emp.name,
+        email: cred.toLowerCase(),
+        role: 'teacher',
+        password: pass,
+        linked_id: emp.id,
+      }).catch(() => {});
     }
 
     setIsLoading(false);
