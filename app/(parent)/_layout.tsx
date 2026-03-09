@@ -2,7 +2,7 @@ import { isLiquidGlassAvailable } from "expo-glass-effect";
 import { Tabs, Redirect } from "expo-router";
 import { NativeTabs, Icon, Label, Badge } from "expo-router/unstable-native-tabs";
 import { BlurView } from "expo-blur";
-import { Platform, StyleSheet, View } from "react-native";
+import { Platform, StyleSheet, View, ActivityIndicator } from "react-native";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { Colors } from "@/constants/colors";
 import { useAppData } from "@/contexts/AppDataContext";
@@ -37,7 +37,7 @@ function NativeParentTabs() {
       <NativeTabs.Trigger name="notifications">
         <Icon sf={{ default: "bell", selected: "bell.fill" }} />
         <Label>الإشعارات</Label>
-        {notifBadge > 0 && <Badge>{notifBadge}</Badge>}
+        {notifBadge > 0 && <Badge>{String(notifBadge)}</Badge>}
       </NativeTabs.Trigger>
     </NativeTabs>
   );

@@ -80,6 +80,8 @@ export default function EmployeesScreen() {
       daysPresent: 0,
       daysAbsent: 0,
       phone: newPhone,
+      email: '',
+      password: '1234',
     });
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setShowAdd(false);

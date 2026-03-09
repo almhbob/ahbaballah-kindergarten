@@ -212,7 +212,7 @@ export default function ParentTransportScreen() {
         ) : (
           <View style={s.section}>
             <View style={s.noSubCard}>
-              <MaterialCommunityIcons name="bus-off" size={44} color={Colors.textLight} />
+              <MaterialCommunityIcons name="bus" size={44} color={Colors.textLight} />
               <Text style={s.noSubTitle}>لم تشترك في خدمة الترحيل بعد</Text>
               <Text style={s.noSubHint}>اختر أحد الخطوط المتاحة أدناه للاشتراك</Text>
             </View>

@@ -501,8 +501,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       const savedWelcome = await AsyncStorage.getItem('app_welcome_msg');
       const savedSchoolInfo = await AsyncStorage.getItem('app_school_info');
       const savedHonorWeights = await AsyncStorage.getItem('app_honor_weights');
-      if (savedStudents) setStudents((JSON.parse(savedStudents) as Student[]).map(s => ({ assessments: [], parentPhone: '', parentPassword: '1234', ...s })));
-      if (savedEmployees) setEmployees((JSON.parse(savedEmployees) as Employee[]).map(e => ({ email: '', password: '1234', ...e })));
+      if (savedStudents) setStudents((JSON.parse(savedStudents) as Student[]).map(s => ({ ...s, assessments: s.assessments ?? [], parentPhone: s.parentPhone ?? '', parentPassword: s.parentPassword ?? '1234' })));
+      if (savedEmployees) setEmployees((JSON.parse(savedEmployees) as Employee[]).map(e => ({ ...e, email: e.email ?? '', password: e.password ?? '1234' })));
       if (savedNews) setNews(JSON.parse(savedNews));
       if (savedInbox) setInbox(JSON.parse(savedInbox));
       if (savedMessages) setMessages(JSON.parse(savedMessages));

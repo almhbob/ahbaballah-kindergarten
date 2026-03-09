@@ -71,7 +71,9 @@ router.post('/upload', requireAuth, upload.single('file'), async (req: Request, 
 
 router.get('/serve/:role/:userId/:filename', async (req: Request, res: Response) => {
   try {
-    const { role, userId, filename } = req.params;
+    const role = String(req.params.role);
+    const userId = String(req.params.userId);
+    const filename = String(req.params.filename);
     const filePath = path.join(UPLOADS_DIR, role, userId, filename);
     if (!filePath.startsWith(UPLOADS_DIR)) return res.status(403).json({ ok: false, error: 'غير مسموح' });
     if (!fs.existsSync(filePath)) return res.status(404).json({ ok: false, error: 'الملف غير موجود' });

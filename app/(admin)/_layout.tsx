@@ -28,7 +28,7 @@ function NativeAdminTabs() {
       <NativeTabs.Trigger name="inbox">
         <Icon sf={{ default: "tray", selected: "tray.fill" }} />
         <Label>الوارد</Label>
-        {unread > 0 && <Badge>{unread}</Badge>}
+        {unread > 0 && <Badge>{String(unread)}</Badge>}
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="finance">
         <Icon sf={{ default: "dollarsign.circle", selected: "dollarsign.circle.fill" }} />
