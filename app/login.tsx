@@ -304,7 +304,7 @@ function HexDecor({ size, x, y, opacity }: { size: number; x: number; y: number;
 export default function LoginScreen() {
   const insets = useSafeAreaInsets();
   const { login, apiLogin, isBiometricEnabled, enableBiometric, getBiometricUser } = useAuth();
-  const { students, employees } = useAppData();
+  const { students, employees, appSettings } = useAppData();
 
   const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
   const [credential, setCredential] = useState('');
@@ -387,7 +387,8 @@ export default function LoginScreen() {
     let authUser = null;
 
     if (selectedRole === 'admin') {
-      if ((trimCred === 'admin' || trimCred === 'administrator') && trimPass === '1234') {
+      const adminPass = appSettings?.adminPassword || '1234';
+      if ((trimCred === 'admin' || trimCred === 'administrator') && trimPass === adminPass) {
         authUser = { id: 'admin_1', name: 'أ. سلوى أحمد داموس', role: 'admin' as UserRole };
       }
     } else if (selectedRole === 'teacher') {
@@ -652,7 +653,7 @@ export default function LoginScreen() {
             onPress={async () => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               await login({ id: 'guest', name: 'زائر', role: 'guest' });
-              router.replace('/(guest)/');
+              router.replace('/(guest)' as any);
             }}
           >
             <Ionicons name="eye-outline" size={15} color="rgba(255,255,255,0.45)" />
@@ -774,10 +775,5 @@ const s = StyleSheet.create({
   },
   bioBtnTitle: { fontSize: 15, fontFamily: 'Inter_700Bold', color: '#FFFFFF', marginBottom: 3 },
   bioBtnSub: { fontSize: 12, fontFamily: 'Inter_400Regular', color: 'rgba(201,149,42,0.85)' },
-
-  waCard: { flexDirection: 'row', alignItems: 'center', width: '100%' },
-  waName: { fontSize: 13, fontFamily: 'Inter_600SemiBold', color: '#FFFFFF' },
-  waSub: { fontSize: 11, fontFamily: 'Inter_400Regular', color: 'rgba(255,255,255,0.50)' },
-  waNum: { fontSize: 11, fontFamily: 'Inter_500Medium', color: '#25D366' },
 });
 

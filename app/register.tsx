@@ -67,13 +67,16 @@ export default function RegisterScreen() {
         return;
       }
       updateStudent(stu.id, { parentPassword: pass });
-      apiRegister({
+      const apiRes = await apiRegister({
         full_name: stu.parentName,
         phone: cred.replace(/\s/g, ''),
         role: 'parent',
         password: pass,
         linked_id: stu.id,
-      }).catch(() => {});
+      }).catch(() => ({ ok: false, error: 'خطأ في الاتصال' }));
+      if (!apiRes.ok && apiRes.error !== 'هذا الحساب مسجّل مسبقاً، سجّل الدخول مباشرة') {
+        console.warn('[register] API sync failed:', apiRes.error);
+      }
     } else {
       const emp = employees.find(e => e.email && e.email.toLowerCase() === cred.toLowerCase());
       if (!emp) {
@@ -83,13 +86,16 @@ export default function RegisterScreen() {
         return;
       }
       updateEmployee(emp.id, { password: pass });
-      apiRegister({
+      const apiRes = await apiRegister({
         full_name: emp.name,
         email: cred.toLowerCase(),
         role: 'teacher',
         password: pass,
         linked_id: emp.id,
-      }).catch(() => {});
+      }).catch(() => ({ ok: false, error: 'خطأ في الاتصال' }));
+      if (!apiRes.ok && apiRes.error !== 'هذا الحساب مسجّل مسبقاً، سجّل الدخول مباشرة') {
+        console.warn('[register] API sync failed:', apiRes.error);
+      }
     }
 
     setIsLoading(false);

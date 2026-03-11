@@ -493,6 +493,8 @@ interface AppDataContextValue {
   updateRegistrationRequest: (id: string, data: Partial<RegistrationRequest>) => void;
   removeRegistrationRequest: (id: string) => void;
   resetAllData: () => void;
+  appSettings: AppSettings;
+  updateAppSettings: (data: Partial<AppSettings>) => void;
 }
 
 const DEMO_YEARLY_SNAPSHOTS: YearlySnapshot[] = [
