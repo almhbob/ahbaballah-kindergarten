@@ -342,7 +342,7 @@ export const DEFAULT_SCHOOL_INFO: SchoolInfo = {
   name: 'روضة أحباب الله — الخاصة',
   principalName: 'أ. سلوى أحمد داموس',
   phone: '+249917545129',
-  email: 'info@ahbaballah.edu',
+  email: 'Ahbaballah2026@hotmail.com',
   motto: 'جودة • التزام • تميز',
   location: 'صفيتة الغنوماب',
   lat: 34.8167,
@@ -647,7 +647,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         setWelcomeMessageState(savedWelcome);
         welcomeRef.current = savedWelcome;
       }
-      if (savedSchoolInfo) setSchoolInfoState({ email: 'info@ahbaballah.edu', ...JSON.parse(savedSchoolInfo) });
+      if (savedSchoolInfo) setSchoolInfoState({ email: 'Ahbaballah2026@hotmail.com', ...JSON.parse(savedSchoolInfo) });
       if (savedHonorWeights) setHonorWeightsState(JSON.parse(savedHonorWeights));
       const savedAnnualPlan = await AsyncStorage.getItem('app_annual_plan');
       const savedGradTasks  = await AsyncStorage.getItem('app_grad_tasks');
