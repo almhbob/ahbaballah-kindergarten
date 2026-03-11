@@ -129,7 +129,7 @@ export default function SettingsScreen() {
         contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={{ paddingBottom: bottomPadding + 24 }}
       >
-        <SectionHeader title="معلومات المدرسة" />
+        <SectionHeader title="معلومات الروضة" />
         <View style={styles.section}>
           <SettingRow
             icon="school"
@@ -265,7 +265,7 @@ export default function SettingsScreen() {
                 <Pressable onPress={() => setShowSchoolModal(false)}>
                   <Ionicons name="close" size={24} color={Colors.text} />
                 </Pressable>
-                <Text style={styles.sheetTitle}>معلومات المدرسة</Text>
+                <Text style={styles.sheetTitle}>معلومات الروضة</Text>
               </View>
 
               {([

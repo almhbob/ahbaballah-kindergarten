@@ -218,7 +218,7 @@ type SectionKey = 'stats' | 'school' | 'features' | 'security' | 'banners' | 'de
 
 const SECTIONS: { key: SectionKey; icon: string; iconLib: 'ion' | 'mci'; label: string; color: string }[] = [
   { key: 'stats',    icon: 'bar-chart',          iconLib: 'ion', label: 'إحصاءات التطبيق',   color: '#3B82F6' },
-  { key: 'school',   icon: 'school',              iconLib: 'mci', label: 'إعدادات المدرسة',   color: '#10B981' },
+  { key: 'school',   icon: 'school',              iconLib: 'mci', label: 'إعدادات الروضة',   color: '#10B981' },
   { key: 'features', icon: 'toggle-switch',       iconLib: 'mci', label: 'مفاتيح الميزات',    color: '#8B5CF6' },
   { key: 'security', icon: 'shield-lock',         iconLib: 'mci', label: 'الأمان وكلمات المرور', color: '#F59E0B' },
   { key: 'banners',  icon: 'bullhorn',            iconLib: 'mci', label: 'الإعلانات والبنرات', color: Colors.accent },
@@ -399,7 +399,7 @@ export default function DeveloperScreen() {
         {open.school && (
           <View style={sty.secBody}>
             {[
-              { field: 'name',          label: 'اسم المدرسة',        placeholder: 'روضة أحباب الله' },
+              { field: 'name',          label: 'اسم الروضة',         placeholder: 'روضة أحباب الله' },
               { field: 'principalName', label: 'اسم المديرة',        placeholder: 'أ. سلوى داموس' },
               { field: 'phone',         label: 'رقم الهاتف',         placeholder: '+249 900 000 000' },
               { field: 'email',         label: 'البريد الإلكتروني',  placeholder: 'info@school.edu' },
@@ -453,10 +453,10 @@ export default function DeveloperScreen() {
             <Pressable style={sty.saveGreenBtn} onPress={() => {
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
               setSchoolInfo(schoolDraft);
-              Alert.alert('تم الحفظ', 'تم تحديث معلومات المدرسة بنجاح ✓');
+              Alert.alert('تم الحفظ', 'تم تحديث معلومات الروضة بنجاح ✓');
             }}>
               <Ionicons name="checkmark-circle" size={18} color="#fff" />
-              <Text style={sty.saveGreenBtnTxt}>حفظ معلومات المدرسة</Text>
+              <Text style={sty.saveGreenBtnTxt}>حفظ معلومات الروضة</Text>
             </Pressable>
           </View>
         )}

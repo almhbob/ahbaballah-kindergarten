@@ -261,7 +261,7 @@ function buildHTMLReport(students: Student[], filterLevel: string, schoolName: s
         <div style="margin-top:4px">روضة أحباب الله — الخاصة</div>
       </div>
       <div style="text-align:left">
-        <div class="footer-signature">ختم المدرسة</div>
+        <div class="footer-signature">ختم الروضة</div>
         <div class="footer-line">الإدارة</div>
         <div class="sig-line"></div>
       </div>
