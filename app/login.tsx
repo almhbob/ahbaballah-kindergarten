@@ -392,7 +392,7 @@ function DesignerCard() {
 
         {/* Badge row */}
         <View style={dc.badgeRow}>
-          <View style={dc.tagBadge}><Text style={dc.tagTxt}>UI/UX • Mobile • Web</Text></View>
+          <View style={dc.tagBadge}><Text style={dc.tagTxt}>Mobile • Web • Design</Text></View>
           <View style={dc.pill}>
             <MaterialCommunityIcons name="code-braces" size={11} color="#2DD4BF" />
             <Text style={dc.pillTxt}>المصمم والمطوّر</Text>
@@ -405,10 +405,10 @@ function DesignerCard() {
             <MaterialCommunityIcons name="account-circle" size={40} color="#2DD4BF" />
           </View>
           <View style={dc.heroText}>
-            <Text style={dc.devName}>Ali Alnassar</Text>
-            <Text style={dc.devRole}>DigitalMind Systems — مطوّر تطبيقات موبايل</Text>
+            <Text style={dc.devName}>Asim Abdulrahman</Text>
+            <Text style={dc.devRole}>عاصم عبدالرحمن محمد — مطوّر ومصمم تطبيقات</Text>
             <View style={dc.tagRow}>
-              {['React Native', 'Expo', 'TypeScript', 'Node.js'].map(t => (
+              {['React Native', 'Expo', 'UI/UX', 'Node.js'].map(t => (
                 <View key={t} style={dc.tag}><Text style={dc.tagLabel}>{t}</Text></View>
               ))}
             </View>
@@ -420,8 +420,8 @@ function DesignerCard() {
         {/* Stats */}
         <View style={dc.statsRow}>
           {[
-            { num: '5+',  lbl: 'سنوات خبرة' },
-            { num: '30+', lbl: 'مشروع منجز' },
+            { num: '3+',  lbl: 'سنوات خبرة' },
+            { num: '15+', lbl: 'مشروع منجز' },
             { num: '100%',lbl: 'رضا العملاء' },
           ].map(st => (
             <View key={st.lbl} style={dc.statBox}>
@@ -435,23 +435,23 @@ function DesignerCard() {
         <View style={dc.actRow}>
           <Pressable
             style={[dc.actBtn, dc.actWa]}
-            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); openLink('https://wa.me/966500000000'); }}
+            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); openLink('https://wa.me/249917545129'); }}
           >
             <MaterialCommunityIcons name="whatsapp" size={16} color="#25D366" />
             <Text style={[dc.actTxt, { color: '#25D366' }]}>تواصل</Text>
           </Pressable>
           <Pressable
             style={[dc.actBtn, dc.actPort]}
-            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); openLink('https://digitalmind.sa'); }}
+            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); openLink('mailto:Ahbaballah2026@hotmail.com'); }}
           >
-            <MaterialCommunityIcons name="web" size={16} color="#2DD4BF" />
-            <Text style={[dc.actTxt, { color: '#2DD4BF' }]}>الموقع</Text>
+            <MaterialCommunityIcons name="email-outline" size={16} color="#2DD4BF" />
+            <Text style={[dc.actTxt, { color: '#2DD4BF' }]}>البريد</Text>
           </Pressable>
         </View>
       </LinearGradient>
 
       <LinearGradient colors={['#021018', '#032030']} style={dc.footerGrad}>
-        <Text style={dc.footerLine}>© 2026 DigitalMind Systems — جميع الحقوق محفوظة</Text>
+        <Text style={dc.footerLine}>© 2026 Asim Abdulrahman Mohammed — جميع الحقوق محفوظة</Text>
         <Text style={dc.footerLine}>Designed & Developed with ♥ for روضة أحباب الله</Text>
       </LinearGradient>
     </View>
