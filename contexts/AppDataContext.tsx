@@ -797,13 +797,20 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     setCertificates([]);
     setTransportRoutes(DEMO_TRANSPORT_ROUTES);
     setTransportSubscriptions([]);
-    AsyncStorage.multiRemove([
+    const keysToReset = [
       'app_students', 'app_employees', 'app_news', 'app_inbox',
       'app_messages', 'app_meetings', 'app_schedule',
       'app_welcome_msg', 'app_school_info', 'app_honor_weights',
       'app_annual_plan', 'app_grad_tasks', 'app_certificates',
       'app_transport_routes', 'app_transport_subs',
-    ]);
+      'app_banners', 'app_yearly_snapshots', 'app_settings', 'app_registration_requests',
+    ];
+    AsyncStorage.multiRemove(keysToReset);
+    keysToReset.forEach(key => {
+      try {
+        fetch(new URL('/api/state/' + key, getApiUrl()).toString(), { method: 'DELETE' }).catch(() => {});
+      } catch {}
+    });
   };
 
   const updateStudent = (id: string, data: Partial<Student>) => {
@@ -867,7 +874,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
           read: false,
         };
         const withReply = [...updated, autoReply];
-        AsyncStorage.setItem('app_messages', JSON.stringify(withReply));
+        saveState('app_messages', withReply);
         return withReply;
       }
 

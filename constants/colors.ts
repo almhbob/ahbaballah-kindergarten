@@ -65,6 +65,8 @@ export const Colors = {
   tabBarActive:   ACCENT,
   tabBarInactive: "rgba(255,255,255,0.45)",
 
+  backgroundSecondary: "#E8EBF5",
+
   teacher:     "#1A6B5C",
   teacherDark: "#0d3d35",
   parent:      "#7B3FA0",

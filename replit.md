@@ -1,51 +1,61 @@
 # روضة أحباب الله - الخاصة
 
 ## Overview
-A comprehensive Arabic school management app for "روضة أحباب الله الخاصة" kindergarten located in صفيتة الغنوماب, built with Expo React Native.
+تطبيق إدارة روضة أحباب الله الخاصة في صفيتة الغنوماب — بني بـ Expo React Native + Express.js + PostgreSQL.
 
 ## Architecture
-- **Frontend**: Expo Router with file-based routing, React Native
-- **Backend**: Express.js (port 5000) - serves API and landing page
-- **Storage**: AsyncStorage for local data persistence
-- **State**: React Context (AuthContext, AppDataContext)
+- **Frontend**: Expo Router (file-based routing), React Native + Web
+- **Backend**: Express.js (port 5000) — REST API + landing page
+- **Database**: PostgreSQL (Replit cloud DB) via pg Pool
+- **State**: AppDataContext (React Context) — persists to AsyncStorage + PostgreSQL cloud (app_state table)
+- **Auth**: Dual-layer — local AppDataContext + backend PostgreSQL users table
 
-## User Roles
-1. **Admin (مدير)** - Full access: dashboard, employees, finance, news, inbox
-2. **Teacher (معلم)** - Class schedule, student notebook, grades, curriculum
-3. **Parent (ولي أمر)** - Child profile, daily reports, messages, notifications
+## User Roles & Login
+| Role | Login field | Default password |
+|------|-------------|-----------------|
+| Admin (أدمن) | username: `admin` | `1234` |
+| Teacher (معلمة) | email (e.g. `noura@ahbaballah.edu`) | `1234` |
+| Parent (ولي أمر) | phone (e.g. `+249912345678`) | `1234` |
+| Guest (ضيف) | No login needed | — |
+
+Admin password can be changed from Settings → Developer panel → Admin password.
+
+## API Routes
+- `POST /api/auth/register` — create teacher/parent account
+- `POST /api/auth/login` — authenticate
+- `GET/PUT /api/state/:key` — cloud state sync (19 keys)
+- `GET/POST /api/reviews` — parent reviews
+- `GET/PATCH/DELETE /api/reviews/:id` — review management
+- `POST /api/files/upload` — file uploads
+- `GET /api/health` — health check
+
+## Database Tables
+- `users` — auth accounts (admin, teacher, parent)
+- `reviews` — parent reviews (approved auto)
+- `app_state` — cloud-synced app state (JSON key-value)
 
 ## Key Features
-- Role-based login with three account types
-- Admin dashboard with stats, employee management, payroll calculation, financial tracking
-- Honor Board (لوحة الشرف): animated luxury leaderboard — sparkle particles, pulsing podium, animated score counters, congratulations banner, staggered row entrance. Per-level + Perfect Mother tabs
-- Finance: real payment tracking via `paidFees` field on Student; modal for recording payments; progress bar per student
-- Teacher interface with daily schedule, student follow-up notebook, grade entry, curriculum planning
-- Parent portal with child profile, daily reports (food/learning/mood), direct messaging, news/notifications
-- Automatic payroll calculation based on attendance/absence
-- Permission system: each role sees only their relevant data
-
-## Demo Accounts
-- Admin: username `admin`, password `1234`
-- Teacher: username `teacher1`, password `1234`
-- Parent: username `parent1`, password `1234`
+- **Admin**: Dashboard stats, student management, employee management, finance/payroll, news, inbox, meetings, schedule, graduation, transport, banners, registration requests, developer panel
+- **Teacher**: Class schedule, student notebook, grades, attendance, curriculum planner
+- **Parent**: Child profile, daily reports, messages, notifications, write reviews
+- **Guest**: Landing page with school info, services, levels, reviews, registration timeline
 
 ## Color Theme
-- Primary: #0F2B4E (Deep Navy)
-- Accent: #F4A01C (Amber Gold)
-- Teacher theme: #1A6B5C (Teal)
-- Parent theme: #7B3FA0 (Purple)
+- Primary: `#0c1155` (Deep Navy)
+- Accent: `#c9952a` (Gold)
+- Teacher: `#1A6B5C` (Teal)
+- Parent: `#7B3FA0` (Purple)
 
 ## Routes
-- `/login` - Role selection & login
-- `/(admin)/` - Admin dashboard, employees, finance, news, inbox
-- `/(teacher)/` - Schedule, students, grades, curriculum
-- `/(parent)/` - Child home, reports, messages, notifications
+- `/login` — role selection & login
+- `/register` — create teacher/parent account
+- `/(admin)/` — admin dashboard tabs
+- `/(teacher)/` — teacher interface tabs
+- `/(parent)/` — parent portal tabs
+- `/(guest)/` — public landing page
 
-## Tech Stack
-- Expo SDK (React Native + Web)
-- expo-router (file-based routing)
-- @tanstack/react-query
-- expo-haptics, expo-linear-gradient
-- expo-glass-effect (iOS 26 liquid glass tabs)
-- AsyncStorage (local persistence)
-- Inter font family
+## Important Notes
+- School email: Ahbaballah2026@hotmail.com
+- Default admin password: 1234 (configurable via developer panel)
+- All AsyncStorage saves also sync to PostgreSQL cloud via /api/state
+- Frontend ENOENT error on Metro watcher: transient, restart frontend workflow resolves it
