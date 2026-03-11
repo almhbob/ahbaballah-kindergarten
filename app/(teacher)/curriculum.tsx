@@ -146,7 +146,7 @@ export default function CurriculumScreen() {
                     {idx < dayPeriods.length - 1 && <View style={[styles.timeLine, current && { backgroundColor: '#10B981' }]} />}
                     <Text style={styles.timeEnd}>{period.endTime}</Text>
                   </View>
-                  <View style={[styles.periodCard, current && styles.periodCardCurrent, { borderLeftColor: meta.color, borderLeftWidth: 3 }]}>
+                  <View style={[styles.periodCard, current && styles.periodCardCurrent, { borderRightColor: meta.color }]}>
                     {current && (
                       <View style={styles.currentBadge}>
                         <MaterialCommunityIcons name="play-circle" size={11} color="#10B981" />
@@ -335,8 +335,8 @@ const styles = StyleSheet.create({
   timeStart: { fontSize: 10, fontFamily: 'Inter_600SemiBold', color: Colors.textSecondary, textAlign: 'center' },
   timeLine: { flex: 1, width: 2, backgroundColor: Colors.borderLight, marginVertical: 2, minHeight: 16 },
   timeEnd: { fontSize: 10, fontFamily: 'Inter_400Regular', color: Colors.textLight, textAlign: 'center' },
-  periodCard: { flex: 1, backgroundColor: Colors.surface, borderRadius: 14, padding: 12, marginBottom: 10, borderWidth: 1, borderColor: Colors.borderLight },
-  periodCardCurrent: { backgroundColor: '#F0FFF8', borderColor: '#10B981', shadowColor: '#10B981', shadowOpacity: 0.15, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 3 },
+  periodCard: { flex: 1, backgroundColor: Colors.surface, borderRadius: 14, padding: 12, marginBottom: 10, borderRightWidth: 3, shadowColor: '#1A6B5C', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.07, shadowRadius: 6, elevation: 2 },
+  periodCardCurrent: { backgroundColor: '#F0FFF8', borderRightColor: '#10B981', shadowColor: '#10B981', shadowOpacity: 0.15, shadowRadius: 8, elevation: 3 },
   currentBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: '#ECFDF5', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3, alignSelf: 'flex-end', marginBottom: 6 },
   currentBadgeText: { fontSize: 10, fontFamily: 'Inter_600SemiBold', color: '#10B981' },
   periodTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },

@@ -49,7 +49,7 @@ function RequestCard({
 }) {
   const lc = LEVEL_COLOR[req.requestedLevel] ?? Colors.accent;
   return (
-    <Pressable style={card.wrap} onPress={onPress}>
+    <Pressable style={[card.wrap, { shadowColor: lc }]} onPress={onPress}>
       <View style={[card.accent, { backgroundColor: lc }]} />
       <View style={card.body}>
         <View style={card.row}>
@@ -74,7 +74,7 @@ function RequestCard({
   );
 }
 const card = StyleSheet.create({
-  wrap: { flexDirection: 'row', backgroundColor: Colors.surface, borderRadius: 16, marginHorizontal: 16, marginBottom: 10, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.07, shadowRadius: 6, elevation: 2 },
+  wrap: { flexDirection: 'row', backgroundColor: Colors.surface, borderRadius: 16, marginHorizontal: 16, marginBottom: 10, overflow: 'hidden', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.10, shadowRadius: 8, elevation: 3 },
   accent: { width: 5 },
   body: { flex: 1, padding: 14, gap: 7 },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },

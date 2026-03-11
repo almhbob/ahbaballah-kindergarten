@@ -7,18 +7,17 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Colors } from '@/constants/colors';
 import { useAppData, Employee } from '@/contexts/AppDataContext';
-import HexFrame from '@/components/HexFrame';
 import * as Haptics from 'expo-haptics';
 
 function EmployeeCard({ emp }: { emp: Employee }) {
   const salaryCalc = Math.round((emp.salary / 22) * emp.daysPresent);
   const deduction = emp.salary - salaryCalc;
   return (
-    <View style={styles.empCard}>
+    <View style={[styles.empCard, { borderRightColor: Colors.primary }]}>
       <View style={styles.empRow}>
-        <HexFrame size={46} fill={Colors.primary} stroke={Colors.accent + '80'} strokeWidth={1.5} style={{ marginLeft: 12 }}>
+        <View style={styles.empAvatar}>
           <Text style={styles.empAvatarText}>{emp.name.charAt(0)}</Text>
-        </HexFrame>
+        </View>
         <View style={styles.empInfo}>
           <Text style={styles.empName}>{emp.name}</Text>
           <Text style={styles.empRole}>{emp.role}</Text>
@@ -191,9 +190,9 @@ const styles = StyleSheet.create({
   summaryLabel: { fontSize: 11, fontFamily: 'Inter_400Regular', color: 'rgba(255,255,255,0.6)' },
   list: { flex: 1 },
   listContent: { padding: 16, gap: 12 },
-  empCard: { backgroundColor: Colors.surface, borderRadius: 16, padding: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 3 },
+  empCard: { backgroundColor: Colors.surface, borderRadius: 16, padding: 16, shadowColor: Colors.primary, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8, elevation: 3, borderRightWidth: 4 },
   empRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-  empAvatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: Colors.primaryLight + '20', justifyContent: 'center', alignItems: 'center', marginLeft: 12 },
+  empAvatar: { width: 46, height: 46, borderRadius: 23, backgroundColor: Colors.primary + '18', borderWidth: 1.5, borderColor: Colors.primary + '40', justifyContent: 'center', alignItems: 'center', marginLeft: 12 },
   empAvatarText: { fontSize: 18, fontFamily: 'Inter_700Bold', color: Colors.primary },
   empInfo: { flex: 1, alignItems: 'flex-end' },
   empName: { fontSize: 15, fontFamily: 'Inter_600SemiBold', color: Colors.text },

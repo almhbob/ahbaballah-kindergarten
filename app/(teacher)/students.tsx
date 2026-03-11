@@ -8,7 +8,7 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { Colors } from '@/constants/colors';
 import { useAppData, Student } from '@/contexts/AppDataContext';
-import HexFrame from '@/components/HexFrame';
+
 import * as Haptics from 'expo-haptics';
 
 const BEHAVIOR_COLORS = {
@@ -24,12 +24,17 @@ const HOMEWORK_COLORS = {
   'لم ينجز': { color: Colors.danger, bg: '#FEF2F2' },
 };
 
+const LEVEL_COLORS: Record<string, string> = {
+  'براعم': '#F59E0B', 'مستوى أول': '#10B981', 'مستوى ثاني': '#3B82F6',
+};
+
 function StudentCard({ student, onPress }: { student: Student; onPress: () => void }) {
   const bh = BEHAVIOR_COLORS[student.behavior];
   const hw = HOMEWORK_COLORS[student.homework];
+  const lc = LEVEL_COLORS[student.level] || '#1A6B5C';
   return (
     <Pressable
-      style={({ pressed }) => [styles.card, { opacity: pressed ? 0.85 : 1 }]}
+      style={({ pressed }) => [styles.card, { opacity: pressed ? 0.85 : 1, borderRightColor: lc }]}
       onPress={onPress}
     >
       <View style={styles.cardHeader}>
@@ -42,9 +47,9 @@ function StudentCard({ student, onPress }: { student: Student; onPress: () => vo
           <Text style={styles.studentName}>{student.name}</Text>
           <Text style={styles.studentLevel}>{student.level}</Text>
         </View>
-        <HexFrame size={44} fill="#0c4a6e" stroke="#38BDF8" strokeWidth={1.5} style={{ marginLeft: 10 }}>
-          <Text style={styles.avatarText}>{student.name.charAt(0)}</Text>
-        </HexFrame>
+        <View style={[styles.avatar, { backgroundColor: lc + '18', borderColor: lc + '40' }]}>
+          <Text style={[styles.avatarText, { color: lc }]}>{student.name.charAt(0)}</Text>
+        </View>
       </View>
       <View style={styles.cardBadges}>
         <View style={[styles.badge, { backgroundColor: hw.bg }]}>
@@ -240,10 +245,10 @@ const styles = StyleSheet.create({
   searchBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: 12, paddingHorizontal: 12, height: 42, gap: 8 },
   searchInput: { flex: 1, fontSize: 14, fontFamily: 'Inter_400Regular', color: '#FFFFFF' },
   list: { padding: 16, gap: 12 },
-  card: { backgroundColor: Colors.surface, borderRadius: 16, padding: 14, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 3 },
+  card: { backgroundColor: Colors.surface, borderRadius: 16, padding: 14, shadowColor: '#1A6B5C', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8, elevation: 3, borderRightWidth: 4 },
   cardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
-  avatar: { width: 42, height: 42, borderRadius: 21, backgroundColor: '#E0F2FE', justifyContent: 'center', alignItems: 'center', marginLeft: 10 },
-  avatarText: { fontSize: 16, fontFamily: 'Inter_700Bold', color: '#0284C7' },
+  avatar: { width: 44, height: 44, borderRadius: 22, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center', marginLeft: 10 },
+  avatarText: { fontSize: 16, fontFamily: 'Inter_700Bold' },
   studentInfo: { flex: 1, alignItems: 'flex-end' },
   studentName: { fontSize: 14, fontFamily: 'Inter_600SemiBold', color: Colors.text },
   studentLevel: { fontSize: 11, fontFamily: 'Inter_400Regular', color: Colors.textSecondary, marginTop: 2 },

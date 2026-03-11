@@ -133,7 +133,7 @@ export default function MeetingsScreen() {
           const statusMeta = STATUS_META[item.status];
           const isToday = item.date === TODAY;
           return (
-            <View style={[styles.card, isToday && item.status === 'upcoming' && styles.cardToday]}>
+            <View style={[styles.card, isToday && item.status === 'upcoming' && styles.cardToday, { borderRightColor: meta.color }]}>
               <View style={styles.cardLeft}>
                 <Pressable onPress={() => handleDelete(item)} style={styles.iconBtn}>
                   <Ionicons name="trash-outline" size={15} color={Colors.danger} />
@@ -326,8 +326,8 @@ const styles = StyleSheet.create({
   addBtn: { borderRadius: 14, overflow: 'hidden', marginBottom: 12 },
   addBtnGrad: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14 },
   addBtnText: { fontSize: 15, fontFamily: 'Inter_600SemiBold', color: '#fff' },
-  card: { backgroundColor: Colors.surface, borderRadius: 16, padding: 14, flexDirection: 'row', gap: 10, borderWidth: 1, borderColor: Colors.borderLight },
-  cardToday: { borderColor: '#FFD700', borderWidth: 1.5, backgroundColor: '#fffef5' },
+  card: { backgroundColor: Colors.surface, borderRadius: 16, padding: 14, flexDirection: 'row', gap: 10, borderRightWidth: 4, shadowColor: Colors.primary, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.07, shadowRadius: 8, elevation: 3 },
+  cardToday: { backgroundColor: '#fffef5' },
   cardLeft: { flexDirection: 'column', gap: 6, alignItems: 'center', justifyContent: 'center' },
   iconBtn: { width: 30, height: 30, borderRadius: 8, backgroundColor: Colors.surfaceAlt, alignItems: 'center', justifyContent: 'center' },
   cardBody: { flex: 1, alignItems: 'flex-end' },

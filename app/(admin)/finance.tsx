@@ -131,7 +131,7 @@ export default function FinanceScreen() {
                 </View>
               )}
               {FEES.map(fee => (
-                <View key={fee.id} style={styles.feeCard}>
+                <View key={fee.id} style={[styles.feeCard, { borderRightColor: statusColor[fee.status] }]}>
                   <View style={styles.feeHeader}>
                     <View style={[styles.statusBadge, { backgroundColor: statusBg[fee.status] }]}>
                       <Text style={[styles.statusText, { color: statusColor[fee.status] }]}>{fee.status}</Text>
@@ -301,7 +301,7 @@ const styles = StyleSheet.create({
   body: { padding: 16, gap: 12 },
   emptyCard: { backgroundColor: Colors.surface, borderRadius: 16, padding: 40, alignItems: 'center', gap: 10 },
   emptyTxt: { fontSize: 14, fontFamily: 'Inter_500Medium', color: Colors.textLight },
-  feeCard: { backgroundColor: Colors.surface, borderRadius: 16, padding: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 3 },
+  feeCard: { backgroundColor: Colors.surface, borderRadius: 16, padding: 16, shadowColor: Colors.primary, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8, elevation: 3, borderRightWidth: 4 },
   feeHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
   feeStudentInfo: { alignItems: 'flex-end' },
   feeStudentName: { fontSize: 14, fontFamily: 'Inter_600SemiBold', color: Colors.text },
@@ -325,9 +325,9 @@ const styles = StyleSheet.create({
   payrollSummary: { backgroundColor: Colors.primary, borderRadius: 16, padding: 20, alignItems: 'center', marginBottom: 4 },
   payrollSummaryLabel: { fontSize: 13, fontFamily: 'Inter_400Regular', color: 'rgba(255,255,255,0.7)' },
   payrollSummaryValue: { fontSize: 28, fontFamily: 'Inter_700Bold', color: Colors.accent, marginTop: 4 },
-  payrollCard: { backgroundColor: Colors.surface, borderRadius: 16, padding: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 3 },
+  payrollCard: { backgroundColor: Colors.surface, borderRadius: 16, padding: 16, shadowColor: Colors.primary, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8, elevation: 3, borderRightWidth: 4, borderRightColor: Colors.primary },
   payrollCardRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 14 },
-  payrollAvatar: { width: 42, height: 42, borderRadius: 21, backgroundColor: Colors.primaryLight + '20', justifyContent: 'center', alignItems: 'center', marginLeft: 10 },
+  payrollAvatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: Colors.primary + '18', borderWidth: 1.5, borderColor: Colors.primary + '40', justifyContent: 'center', alignItems: 'center', marginLeft: 10 },
   payrollAvatarText: { fontSize: 16, fontFamily: 'Inter_700Bold', color: Colors.primary },
   payrollInfo: { flex: 1, alignItems: 'flex-end' },
   payrollName: { fontSize: 14, fontFamily: 'Inter_600SemiBold', color: Colors.text },

@@ -107,7 +107,7 @@ export default function ReportScreen() {
                     const pct = Math.round((g.score / g.total) * 100);
                     const gc = pct >= 90 ? Colors.success : pct >= 70 ? Colors.warning : Colors.danger;
                     return (
-                      <View key={i} style={styles.gradeCard}>
+                      <View key={i} style={[styles.gradeCard, { borderTopColor: gc }]}>
                         <View style={styles.gradeCardRight}>
                           <Text style={styles.gradeSubject}>{g.subject}</Text>
                           <Text style={styles.gradeDate}>{g.date}</Text>
@@ -142,7 +142,7 @@ const styles = StyleSheet.create({
   tabText: { fontSize: 13, fontFamily: 'Inter_500Medium', color: 'rgba(255,255,255,0.6)' },
   tabTextActive: { color: '#FFFFFF', fontFamily: 'Inter_700Bold' },
   body: { padding: 16, gap: 12 },
-  reportCard: { backgroundColor: Colors.surface, borderRadius: 18, padding: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.07, shadowRadius: 8, elevation: 3 },
+  reportCard: { backgroundColor: Colors.surface, borderRadius: 18, padding: 16, shadowColor: PARENT_COLOR, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.09, shadowRadius: 8, elevation: 3, borderRightWidth: 4, borderRightColor: PARENT_COLOR },
   reportCardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
   reportCardTitle: { fontSize: 14, fontFamily: 'Inter_700Bold', color: Colors.text },
   dateBadge: { backgroundColor: '#F5F0FA', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
@@ -156,7 +156,7 @@ const styles = StyleSheet.create({
   gradesSummary: { backgroundColor: PARENT_COLOR, borderRadius: 16, padding: 20, alignItems: 'center', marginBottom: 4 },
   gradesSummaryLabel: { fontSize: 13, fontFamily: 'Inter_400Regular', color: 'rgba(255,255,255,0.7)' },
   gradesSummaryValue: { fontSize: 36, fontFamily: 'Inter_700Bold', marginTop: 4 },
-  gradeCard: { backgroundColor: Colors.surface, borderRadius: 14, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 },
+  gradeCard: { backgroundColor: Colors.surface, borderRadius: 14, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12, shadowColor: PARENT_COLOR, shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.07, shadowRadius: 4, elevation: 2, borderTopWidth: 3 },
   gradeCardRight: { alignItems: 'flex-end', minWidth: 80 },
   gradeSubject: { fontSize: 13, fontFamily: 'Inter_600SemiBold', color: Colors.text },
   gradeDate: { fontSize: 10, fontFamily: 'Inter_400Regular', color: Colors.textLight, marginTop: 2 },

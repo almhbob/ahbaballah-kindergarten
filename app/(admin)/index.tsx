@@ -30,7 +30,7 @@ function StatCard({ label, value, sub, icon, color, bg }: {
   label: string; value: string; sub?: string; icon: string; color: string; bg: string;
 }) {
   return (
-    <View style={[styles.statCard, { borderLeftColor: color }]}>
+    <View style={[styles.statCard, { borderRightColor: color }]}>
       <View style={styles.statCardTop}>
         <Text style={[styles.statValue, { color }]}>{value}</Text>
         <View style={[styles.statIconWrap, { backgroundColor: color + '18' }]}>
