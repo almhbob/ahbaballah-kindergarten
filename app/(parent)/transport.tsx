@@ -413,18 +413,20 @@ const s = StyleSheet.create({
 
   noSubCard: {
     backgroundColor: Colors.surface, borderRadius: 16,
-    borderWidth: 1, borderColor: Colors.border,
+    borderRightWidth: 4, borderRightColor: BUS_GREEN + '60',
     padding: 28, alignItems: 'center', gap: 8,
+    shadowColor: BUS_GREEN, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.07, shadowRadius: 8, elevation: 2,
   },
   noSubTitle: { fontSize: 14, fontFamily: 'Inter_600SemiBold', color: Colors.text, textAlign: 'center' },
   noSubHint: { fontSize: 12, fontFamily: 'Inter_400Regular', color: Colors.textSecondary, textAlign: 'center' },
 
   routeCard: {
     backgroundColor: Colors.surface, borderRadius: 16,
-    borderWidth: 1, borderColor: Colors.border,
+    borderRightWidth: 4, borderRightColor: Colors.borderLight,
     padding: 14, gap: 10,
+    shadowColor: BUS_GREEN, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.07, shadowRadius: 8, elevation: 2,
   },
-  routeCardActive: { borderColor: BUS_GREEN, borderWidth: 1.5 },
+  routeCardActive: { borderRightColor: BUS_GREEN },
   routeCardTop: { flexDirection: 'row', alignItems: 'center' },
   routeIcon: { width: 40, height: 40, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   routeName: { fontSize: 14, fontFamily: 'Inter_700Bold', color: Colors.text },
