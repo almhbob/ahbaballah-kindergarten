@@ -1,14 +1,15 @@
 import React, { useState, useMemo } from 'react';
 import {
   View, Text, StyleSheet, FlatList, Pressable,
-  TextInput, Modal, ScrollView, Alert, Platform, Linking,
+  TextInput, Modal, ScrollView, Alert, Platform, Linking, Image,
 } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { Colors } from '@/constants/colors';
-import { useAppData, Employee, Student, AttendanceRecord, EmployeeWarning } from '@/contexts/AppDataContext';
+import { useAppData, Employee, Student, AttendanceRecord, EmployeeWarning, BloodType } from '@/contexts/AppDataContext';
 import HexFrame from '@/components/HexFrame';
 import * as Haptics from 'expo-haptics';
 
@@ -346,12 +347,16 @@ function StudentsSection({ students, onAdd, onEdit, onView, onDelete }: {
               </Pressable>
             </View>
             <View style={styles.cardRight}>
-              <HexFrame size={48} fill={LEVEL_COLORS[item.level] ?? '#8B5CF6'} stroke="rgba(255,255,255,0.35)" strokeWidth={1.5}>
-                <MaterialCommunityIcons name="account-school" size={22} color="#fff" />
-              </HexFrame>
+              {item.photo ? (
+                <Image source={{ uri: item.photo }} style={{ width: 48, height: 48, borderRadius: 24, borderWidth: 2, borderColor: LEVEL_COLORS[item.level] ?? '#8B5CF6' }} />
+              ) : (
+                <HexFrame size={48} fill={LEVEL_COLORS[item.level] ?? '#8B5CF6'} stroke="rgba(255,255,255,0.35)" strokeWidth={1.5}>
+                  <MaterialCommunityIcons name="account-school" size={22} color="#fff" />
+                </HexFrame>
+              )}
               <View style={styles.cardInfo}>
                 <Text style={styles.cardName}>{item.name}</Text>
-                <Text style={styles.cardSub}>ولي الأمر: {item.parentName}</Text>
+                <Text style={styles.cardSub}>{item.parentRelation ? `${item.parentRelation}: ` : 'ولي الأمر: '}{item.parentName}</Text>
                 <View style={styles.cardMeta}>
                   <View style={[styles.levelBadge, { backgroundColor: (LEVEL_COLORS[item.level] ?? '#8B5CF6') + '20' }]}>
                     <Text style={[styles.levelBadgeText, { color: LEVEL_COLORS[item.level] ?? '#8B5CF6' }]}>{item.level}</Text>
@@ -519,6 +524,18 @@ const HOMEWORKS: Student['homework'][] = ['منجز', 'ناقص', 'لم ينجز
 const BEHAVIOR_COLORS: Record<string, string> = { 'ممتاز': '#10B981', 'جيد': '#3B82F6', 'مقبول': '#F59E0B', 'يحتاج متابعة': Colors.danger };
 const HOMEWORK_COLORS: Record<string, string> = { 'منجز': '#10B981', 'ناقص': '#F59E0B', 'لم ينجز': Colors.danger };
 
+const BLOOD_TYPES: BloodType[] = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
+const PARENT_RELATIONS = ['الأب', 'الأم', 'الجد', 'الجدة', 'الأخ', 'الأخت', 'العم', 'الخال', 'وصي قانوني'];
+
+function SectionHeader({ title, icon }: { title: string; icon: string }) {
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 24, marginBottom: 12, paddingBottom: 8, borderBottomWidth: 1, borderBottomColor: Colors.borderLight }}>
+      <Text style={{ fontSize: 16 }}>{icon}</Text>
+      <Text style={{ fontSize: 15, fontWeight: '700' as const, color: Colors.primary }}>{title}</Text>
+    </View>
+  );
+}
+
 function AddStudentModal({ visible, editing, onClose, onSave }: {
   visible: boolean;
   editing: Student | null;
@@ -528,8 +545,16 @@ function AddStudentModal({ visible, editing, onClose, onSave }: {
   const insets = useSafeAreaInsets();
   const [name, setName] = useState('');
   const [level, setLevel] = useState('مستوى أول');
+  const [gender, setGender] = useState<'ذكر' | 'أنثى'>('ذكر');
+  const [nationality, setNationality] = useState('');
+  const [photo, setPhoto] = useState('');
+  const [nationalId, setNationalId] = useState('');
+  const [birthCertImages, setBirthCertImages] = useState<string[]>([]);
+  const [bloodType, setBloodType] = useState<BloodType | ''>('');
+  const [emergencyPhone, setEmergencyPhone] = useState('');
   const [parentName, setParentName] = useState('');
   const [parentPhone, setParentPhone] = useState('');
+  const [parentRelation, setParentRelation] = useState('الأب');
   const [notes, setNotes] = useState('');
   const [attendance, setAttendance] = useState('100');
   const [behavior, setBehavior] = useState<Student['behavior']>('ممتاز');
@@ -538,20 +563,57 @@ function AddStudentModal({ visible, editing, onClose, onSave }: {
   React.useEffect(() => {
     if (editing) {
       setName(editing.name); setLevel(editing.level);
+      setGender(editing.gender ?? 'ذكر');
+      setNationality(editing.nationality ?? '');
+      setPhoto(editing.photo ?? '');
+      setNationalId(editing.nationalId ?? '');
+      setBirthCertImages(editing.birthCertificateImages ?? []);
+      setBloodType(editing.bloodType ?? '');
+      setEmergencyPhone(editing.emergencyPhone ?? '');
       setParentName(editing.parentName); setParentPhone(editing.parentPhone ?? '');
+      setParentRelation(editing.parentRelation ?? 'الأب');
       setNotes(editing.notes); setAttendance(String(editing.attendance));
       setBehavior(editing.behavior); setHomework(editing.homework);
     } else {
-      setName(''); setLevel('مستوى أول'); setParentName(''); setParentPhone('');
+      setName(''); setLevel('مستوى أول'); setGender('ذكر');
+      setNationality(''); setPhoto(''); setNationalId('');
+      setBirthCertImages([]); setBloodType(''); setEmergencyPhone('');
+      setParentName(''); setParentPhone(''); setParentRelation('الأب');
       setNotes(''); setAttendance('100'); setBehavior('ممتاز'); setHomework('منجز');
     }
   }, [editing, visible]);
 
+  const pickPhoto = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') { Alert.alert('الأذونات', 'نحتاج إذن الوصول للمعرض'); return; }
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, allowsEditing: true, aspect: [1, 1], quality: 0.8 });
+    if (!result.canceled && result.assets[0]) setPhoto(result.assets[0].uri);
+  };
+
+  const pickBirthCert = async () => {
+    if (birthCertImages.length >= 3) { Alert.alert('الحد الأقصى', 'يمكن إضافة 3 صور كحد أقصى'); return; }
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') { Alert.alert('الأذونات', 'نحتاج إذن الوصول للمعرض'); return; }
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, allowsEditing: false, quality: 0.9 });
+    if (!result.canceled && result.assets[0]) setBirthCertImages(prev => [...prev, result.assets[0].uri]);
+  };
+
   const handleSave = () => {
-    if (!name.trim()) { Alert.alert('تنبيه', 'الرجاء إدخال اسم الطالب'); return; }
+    if (!name.trim()) { Alert.alert('تنبيه', 'الرجاء إدخال الاسم الرباعي للطالب'); return; }
     if (!parentName.trim()) { Alert.alert('تنبيه', 'الرجاء إدخال اسم ولي الأمر'); return; }
     const att = Math.min(100, Math.max(0, Number(attendance) || 0));
-    onSave({ name: name.trim(), level, parentName: parentName.trim(), parentPhone: parentPhone.trim(), notes: notes.trim(), attendance: att, behavior, homework });
+    onSave({
+      name: name.trim(), level, gender,
+      nationality: nationality.trim() || undefined,
+      photo: photo || undefined,
+      nationalId: nationalId.trim() || undefined,
+      birthCertificateImages: birthCertImages.length ? birthCertImages : undefined,
+      bloodType: bloodType || undefined,
+      emergencyPhone: emergencyPhone.trim() || undefined,
+      parentName: parentName.trim(), parentPhone: parentPhone.trim(),
+      parentRelation: parentRelation || undefined,
+      notes: notes.trim(), attendance: att, behavior, homework,
+    });
   };
 
   const attNum = Math.min(100, Math.max(0, Number(attendance) || 0));
@@ -563,15 +625,50 @@ function AddStudentModal({ visible, editing, onClose, onSave }: {
           <Pressable onPress={onClose} style={styles.modalCloseBtn}>
             <Text style={styles.modalCloseTxt}>إلغاء</Text>
           </Pressable>
-          <Text style={styles.modalTitle}>{editing ? 'تعديل بيانات الطالب' : 'إضافة طالب جديد'}</Text>
+          <Text style={styles.modalTitle}>{editing ? 'تعديل بيانات الطالب' : 'تسجيل طالب جديد'}</Text>
           <Pressable onPress={handleSave} style={styles.modalSaveBtn}>
             <Text style={styles.modalSaveTxt}>حفظ</Text>
           </Pressable>
         </View>
 
         <ScrollView style={styles.modalBody} keyboardShouldPersistTaps="handled">
-          <Text style={styles.fieldLabel}>اسم الطالب *</Text>
-          <TextInput style={styles.fieldInput} value={name} onChangeText={setName} placeholder="مثال: محمد علي سعد" placeholderTextColor={Colors.textLight} textAlign="right" />
+
+          {/* ── صورة الطالب ── */}
+          <View style={{ alignItems: 'center', marginBottom: 8, marginTop: 8 }}>
+            <Pressable onPress={pickPhoto} style={{ position: 'relative' }}>
+              {photo ? (
+                <Image source={{ uri: photo }} style={{ width: 100, height: 100, borderRadius: 50, borderWidth: 3, borderColor: Colors.primary }} />
+              ) : (
+                <View style={{ width: 100, height: 100, borderRadius: 50, backgroundColor: Colors.backgroundSecondary, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderStyle: 'dashed', borderColor: Colors.border }}>
+                  <Ionicons name="camera" size={30} color={Colors.textLight} />
+                </View>
+              )}
+              <View style={{ position: 'absolute', bottom: 0, right: 0, backgroundColor: Colors.primary, borderRadius: 14, width: 28, height: 28, alignItems: 'center', justifyContent: 'center' }}>
+                <Ionicons name="pencil" size={14} color="#fff" />
+              </View>
+            </Pressable>
+            <Text style={{ color: Colors.textLight, fontSize: 12, marginTop: 6 }}>صورة الطالب الشخصية</Text>
+          </View>
+
+          <SectionHeader title="البيانات الشخصية" icon="👦" />
+
+          <Text style={styles.fieldLabel}>الاسم الرباعي *</Text>
+          <TextInput style={styles.fieldInput} value={name} onChangeText={setName} placeholder="مثال: محمد علي سعد الأحمد" placeholderTextColor={Colors.textLight} textAlign="right" />
+
+          <Text style={styles.fieldLabel}>الجنس</Text>
+          <View style={styles.pillRow}>
+            {(['ذكر', 'أنثى'] as const).map(g => (
+              <Pressable key={g} style={[styles.pill, gender === g && styles.pillActive]} onPress={() => setGender(g)}>
+                <Text style={[styles.pillText, gender === g && styles.pillTextActive]}>{g === 'ذكر' ? '👦 ذكر' : '👧 أنثى'}</Text>
+              </Pressable>
+            ))}
+          </View>
+
+          <Text style={styles.fieldLabel}>الجنسية</Text>
+          <TextInput style={styles.fieldInput} value={nationality} onChangeText={setNationality} placeholder="مثال: سوري، مصري، سعودي..." placeholderTextColor={Colors.textLight} textAlign="right" />
+
+          <Text style={styles.fieldLabel}>الرقم الوطني</Text>
+          <TextInput style={styles.fieldInput} value={nationalId} onChangeText={setNationalId} placeholder="أدخل الرقم الوطني" placeholderTextColor={Colors.textLight} keyboardType="default" textAlign="right" />
 
           <Text style={styles.fieldLabel}>المرحلة الدراسية</Text>
           <View style={styles.pillRow}>
@@ -582,18 +679,71 @@ function AddStudentModal({ visible, editing, onClose, onSave }: {
             ))}
           </View>
 
+          {/* ── صور شهادة الميلاد ── */}
+          <SectionHeader title="شهادة الميلاد" icon="📄" />
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 16 }}>
+            {birthCertImages.map((uri, idx) => (
+              <View key={idx} style={{ position: 'relative' }}>
+                <Image source={{ uri }} style={{ width: 90, height: 90, borderRadius: 10, borderWidth: 1, borderColor: Colors.border }} />
+                <Pressable
+                  style={{ position: 'absolute', top: -6, right: -6, backgroundColor: Colors.danger, borderRadius: 10, width: 20, height: 20, alignItems: 'center', justifyContent: 'center' }}
+                  onPress={() => setBirthCertImages(prev => prev.filter((_, i) => i !== idx))}
+                >
+                  <Ionicons name="close" size={12} color="#fff" />
+                </Pressable>
+              </View>
+            ))}
+            {birthCertImages.length < 3 && (
+              <Pressable
+                onPress={pickBirthCert}
+                style={{ width: 90, height: 90, borderRadius: 10, borderWidth: 2, borderStyle: 'dashed', borderColor: Colors.border, alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.backgroundSecondary }}
+              >
+                <Ionicons name="add" size={28} color={Colors.textLight} />
+                <Text style={{ fontSize: 10, color: Colors.textLight, marginTop: 2 }}>إضافة صورة</Text>
+              </Pressable>
+            )}
+          </View>
+          <Text style={{ fontSize: 11, color: Colors.textLight, textAlign: 'right', marginBottom: 8, marginTop: -8 }}>يمكن إضافة حتى 3 صور لشهادة الميلاد</Text>
+
+          {/* ── بيانات ولي الأمر ── */}
+          <SectionHeader title="بيانات ولي الأمر" icon="👨‍👦" />
+
           <Text style={styles.fieldLabel}>اسم ولي الأمر *</Text>
           <TextInput style={styles.fieldInput} value={parentName} onChangeText={setParentName} placeholder="مثال: علي سعد الأحمد" placeholderTextColor={Colors.textLight} textAlign="right" />
 
-          <Text style={styles.fieldLabel}>هاتف ولي الأمر</Text>
+          <Text style={styles.fieldLabel}>صلة القرابة</Text>
+          <View style={[styles.pillRow, { flexWrap: 'wrap' }]}>
+            {PARENT_RELATIONS.map(r => (
+              <Pressable key={r} style={[styles.pill, parentRelation === r && styles.pillActive]} onPress={() => setParentRelation(r)}>
+                <Text style={[styles.pillText, parentRelation === r && styles.pillTextActive]}>{r}</Text>
+              </Pressable>
+            ))}
+          </View>
+
+          <Text style={styles.fieldLabel}>رقم هاتف ولي الأمر</Text>
           <TextInput style={styles.fieldInput} value={parentPhone} onChangeText={setParentPhone} placeholder="+249 XXX XXX XXX" placeholderTextColor={Colors.textLight} keyboardType="phone-pad" textAlign="right" />
+
+          <Text style={styles.fieldLabel}>رقم إضافي للطوارئ</Text>
+          <TextInput style={styles.fieldInput} value={emergencyPhone} onChangeText={setEmergencyPhone} placeholder="+249 XXX XXX XXX" placeholderTextColor={Colors.textLight} keyboardType="phone-pad" textAlign="right" />
+
+          {/* ── الحالة الصحية ── */}
+          <SectionHeader title="الحالة الصحية" icon="🩺" />
+
+          <Text style={styles.fieldLabel}>فصيلة الدم</Text>
+          <View style={[styles.pillRow, { flexWrap: 'wrap' }]}>
+            {BLOOD_TYPES.map(bt => (
+              <Pressable key={bt} style={[styles.pill, bloodType === bt && { backgroundColor: '#EF4444', borderColor: '#EF4444' }]} onPress={() => setBloodType(bt)}>
+                <Text style={[styles.pillText, bloodType === bt && styles.pillTextActive]}>{bt}</Text>
+              </Pressable>
+            ))}
+          </View>
+
+          {/* ── متابعة ── */}
+          <SectionHeader title="متابعة الطالب" icon="📊" />
 
           <Text style={styles.fieldLabel}>نسبة الحضور (%)</Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 18 }}>
-            <Pressable
-              style={[styles.pill, { paddingHorizontal: 16, paddingVertical: 8 }]}
-              onPress={() => setAttendance(String(Math.max(0, attNum - 1)))}
-            >
+            <Pressable style={[styles.pill, { paddingHorizontal: 16, paddingVertical: 8 }]} onPress={() => setAttendance(String(Math.max(0, attNum - 1)))}>
               <Text style={[styles.pillText, { fontSize: 18 }]}>−</Text>
             </Pressable>
             <View style={{ flex: 1 }}>
@@ -603,14 +753,10 @@ function AddStudentModal({ visible, editing, onClose, onSave }: {
               <TextInput
                 style={[styles.fieldInput, { marginBottom: 0, textAlign: 'center', paddingVertical: 8 }]}
                 value={attendance} onChangeText={setAttendance}
-                keyboardType="numeric" placeholder="100"
-                placeholderTextColor={Colors.textLight}
+                keyboardType="numeric" placeholder="100" placeholderTextColor={Colors.textLight}
               />
             </View>
-            <Pressable
-              style={[styles.pill, { paddingHorizontal: 16, paddingVertical: 8 }]}
-              onPress={() => setAttendance(String(Math.min(100, attNum + 1)))}
-            >
+            <Pressable style={[styles.pill, { paddingHorizontal: 16, paddingVertical: 8 }]} onPress={() => setAttendance(String(Math.min(100, attNum + 1)))}>
               <Text style={[styles.pillText, { fontSize: 18 }]}>+</Text>
             </Pressable>
           </View>
@@ -618,11 +764,7 @@ function AddStudentModal({ visible, editing, onClose, onSave }: {
           <Text style={styles.fieldLabel}>السلوك</Text>
           <View style={styles.pillRow}>
             {BEHAVIORS.map(b => (
-              <Pressable
-                key={b}
-                style={[styles.pill, behavior === b && { backgroundColor: BEHAVIOR_COLORS[b], borderColor: BEHAVIOR_COLORS[b] }]}
-                onPress={() => setBehavior(b)}
-              >
+              <Pressable key={b} style={[styles.pill, behavior === b && { backgroundColor: BEHAVIOR_COLORS[b], borderColor: BEHAVIOR_COLORS[b] }]} onPress={() => setBehavior(b)}>
                 <Text style={[styles.pillText, behavior === b && styles.pillTextActive]}>{b}</Text>
               </Pressable>
             ))}
@@ -631,11 +773,7 @@ function AddStudentModal({ visible, editing, onClose, onSave }: {
           <Text style={styles.fieldLabel}>الواجبات</Text>
           <View style={styles.pillRow}>
             {HOMEWORKS.map(h => (
-              <Pressable
-                key={h}
-                style={[styles.pill, homework === h && { backgroundColor: HOMEWORK_COLORS[h], borderColor: HOMEWORK_COLORS[h] }]}
-                onPress={() => setHomework(h)}
-              >
+              <Pressable key={h} style={[styles.pill, homework === h && { backgroundColor: HOMEWORK_COLORS[h], borderColor: HOMEWORK_COLORS[h] }]} onPress={() => setHomework(h)}>
                 <Text style={[styles.pillText, homework === h && styles.pillTextActive]}>{h}</Text>
               </Pressable>
             ))}
@@ -649,7 +787,7 @@ function AddStudentModal({ visible, editing, onClose, onSave }: {
             placeholderTextColor={Colors.textLight}
             textAlign="right" multiline
           />
-          <View style={{ height: 40 }} />
+          <View style={{ height: 50 }} />
         </ScrollView>
       </View>
     </Modal>
@@ -694,14 +832,23 @@ function StudentProfileSheet({ student, onClose }: { student: Student | null; on
           <Pressable onPress={onClose} style={pStyles.closeBtn}>
             <Ionicons name="chevron-down" size={24} color="#fff" />
           </Pressable>
-          <HexFrame size={86} fill="rgba(255,255,255,0.15)" stroke="rgba(255,255,255,0.45)" strokeWidth={2} style={{ marginBottom: 10 }}>
-            <MaterialCommunityIcons name="account-school" size={40} color="#fff" />
-          </HexFrame>
+          {student.photo ? (
+            <Image source={{ uri: student.photo }} style={{ width: 86, height: 86, borderRadius: 43, borderWidth: 3, borderColor: 'rgba(255,255,255,0.6)', marginBottom: 10 }} />
+          ) : (
+            <HexFrame size={86} fill="rgba(255,255,255,0.15)" stroke="rgba(255,255,255,0.45)" strokeWidth={2} style={{ marginBottom: 10 }}>
+              <MaterialCommunityIcons name="account-school" size={40} color="#fff" />
+            </HexFrame>
+          )}
           <Text style={pStyles.profileName}>{student.name}</Text>
           <View style={pStyles.profileBadgeRow}>
             <View style={[pStyles.profileBadge, { backgroundColor: levelColor }]}>
               <Text style={pStyles.profileBadgeText}>{student.level}</Text>
             </View>
+            {student.gender ? (
+              <View style={[pStyles.profileBadge, { backgroundColor: student.gender === 'ذكر' ? '#3B82F650' : '#EC489950' }]}>
+                <Text style={pStyles.profileBadgeText}>{student.gender === 'ذكر' ? '👦' : '👧'} {student.gender}</Text>
+              </View>
+            ) : null}
             <View style={[pStyles.profileBadge, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
               <Text style={pStyles.profileBadgeText}>ولي الأمر: {student.parentName}</Text>
             </View>
@@ -753,12 +900,52 @@ function StudentProfileSheet({ student, onClose }: { student: Student | null; on
           {/* ══ TAB: نظرة عامة ══ */}
           {activeTab === 'نظرة عامة' && (
             <>
+              {/* Personal Info Card */}
+              {(student.nationalId || student.nationality || student.birthCertificateImages?.length) ? (
+                <View style={pStyles.section}>
+                  <Text style={pStyles.sectionTitle}>البيانات الشخصية</Text>
+                  <View style={pStyles.contactBlock}>
+                    {student.nationalId ? (
+                      <View style={pStyles.contactLine}>
+                        <Text style={pStyles.contactVal}>{student.nationalId}</Text>
+                        <View style={[pStyles.contactIcon, { backgroundColor: '#8B5CF620' }]}>
+                          <Ionicons name="card-outline" size={16} color="#8B5CF6" />
+                        </View>
+                      </View>
+                    ) : null}
+                    {student.nationality ? (
+                      <View style={pStyles.contactLine}>
+                        <Text style={pStyles.contactVal}>{student.nationality}</Text>
+                        <View style={[pStyles.contactIcon, { backgroundColor: '#F59E0B20' }]}>
+                          <Text style={{ fontSize: 14 }}>🌍</Text>
+                        </View>
+                      </View>
+                    ) : null}
+                    {student.birthCertificateImages?.length ? (
+                      <View>
+                        <View style={pStyles.contactLine}>
+                          <Text style={pStyles.contactVal}>شهادة الميلاد ({student.birthCertificateImages.length} صورة)</Text>
+                          <View style={[pStyles.contactIcon, { backgroundColor: '#10B98120' }]}>
+                            <Ionicons name="document-text-outline" size={16} color="#10B981" />
+                          </View>
+                        </View>
+                        <View style={{ flexDirection: 'row', gap: 8, marginTop: 8, flexWrap: 'wrap' }}>
+                          {student.birthCertificateImages.map((uri, i) => (
+                            <Image key={i} source={{ uri }} style={{ width: 80, height: 80, borderRadius: 8, borderWidth: 1, borderColor: Colors.border }} />
+                          ))}
+                        </View>
+                      </View>
+                    ) : null}
+                  </View>
+                </View>
+              ) : null}
+
               {/* Contact Card */}
               <View style={pStyles.section}>
                 <Text style={pStyles.sectionTitle}>معلومات ولي الأمر</Text>
                 <View style={pStyles.contactBlock}>
                   <View style={pStyles.contactLine}>
-                    <Text style={pStyles.contactVal}>{student.parentName}</Text>
+                    <Text style={pStyles.contactVal}>{student.parentName}{student.parentRelation ? ` (${student.parentRelation})` : ''}</Text>
                     <View style={pStyles.contactIcon}>
                       <Ionicons name="person" size={16} color={Colors.primary} />
                     </View>
@@ -771,6 +958,17 @@ function StudentProfileSheet({ student, onClose }: { student: Student | null; on
                       <Text style={[pStyles.contactVal, { color: '#3B82F6' }]}>{student.parentPhone}</Text>
                       <View style={[pStyles.contactIcon, { backgroundColor: '#3B82F620' }]}>
                         <Ionicons name="call" size={16} color="#3B82F6" />
+                      </View>
+                    </Pressable>
+                  ) : null}
+                  {student.emergencyPhone ? (
+                    <Pressable
+                      style={pStyles.contactLine}
+                      onPress={() => openLink(`tel:${student.emergencyPhone}`, `رقم الطوارئ: ${student.emergencyPhone}`)}
+                    >
+                      <Text style={[pStyles.contactVal, { color: Colors.danger }]}>{student.emergencyPhone} (طوارئ)</Text>
+                      <View style={[pStyles.contactIcon, { backgroundColor: Colors.danger + '20' }]}>
+                        <Ionicons name="call" size={16} color={Colors.danger} />
                       </View>
                     </Pressable>
                   ) : null}
@@ -798,6 +996,21 @@ function StudentProfileSheet({ student, onClose }: { student: Student | null; on
                   </View>
                 </View>
               </View>
+
+              {/* Health Info */}
+              {student.bloodType ? (
+                <View style={pStyles.section}>
+                  <Text style={pStyles.sectionTitle}>الحالة الصحية</Text>
+                  <View style={pStyles.contactBlock}>
+                    <View style={pStyles.contactLine}>
+                      <Text style={[pStyles.contactVal, { color: '#EF4444', fontFamily: 'Inter_700Bold' }]}>{student.bloodType}</Text>
+                      <View style={[pStyles.contactIcon, { backgroundColor: '#EF444420' }]}>
+                        <Text style={{ fontSize: 16 }}>🩸</Text>
+                      </View>
+                    </View>
+                  </View>
+                </View>
+              ) : null}
 
               {/* Behavior & Homework */}
               <View style={pStyles.statusRow}>

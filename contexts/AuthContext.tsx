@@ -4,7 +4,7 @@ import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 import { getApiUrl } from '@/lib/query-client';
 
-export type UserRole = 'admin' | 'teacher' | 'parent';
+export type UserRole = 'admin' | 'teacher' | 'parent' | 'guest';
 
 export interface AuthUser {
   id: string;

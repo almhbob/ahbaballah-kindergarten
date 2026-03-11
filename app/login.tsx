@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, Pressable, TextInput,
   KeyboardAvoidingView, Platform, ScrollView, Alert, Linking, Image,
@@ -81,32 +81,11 @@ export default function LoginScreen() {
 
   const activeRole = ROLES.find(r => r.id === selectedRole);
 
-  const demoHint = useMemo(() => {
-    if (!selectedRole) return null;
-    if (selectedRole === 'admin') return { cred: 'admin', pass: '1234' };
-    if (selectedRole === 'teacher') {
-      const t = employees.find(e => e.email);
-      return t ? { cred: t.email, pass: t.password || '1234' } : null;
-    }
-    if (selectedRole === 'parent') {
-      const s = students.find(s => s.parentPhone);
-      return s ? { cred: s.parentPhone, pass: s.parentPassword || '1234' } : null;
-    }
-    return null;
-  }, [selectedRole, employees, students]);
-
   const handleRoleSelect = (role: UserRole) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setSelectedRole(role);
     setPassword('');
     setCredential('');
-  };
-
-  const applyDemo = () => {
-    if (!demoHint) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setCredential(demoHint.cred);
-    setPassword(demoHint.pass);
   };
 
   const handleLogin = async () => {
@@ -323,20 +302,6 @@ export default function LoginScreen() {
             </View>
           </View>
 
-          {/* ── Demo Hint ── */}
-          {demoHint && (
-            <Pressable style={s.demoHint} onPress={applyDemo}>
-              <MaterialCommunityIcons name="information-outline" size={13} color="rgba(201,149,42,0.8)" style={{ marginLeft: 6 }} />
-              <Text style={s.demoHintTxt} numberOfLines={1}>
-                {activeRole?.id === 'teacher' ? 'إيميل: ' : activeRole?.id === 'parent' ? 'هاتف: ' : 'مستخدم: '}
-                <Text style={s.demoHintVal}>{demoHint.cred}</Text>
-                {'  ·  '}
-                <Text style={s.demoHintVal}>{'كلمة المرور: '}{demoHint.pass}</Text>
-              </Text>
-              <Text style={s.demoFill}>تعبئة</Text>
-            </Pressable>
-          )}
-
           {/* ── Login Button ── */}
           <Pressable
             style={({ pressed }) => [s.loginBtn, { transform: [{ scale: pressed ? 0.97 : 1 }], opacity: pressed ? 0.9 : 1 }]}
@@ -462,16 +427,6 @@ const s = StyleSheet.create({
     flex: 1, fontSize: 14, fontFamily: 'Inter_400Regular',
     color: '#FFFFFF', paddingHorizontal: 12, paddingVertical: 0,
   },
-
-  demoHint: {
-    width: '100%', flexDirection: 'row', alignItems: 'center',
-    backgroundColor: 'rgba(201,149,42,0.08)',
-    borderRadius: 10, borderWidth: 1, borderColor: 'rgba(201,149,42,0.18)',
-    paddingHorizontal: 12, paddingVertical: 8, marginBottom: 12, gap: 4,
-  },
-  demoHintTxt: { flex: 1, fontSize: 11, fontFamily: 'Inter_400Regular', color: 'rgba(255,255,255,0.55)', textAlign: 'right' },
-  demoHintVal: { fontFamily: 'Inter_600SemiBold', color: 'rgba(255,255,255,0.8)' },
-  demoFill: { fontSize: 11, fontFamily: 'Inter_700Bold', color: '#dfb04a' },
 
   loginBtn: { width: '100%', borderRadius: 14, overflow: 'hidden', marginBottom: 16 },
   loginGrad: { height: 54, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6 },

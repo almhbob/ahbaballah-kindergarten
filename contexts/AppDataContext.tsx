@@ -15,12 +15,22 @@ export interface AssessmentResult {
   levelLabel: 'مبتدئ' | 'متوسط' | 'متقدم' | 'ممتاز';
 }
 
+export type BloodType = 'A+' | 'A-' | 'B+' | 'B-' | 'AB+' | 'AB-' | 'O+' | 'O-';
+
 export interface Student {
   id: string;
   name: string;
   level: string;
+  gender?: 'ذكر' | 'أنثى';
+  nationality?: string;
+  photo?: string;
+  nationalId?: string;
+  birthCertificateImages?: string[];
+  bloodType?: BloodType;
+  emergencyPhone?: string;
   parentName: string;
   parentPhone: string;
+  parentRelation?: string;
   parentPassword?: string;
   parentDisabled?: boolean;
   attendance: number;
@@ -159,6 +169,29 @@ export interface TransportSubscription {
   studentId: string;
   routeId: string;
   subscribedAt: string;
+}
+
+export interface LevelSnapshot {
+  avgGrade: number;
+  avgAttendance: number;
+  studentCount: number;
+  subjects: { name: string; avg: number }[];
+}
+
+export interface YearlySnapshot {
+  year: string;
+  levels: Record<string, LevelSnapshot>;
+}
+
+export type BannerType = 'offer' | 'alert' | 'event' | 'ad';
+
+export interface Banner {
+  id: string;
+  type: BannerType;
+  title: string;
+  body: string;
+  active: boolean;
+  date: string;
 }
 
 const DEMO_TRANSPORT_ROUTES: TransportRoute[] = [
@@ -378,8 +411,34 @@ interface AppDataContextValue {
   updateTransportRoute: (id: string, data: Partial<TransportRoute>) => void;
   removeTransportRoute: (id: string) => void;
   setTransportSubscription: (studentId: string, routeId: string | null) => void;
+  banners: Banner[];
+  addBanner: (b: Banner) => void;
+  updateBanner: (id: string, data: Partial<Banner>) => void;
+  removeBanner: (id: string) => void;
+  yearlySnapshots: YearlySnapshot[];
+  saveYearlySnapshot: (snapshot: YearlySnapshot) => void;
+  removeYearlySnapshot: (year: string) => void;
   resetAllData: () => void;
 }
+
+const DEMO_YEARLY_SNAPSHOTS: YearlySnapshot[] = [
+  {
+    year: '2024',
+    levels: {
+      'براعم': { avgGrade: 72, avgAttendance: 84, studentCount: 8, subjects: [{ name: 'الأنشطة', avg: 72 }, { name: 'اللغة العربية', avg: 70 }, { name: 'الرياضيات', avg: 68 }] },
+      'مستوى أول': { avgGrade: 76, avgAttendance: 87, studentCount: 10, subjects: [{ name: 'الرياضيات', avg: 78 }, { name: 'اللغة العربية', avg: 75 }, { name: 'العلوم', avg: 74 }] },
+      'مستوى ثاني': { avgGrade: 80, avgAttendance: 90, studentCount: 9, subjects: [{ name: 'الرياضيات', avg: 82 }, { name: 'اللغة العربية', avg: 79 }, { name: 'العلوم', avg: 80 }] },
+    },
+  },
+  {
+    year: '2025',
+    levels: {
+      'براعم': { avgGrade: 75, avgAttendance: 86, studentCount: 9, subjects: [{ name: 'الأنشطة', avg: 76 }, { name: 'اللغة العربية', avg: 73 }, { name: 'الرياضيات', avg: 71 }] },
+      'مستوى أول': { avgGrade: 79, avgAttendance: 89, studentCount: 11, subjects: [{ name: 'الرياضيات', avg: 81 }, { name: 'اللغة العربية', avg: 78 }, { name: 'العلوم', avg: 77 }] },
+      'مستوى ثاني': { avgGrade: 84, avgAttendance: 92, studentCount: 10, subjects: [{ name: 'الرياضيات', avg: 86 }, { name: 'اللغة العربية', avg: 83 }, { name: 'العلوم', avg: 84 }] },
+    },
+  },
+];
 
 const DEFAULT_WELCOME_MSG =
 `مرحباً بك في روضة أحباب الله الخاصة 🌟
@@ -487,6 +546,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const [certificates, setCertificates] = useState<Certificate[]>([]);
   const [transportRoutes, setTransportRoutes] = useState<TransportRoute[]>(DEMO_TRANSPORT_ROUTES);
   const [transportSubscriptions, setTransportSubscriptions] = useState<TransportSubscription[]>([]);
+  const [banners, setBanners] = useState<Banner[]>([]);
+  const [yearlySnapshots, setYearlySnapshots] = useState<YearlySnapshot[]>(DEMO_YEARLY_SNAPSHOTS);
   const welcomeRef = useRef<string>(DEFAULT_WELCOME_MSG);
 
   useEffect(() => {
@@ -524,6 +585,10 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       const savedSubs   = await AsyncStorage.getItem('app_transport_subs');
       if (savedRoutes) setTransportRoutes(JSON.parse(savedRoutes));
       if (savedSubs)   setTransportSubscriptions(JSON.parse(savedSubs));
+      const savedBanners = await AsyncStorage.getItem('app_banners');
+      if (savedBanners) setBanners(JSON.parse(savedBanners));
+      const savedSnapshots = await AsyncStorage.getItem('app_yearly_snapshots');
+      if (savedSnapshots) setYearlySnapshots(JSON.parse(savedSnapshots));
     };
     load();
   }, []);
@@ -839,6 +904,47 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  const addBanner = (b: Banner) => {
+    setBanners(prev => {
+      const updated = [b, ...prev];
+      AsyncStorage.setItem('app_banners', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const updateBanner = (id: string, data: Partial<Banner>) => {
+    setBanners(prev => {
+      const updated = prev.map(b => b.id === id ? { ...b, ...data } : b);
+      AsyncStorage.setItem('app_banners', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const removeBanner = (id: string) => {
+    setBanners(prev => {
+      const updated = prev.filter(b => b.id !== id);
+      AsyncStorage.setItem('app_banners', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const saveYearlySnapshot = (snapshot: YearlySnapshot) => {
+    setYearlySnapshots(prev => {
+      const filtered = prev.filter(s => s.year !== snapshot.year);
+      const updated = [...filtered, snapshot].sort((a, b) => a.year.localeCompare(b.year));
+      AsyncStorage.setItem('app_yearly_snapshots', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const removeYearlySnapshot = (year: string) => {
+    setYearlySnapshots(prev => {
+      const updated = prev.filter(s => s.year !== year);
+      AsyncStorage.setItem('app_yearly_snapshots', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
   const addGraduationYear = (year: string) => {
     const newTasks: GraduationTask[] = DEFAULT_GRADUATION_TASKS.map(t => ({
       ...t,
@@ -868,7 +974,9 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     addCertificate, updateCertificate, removeCertificate,
     transportRoutes, transportSubscriptions,
     addTransportRoute, updateTransportRoute, removeTransportRoute, setTransportSubscription,
-  }), [students, employees, news, inbox, messages, meetings, schedule, welcomeMessage, schoolInfo, honorWeights, annualPlan, graduationTasks, certificates, transportRoutes, transportSubscriptions]);
+    banners, addBanner, updateBanner, removeBanner,
+    yearlySnapshots, saveYearlySnapshot, removeYearlySnapshot,
+  }), [students, employees, news, inbox, messages, meetings, schedule, welcomeMessage, schoolInfo, honorWeights, annualPlan, graduationTasks, certificates, transportRoutes, transportSubscriptions, banners, yearlySnapshots]);
 
   return <AppDataContext.Provider value={value}>{children}</AppDataContext.Provider>;
 }
