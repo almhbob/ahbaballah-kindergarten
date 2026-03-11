@@ -148,7 +148,6 @@ const ab = StyleSheet.create({
 const DETAIL_ITEMS = [
   { icon: 'person-circle', iconBg: '#EFF6FF', iconColor: '#3B82F6', label: 'المديرة', value: 'أ. سلوى أحمد داموس', section: 'معلومات المؤسسة' },
   { icon: 'location',      iconBg: '#ECFDF5', iconColor: '#10B981', label: 'الموقع',  value: 'صفيتة الغنوماب — السودان', section: 'معلومات المؤسسة' },
-  { icon: 'call',          iconBg: '#FFFBEB', iconColor: '#F59E0B', label: 'الهاتف',  value: '+249 917 545 129',          section: 'معلومات المؤسسة' },
   { icon: 'mail',          iconBg: '#F5F3FF', iconColor: '#8B5CF6', label: 'البريد',  value: 'info@ahbaballah.edu',       section: 'معلومات المؤسسة' },
   { icon: 'layers',        iconBg: '#FEF2F2', iconColor: '#EF4444', label: 'الإصدار', value: 'v2.0 — 2026',               section: 'معلومات التطبيق' },
   { icon: 'code-slash',    iconBg: '#F0FDFA', iconColor: '#14B8A6', label: 'المطوّر', value: 'Ali Alnassar — DigitalMind', section: 'معلومات التطبيق' },
@@ -221,7 +220,7 @@ function AboutCard() {
           {[
             { icon: 'account-tie', label: 'المديرة', value: 'سلوى داموس', color: '#818CF8' },
             { icon: 'map-marker',  label: 'الموقع',  value: 'صفيتة',       color: '#34D399' },
-            { icon: 'phone',       label: 'التواصل', value: '545129',       color: '#FCD34D' },
+            { icon: 'calendar',    label: 'التأسيس', value: '2015',         color: '#FCD34D' },
           ].map(q => (
             <View key={q.label} style={ab.quickCard}>
               <MaterialCommunityIcons name={q.icon as any} size={18} color={q.color} />
