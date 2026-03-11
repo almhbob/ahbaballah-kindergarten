@@ -260,41 +260,44 @@ function TeachersSection({ teachers, onAdd, onEdit, onView, onDelete }: {
             <Text style={styles.emptyText}>لا يوجد موظفون</Text>
           </View>
         }
-        renderItem={({ item }) => (
-          <Pressable style={styles.card} onPress={() => onView(item)}>
-            <View style={styles.cardActions}>
-              <Pressable onPress={() => onDelete(item.id)} style={styles.actionBtn}>
-                <Ionicons name="trash-outline" size={16} color={Colors.danger} />
-              </Pressable>
-              <Pressable onPress={() => onEdit(item)} style={styles.actionBtn}>
-                <Ionicons name="create-outline" size={16} color={Colors.primary} />
-              </Pressable>
-            </View>
-            <View style={styles.cardRight}>
-              <HexFrame size={48} fill={item.level ? LEVEL_COLORS[item.level] ?? Colors.primary : Colors.primary} stroke="rgba(255,255,255,0.35)" strokeWidth={1.5}>
-                <MaterialCommunityIcons name="account" size={22} color="#fff" />
-              </HexFrame>
-              <View style={styles.cardInfo}>
-                <Text style={styles.cardName}>{item.name}</Text>
-                <Text style={styles.cardSub}>{item.role}{item.level ? ` — ${item.level}` : ''}</Text>
-                <View style={styles.cardMeta}>
-                  <View style={styles.metaChip}>
-                    <Ionicons name="call-outline" size={11} color={Colors.textSecondary} />
-                    <Text style={styles.metaText}>{item.phone || '—'}</Text>
-                  </View>
-                  <View style={styles.metaChip}>
-                    <Ionicons name="wallet-outline" size={11} color={Colors.textSecondary} />
-                    <Text style={styles.metaText}>{item.salary.toLocaleString()} ج.س</Text>
-                  </View>
+        renderItem={({ item }) => {
+          const accentColor = item.level ? LEVEL_COLORS[item.level] ?? Colors.primary : Colors.primary;
+          return (
+            <Pressable style={[styles.card, { borderRightColor: accentColor }]} onPress={() => onView(item)}>
+              <View style={styles.cardActions}>
+                <Pressable onPress={() => onDelete(item.id)} style={styles.actionBtn}>
+                  <Ionicons name="trash-outline" size={15} color={Colors.danger} />
+                </Pressable>
+                <Pressable onPress={() => onEdit(item)} style={styles.actionBtn}>
+                  <Ionicons name="create-outline" size={15} color={Colors.primary} />
+                </Pressable>
+              </View>
+              <View style={styles.cardRight}>
+                <View style={[styles.avatarCircle, { backgroundColor: accentColor + '18', borderColor: accentColor + '40' }]}>
+                  <MaterialCommunityIcons name="account-tie" size={22} color={accentColor} />
                 </View>
-                <View style={styles.viewFileBadge}>
-                  <Ionicons name="document-text-outline" size={11} color={Colors.primary} />
-                  <Text style={styles.viewFileText}>عرض الملف الوظيفي</Text>
+                <View style={styles.cardInfo}>
+                  <Text style={styles.cardName}>{item.name}</Text>
+                  <Text style={styles.cardSub}>{item.role}{item.level ? ` — ${item.level}` : ''}</Text>
+                  <View style={styles.cardMeta}>
+                    <View style={styles.metaChip}>
+                      <Ionicons name="call-outline" size={11} color={Colors.textSecondary} />
+                      <Text style={styles.metaText}>{item.phone || '—'}</Text>
+                    </View>
+                    <View style={styles.metaChip}>
+                      <Ionicons name="wallet-outline" size={11} color={Colors.textSecondary} />
+                      <Text style={styles.metaText}>{item.salary.toLocaleString()} ج.س</Text>
+                    </View>
+                  </View>
+                  <View style={styles.viewFileBadge}>
+                    <Ionicons name="document-text-outline" size={11} color={accentColor} />
+                    <Text style={[styles.viewFileText, { color: accentColor }]}>عرض الملف الوظيفي</Text>
+                  </View>
                 </View>
               </View>
-            </View>
-          </Pressable>
-        )}
+            </Pressable>
+          );
+        }}
       />
     </View>
   );
@@ -336,44 +339,47 @@ function StudentsSection({ students, onAdd, onEdit, onView, onDelete }: {
             <Text style={styles.emptyText}>لا يوجد طلاب</Text>
           </View>
         }
-        renderItem={({ item }) => (
-          <Pressable style={styles.card} onPress={() => onView(item)}>
-            <View style={styles.cardActions}>
-              <Pressable onPress={() => onDelete(item.id)} style={styles.actionBtn}>
-                <Ionicons name="trash-outline" size={16} color={Colors.danger} />
-              </Pressable>
-              <Pressable onPress={() => onEdit(item)} style={styles.actionBtn}>
-                <Ionicons name="create-outline" size={16} color={Colors.primary} />
-              </Pressable>
-            </View>
-            <View style={styles.cardRight}>
-              {item.photo ? (
-                <Image source={{ uri: item.photo }} style={{ width: 48, height: 48, borderRadius: 24, borderWidth: 2, borderColor: LEVEL_COLORS[item.level] ?? '#8B5CF6' }} />
-              ) : (
-                <HexFrame size={48} fill={LEVEL_COLORS[item.level] ?? '#8B5CF6'} stroke="rgba(255,255,255,0.35)" strokeWidth={1.5}>
-                  <MaterialCommunityIcons name="account-school" size={22} color="#fff" />
-                </HexFrame>
-              )}
-              <View style={styles.cardInfo}>
-                <Text style={styles.cardName}>{item.name}</Text>
-                <Text style={styles.cardSub}>{item.parentRelation ? `${item.parentRelation}: ` : 'ولي الأمر: '}{item.parentName}</Text>
-                <View style={styles.cardMeta}>
-                  <View style={[styles.levelBadge, { backgroundColor: (LEVEL_COLORS[item.level] ?? '#8B5CF6') + '20' }]}>
-                    <Text style={[styles.levelBadgeText, { color: LEVEL_COLORS[item.level] ?? '#8B5CF6' }]}>{item.level}</Text>
+        renderItem={({ item }) => {
+          const lc = LEVEL_COLORS[item.level] ?? '#8B5CF6';
+          return (
+            <Pressable style={[styles.card, { borderRightColor: lc }]} onPress={() => onView(item)}>
+              <View style={styles.cardActions}>
+                <Pressable onPress={() => onDelete(item.id)} style={styles.actionBtn}>
+                  <Ionicons name="trash-outline" size={15} color={Colors.danger} />
+                </Pressable>
+                <Pressable onPress={() => onEdit(item)} style={styles.actionBtn}>
+                  <Ionicons name="create-outline" size={15} color={Colors.primary} />
+                </Pressable>
+              </View>
+              <View style={styles.cardRight}>
+                {item.photo ? (
+                  <Image source={{ uri: item.photo }} style={{ width: 48, height: 48, borderRadius: 24, borderWidth: 2.5, borderColor: lc }} />
+                ) : (
+                  <View style={[styles.avatarCircle, { backgroundColor: lc + '18', borderColor: lc + '50' }]}>
+                    <MaterialCommunityIcons name="account-school" size={22} color={lc} />
                   </View>
-                  <View style={styles.metaChip}>
-                    <Ionicons name="stats-chart-outline" size={11} color={Colors.textSecondary} />
-                    <Text style={styles.metaText}>حضور {item.attendance}%</Text>
+                )}
+                <View style={styles.cardInfo}>
+                  <Text style={styles.cardName}>{item.name}</Text>
+                  <Text style={styles.cardSub}>{item.parentRelation ? `${item.parentRelation}: ` : 'ولي الأمر: '}{item.parentName}</Text>
+                  <View style={styles.cardMeta}>
+                    <View style={[styles.levelBadge, { backgroundColor: lc + '18', borderWidth: 1, borderColor: lc + '40' }]}>
+                      <Text style={[styles.levelBadgeText, { color: lc }]}>{item.level}</Text>
+                    </View>
+                    <View style={styles.metaChip}>
+                      <Ionicons name="stats-chart-outline" size={11} color={Colors.textSecondary} />
+                      <Text style={styles.metaText}>حضور {item.attendance}%</Text>
+                    </View>
                   </View>
-                </View>
-                <View style={styles.viewFileBadge}>
-                  <Ionicons name="document-text-outline" size={11} color='#8B5CF6' />
-                  <Text style={[styles.viewFileText, { color: '#8B5CF6' }]}>عرض الملف الأكاديمي</Text>
+                  <View style={styles.viewFileBadge}>
+                    <Ionicons name="document-text-outline" size={11} color={lc} />
+                    <Text style={[styles.viewFileText, { color: lc }]}>عرض الملف الأكاديمي</Text>
+                  </View>
                 </View>
               </View>
-            </View>
-          </Pressable>
-        )}
+            </Pressable>
+          );
+        }}
       />
     </View>
   );
@@ -1909,19 +1915,37 @@ const styles = StyleSheet.create({
   addBtnText: { fontSize: 15, fontFamily: 'Inter_600SemiBold', color: '#fff' },
   exportBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 11, borderRadius: 12, backgroundColor: Colors.surface, borderWidth: 1.5, borderColor: Colors.primary + '30' },
   exportBtnText: { fontSize: 14, fontFamily: 'Inter_600SemiBold', color: Colors.primary },
-  card: { backgroundColor: Colors.surface, borderRadius: 16, padding: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1, borderColor: Colors.borderLight },
+  card: {
+    backgroundColor: Colors.surface, borderRadius: 16, padding: 14,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    borderRightWidth: 4,
+    shadowColor: Colors.primary, shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08, shadowRadius: 8, elevation: 3,
+  },
   cardRight: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 },
-  avatarCircle: { width: 46, height: 46, borderRadius: 23, alignItems: 'center', justifyContent: 'center' },
+  avatarCircle: {
+    width: 48, height: 48, borderRadius: 24,
+    alignItems: 'center', justifyContent: 'center',
+    borderWidth: 2, borderColor: 'transparent',
+  },
   cardInfo: { flex: 1, alignItems: 'flex-end' },
-  cardName: { fontSize: 15, fontFamily: 'Inter_600SemiBold', color: Colors.text, marginBottom: 2 },
-  cardSub: { fontSize: 12, fontFamily: 'Inter_400Regular', color: Colors.textSecondary, marginBottom: 6 },
-  cardMeta: { flexDirection: 'row', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' },
-  metaChip: { flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: Colors.surfaceAlt, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 },
-  metaText: { fontSize: 10, fontFamily: 'Inter_400Regular', color: Colors.textSecondary },
-  levelBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 6 },
+  cardName: { fontSize: 15, fontFamily: 'Inter_600SemiBold', color: Colors.text, marginBottom: 3 },
+  cardSub: { fontSize: 12, fontFamily: 'Inter_400Regular', color: Colors.textSecondary, marginBottom: 7 },
+  cardMeta: { flexDirection: 'row', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' },
+  metaChip: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    backgroundColor: Colors.surfaceAlt, paddingHorizontal: 8, paddingVertical: 3,
+    borderRadius: 8, borderWidth: 1, borderColor: Colors.borderLight,
+  },
+  metaText: { fontSize: 10, fontFamily: 'Inter_500Medium', color: Colors.textSecondary },
+  levelBadge: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 8 },
   levelBadgeText: { fontSize: 11, fontFamily: 'Inter_600SemiBold' },
-  cardActions: { flexDirection: 'column', gap: 6, marginLeft: 8 },
-  actionBtn: { width: 32, height: 32, borderRadius: 8, backgroundColor: Colors.surfaceAlt, alignItems: 'center', justifyContent: 'center' },
+  cardActions: { flexDirection: 'column', gap: 8, marginLeft: 6 },
+  actionBtn: {
+    width: 32, height: 32, borderRadius: 10,
+    backgroundColor: Colors.surfaceAlt, alignItems: 'center', justifyContent: 'center',
+    borderWidth: 1, borderColor: Colors.borderLight,
+  },
   empty: { alignItems: 'center', paddingVertical: 48, gap: 12 },
   emptyText: { fontSize: 14, fontFamily: 'Inter_400Regular', color: Colors.textLight },
   classCard: { backgroundColor: Colors.surface, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: Colors.borderLight },

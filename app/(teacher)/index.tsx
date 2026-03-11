@@ -114,16 +114,15 @@ export default function TeacherScheduleScreen() {
               const color = PERIOD_COLORS[item.type] ?? '#3B82F6';
               const isBreak = item.type === 'break';
               return (
-                <View key={item.id} style={[styles.scheduleItem, isBreak && styles.scheduleBreak]}>
-                  <View style={[styles.scheduleIndicator, { backgroundColor: color }]} />
+                <View key={item.id} style={[styles.scheduleItem, isBreak ? styles.scheduleBreak : { borderRightColor: color }]}>
                   <View style={styles.scheduleContent}>
                     <Text style={[styles.scheduleSubject, isBreak && styles.scheduleBreakText]}>
                       {item.subject}
                     </Text>
-                    <Text style={styles.scheduleTime}>{item.startTime} - {item.endTime}</Text>
+                    <Text style={styles.scheduleTime}>{item.startTime} — {item.endTime}</Text>
                   </View>
                   {!isBreak && (
-                    <View style={[styles.scheduleTypeBadge, { backgroundColor: color + '20' }]}>
+                    <View style={[styles.scheduleTypeBadge, { backgroundColor: color + '18' }]}>
                       <Text style={[styles.scheduleTypeText, { color }]}>
                         {item.type === 'lesson' ? 'حصة' : 'نشاط'}
                       </Text>
@@ -171,22 +170,40 @@ const styles = StyleSheet.create({
   todayStatLabel: { fontSize: 11, fontFamily: 'Inter_400Regular', color: 'rgba(255,255,255,0.6)' },
   todayStatDivider: { width: 1, backgroundColor: 'rgba(255,255,255,0.2)', height: 30, alignSelf: 'center' },
   body: { padding: 20 },
-  sectionTitle: { fontSize: 16, fontFamily: 'Inter_700Bold', color: Colors.text, textAlign: 'right', marginBottom: 12, marginTop: 4 },
-  schedule: { gap: 8, marginBottom: 24 },
-  scheduleItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.surface, borderRadius: 14, padding: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 },
-  scheduleBreak: { backgroundColor: Colors.surfaceAlt },
-  scheduleIndicator: { width: 4, height: 40, borderRadius: 2, marginLeft: 12 },
-  scheduleContent: { flex: 1, alignItems: 'flex-end' },
+  sectionTitle: {
+    fontSize: 15, fontFamily: 'Inter_700Bold', color: Colors.text,
+    textAlign: 'right', marginBottom: 12, marginTop: 4,
+    borderRightWidth: 3, borderRightColor: '#1A6B5C', paddingRight: 10,
+  },
+  schedule: { gap: 10, marginBottom: 24 },
+  scheduleItem: {
+    flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.surface,
+    borderRadius: 16, paddingVertical: 14, paddingHorizontal: 14,
+    shadowColor: '#1A6B5C', shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08, shadowRadius: 8, elevation: 2,
+    borderRightWidth: 4,
+  },
+  scheduleBreak: { backgroundColor: Colors.surfaceAlt, borderRightColor: '#94A3B8' },
+  scheduleIndicator: { display: 'none' as any },
+  scheduleContent: { flex: 1, alignItems: 'flex-end', marginRight: 2 },
   scheduleSubject: { fontSize: 14, fontFamily: 'Inter_600SemiBold', color: Colors.text },
-  scheduleBreakText: { color: Colors.textSecondary },
-  scheduleTime: { fontSize: 11, fontFamily: 'Inter_400Regular', color: Colors.textLight, marginTop: 2 },
-  scheduleTypeBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
-  scheduleTypeText: { fontSize: 10, fontFamily: 'Inter_600SemiBold' },
+  scheduleBreakText: { color: Colors.textSecondary, fontFamily: 'Inter_400Regular' as any },
+  scheduleTime: {
+    fontSize: 11, fontFamily: 'Inter_400Regular', color: Colors.textLight, marginTop: 4,
+    backgroundColor: Colors.surfaceAlt, paddingHorizontal: 8, paddingVertical: 2,
+    borderRadius: 8, alignSelf: 'flex-end' as any,
+  },
+  scheduleTypeBadge: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 10 },
+  scheduleTypeText: { fontSize: 11, fontFamily: 'Inter_600SemiBold' },
   emptySchedule: { alignItems: 'center', paddingVertical: 24, gap: 8 },
   emptyScheduleText: { fontSize: 13, fontFamily: 'Inter_400Regular', color: Colors.textLight, textAlign: 'center' },
   daysRow: { flexDirection: 'row', gap: 6 },
-  dayChip: { flex: 1, paddingVertical: 8, borderRadius: 10, backgroundColor: Colors.surface, alignItems: 'center' },
-  dayChipActive: { backgroundColor: '#1A6B5C' },
+  dayChip: {
+    flex: 1, paddingVertical: 10, borderRadius: 12, backgroundColor: Colors.surface,
+    alignItems: 'center', borderWidth: 1, borderColor: Colors.borderLight,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 3, elevation: 1,
+  },
+  dayChipActive: { backgroundColor: '#1A6B5C', borderColor: '#1A6B5C' },
   dayChipText: { fontSize: 10, fontFamily: 'Inter_500Medium', color: Colors.textSecondary },
   dayChipTextActive: { color: '#FFFFFF', fontFamily: 'Inter_700Bold' },
 });

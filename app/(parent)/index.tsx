@@ -98,18 +98,18 @@ export default function ParentHomeScreen() {
 
         <View style={styles.body}>
           <View style={styles.statsRow}>
-            <View style={[styles.statBox, { borderColor: behColor + '40' }]}>
+            <View style={[styles.statBox, { borderBottomColor: behColor }]}>
               <Text style={[styles.statBoxValue, { color: behColor }]}>{child.behavior}</Text>
               <Text style={styles.statBoxLabel}>السلوك</Text>
             </View>
-            <View style={[styles.statBox, { borderColor: avgGrade >= 80 ? Colors.success + '40' : Colors.warning + '40' }]}>
+            <View style={[styles.statBox, { borderBottomColor: avgGrade >= 80 ? Colors.success : Colors.warning }]}>
               <Text style={[styles.statBoxValue, { color: avgGrade >= 80 ? Colors.success : Colors.warning }]}>
                 {avgGrade > 0 ? `${avgGrade}%` : 'لا يوجد'}
               </Text>
               <Text style={styles.statBoxLabel}>المعدل</Text>
             </View>
             <View style={[styles.statBox, {
-              borderColor: child.homework === 'منجز' ? Colors.success + '40' : Colors.danger + '40'
+              borderBottomColor: child.homework === 'منجز' ? Colors.success : child.homework === 'ناقص' ? Colors.warning : Colors.danger
             }]}>
               <Text style={[styles.statBoxValue, {
                 color: child.homework === 'منجز' ? Colors.success : child.homework === 'ناقص' ? Colors.warning : Colors.danger
@@ -218,7 +218,7 @@ export default function ParentHomeScreen() {
                 const pct = Math.round((g.score / g.total) * 100);
                 const gc = pct >= 90 ? Colors.success : pct >= 70 ? Colors.warning : Colors.danger;
                 return (
-                  <View key={i} style={styles.gradeBox}>
+                  <View key={i} style={[styles.gradeBox, { borderTopColor: gc }]}>
                     <View style={styles.gradeCircle}>
                       <Text style={[styles.gradeScore, { color: gc }]}>{g.score}</Text>
                       <Text style={styles.gradeTotal}>/{g.total}</Text>
@@ -266,23 +266,45 @@ const styles = StyleSheet.create({
   attendanceLabel: { fontSize: 9, fontFamily: 'Inter_400Regular', color: 'rgba(255,255,255,0.6)' },
   body: { padding: 20 },
   statsRow: { flexDirection: 'row', gap: 10, marginBottom: 20 },
-  statBox: { flex: 1, backgroundColor: Colors.surface, borderRadius: 14, padding: 12, alignItems: 'center', borderWidth: 1.5, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 },
-  statBoxValue: { fontSize: 14, fontFamily: 'Inter_700Bold', textAlign: 'center' },
-  statBoxLabel: { fontSize: 10, fontFamily: 'Inter_400Regular', color: Colors.textSecondary, marginTop: 3 },
-  sectionTitle: { fontSize: 16, fontFamily: 'Inter_700Bold', color: Colors.text, textAlign: 'right', marginBottom: 12, marginTop: 4 },
-  reportCard: { backgroundColor: Colors.surface, borderRadius: 18, padding: 16, marginBottom: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 3 },
-  reportHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12, justifyContent: 'flex-end' },
+  statBox: {
+    flex: 1, backgroundColor: Colors.surface, borderRadius: 16, padding: 14,
+    alignItems: 'center', borderBottomWidth: 3,
+    shadowColor: '#7B3FA0', shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.09, shadowRadius: 8, elevation: 3,
+  },
+  statBoxValue: { fontSize: 17, fontFamily: 'Inter_700Bold', textAlign: 'center', marginBottom: 2 },
+  statBoxLabel: { fontSize: 10, fontFamily: 'Inter_500Medium', color: Colors.textSecondary },
+  sectionTitle: {
+    fontSize: 15, fontFamily: 'Inter_700Bold', color: Colors.text,
+    textAlign: 'right', marginBottom: 12, marginTop: 4,
+    borderRightWidth: 3, borderRightColor: '#7B3FA0', paddingRight: 10,
+  },
+  reportCard: {
+    backgroundColor: Colors.surface, borderRadius: 18, padding: 16, marginBottom: 20,
+    borderRightWidth: 4, borderRightColor: '#7B3FA0',
+    shadowColor: '#7B3FA0', shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.09, shadowRadius: 10, elevation: 3,
+  },
+  reportHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 14, justifyContent: 'flex-end' },
   reportDate: { fontSize: 13, fontFamily: 'Inter_600SemiBold', color: '#7B3FA0' },
-  reportItems: { gap: 10 },
-  reportItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: Colors.borderLight },
-  reportItemLabel: { fontSize: 12, fontFamily: 'Inter_400Regular', color: Colors.textSecondary },
+  reportItems: { gap: 2 },
+  reportItem: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: Colors.borderLight,
+  },
+  reportItemLabel: { fontSize: 12, fontFamily: 'Inter_500Medium', color: Colors.textSecondary },
   reportItemValue: { fontSize: 13, fontFamily: 'Inter_600SemiBold', color: Colors.text, textAlign: 'right', flex: 1, paddingLeft: 8 },
-  reportNote: { flexDirection: 'row', alignItems: 'flex-start', gap: 6, paddingTop: 8 },
+  reportNote: { flexDirection: 'row', alignItems: 'flex-start', gap: 6, paddingTop: 10 },
   reportNoteText: { fontSize: 12, fontFamily: 'Inter_400Regular', color: Colors.textSecondary, flex: 1, textAlign: 'right', lineHeight: 18 },
   gradesGrid: { flexDirection: 'row', gap: 10, marginBottom: 20 },
-  gradeBox: { flex: 1, backgroundColor: Colors.surface, borderRadius: 14, padding: 12, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 },
+  gradeBox: {
+    flex: 1, backgroundColor: Colors.surface, borderRadius: 16, padding: 14,
+    alignItems: 'center', borderTopWidth: 3,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06, shadowRadius: 6, elevation: 2,
+  },
   gradeCircle: { flexDirection: 'row', alignItems: 'flex-end', marginBottom: 6 },
-  gradeScore: { fontSize: 22, fontFamily: 'Inter_700Bold' },
+  gradeScore: { fontSize: 24, fontFamily: 'Inter_700Bold' },
   gradeTotal: { fontSize: 13, fontFamily: 'Inter_400Regular', color: Colors.textLight, paddingBottom: 2 },
   gradeSubject: { fontSize: 10, fontFamily: 'Inter_500Medium', color: Colors.textSecondary, textAlign: 'center' },
   notesCard: { backgroundColor: '#F5F0FA', borderRadius: 16, padding: 16, marginBottom: 8, borderWidth: 1, borderColor: '#E9D5F7' },
