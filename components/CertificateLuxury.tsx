@@ -141,7 +141,7 @@ const CertificateLuxury = forwardRef<View, Props>(function CertificateLuxury(
                     borderRadius: sz(6),
                   }]} />
                   <Image
-                    source={require('@/assets/images/logo_new.jpg')}
+                    source={require('@/assets/images/logo_main.png')}
                     style={{ width: sz(82), height: sz(82) }}
                     resizeMode="contain"
                   />

@@ -35,6 +35,7 @@ export default function MeetingsScreen() {
   const insets = useSafeAreaInsets();
   const { meetings, addMeeting, updateMeeting, removeMeeting } = useAppData();
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
+  const bottomPadding = Platform.OS === 'web' ? 34 : insets.bottom + 90;
 
   const [tab, setTab] = useState<TabKey>('upcoming');
   const [showForm, setShowForm] = useState(false);
@@ -112,7 +113,7 @@ export default function MeetingsScreen() {
       <FlatList
         data={filtered}
         keyExtractor={m => m.id}
-        contentContainerStyle={styles.list}
+        contentContainerStyle={[styles.list, { paddingBottom: bottomPadding }]}
         ListHeaderComponent={
           <Pressable style={styles.addBtn} onPress={() => { setEditing(null); setShowForm(true); }}>
             <LinearGradient colors={['#ca9928', '#b8841c']} style={styles.addBtnGrad}>

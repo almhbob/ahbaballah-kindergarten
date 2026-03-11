@@ -19,6 +19,7 @@ export default function ParentHomeScreen() {
   const { user, logout, apiLogout } = useAuth();
   const { students, messages } = useAppData();
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
+  const bottomPadding = Platform.OS === 'web' ? 34 : insets.bottom + 90;
 
   const child = students.find(s => s.id === user?.studentId);
 

@@ -74,6 +74,7 @@ export default function StudentsScreen() {
   const [reportLearned, setReportLearned] = useState('');
   const [reportMood, setReportMood] = useState('');
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
+  const bottomPadding = Platform.OS === 'web' ? 34 : insets.bottom + 90;
 
   const filtered = students.filter(s => s.name.includes(search) || s.level.includes(search));
 

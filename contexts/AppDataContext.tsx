@@ -183,6 +183,25 @@ export interface YearlySnapshot {
   levels: Record<string, LevelSnapshot>;
 }
 
+export type RegistrationStatus = 'pending' | 'approved' | 'rejected';
+
+export interface RegistrationRequest {
+  id: string;
+  createdAt: string;
+  status: RegistrationStatus;
+  rejectionReason?: string;
+  approvedAt?: string;
+  childName: string;
+  birthDate: string;
+  gender: 'ذكر' | 'أنثى';
+  requestedLevel: 'براعم' | 'مستوى أول' | 'مستوى ثاني';
+  parentName: string;
+  parentPhone: string;
+  parentRelation: string;
+  parentEmail?: string;
+  notes?: string;
+}
+
 export type BannerType = 'offer' | 'alert' | 'event' | 'ad';
 
 export interface Banner {
@@ -418,6 +437,10 @@ interface AppDataContextValue {
   yearlySnapshots: YearlySnapshot[];
   saveYearlySnapshot: (snapshot: YearlySnapshot) => void;
   removeYearlySnapshot: (year: string) => void;
+  registrationRequests: RegistrationRequest[];
+  addRegistrationRequest: (r: RegistrationRequest) => void;
+  updateRegistrationRequest: (id: string, data: Partial<RegistrationRequest>) => void;
+  removeRegistrationRequest: (id: string) => void;
   resetAllData: () => void;
 }
 
@@ -548,6 +571,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const [transportSubscriptions, setTransportSubscriptions] = useState<TransportSubscription[]>([]);
   const [banners, setBanners] = useState<Banner[]>([]);
   const [yearlySnapshots, setYearlySnapshots] = useState<YearlySnapshot[]>(DEMO_YEARLY_SNAPSHOTS);
+  const [registrationRequests, setRegistrationRequests] = useState<RegistrationRequest[]>([]);
   const welcomeRef = useRef<string>(DEFAULT_WELCOME_MSG);
 
   useEffect(() => {
@@ -589,6 +613,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       if (savedBanners) setBanners(JSON.parse(savedBanners));
       const savedSnapshots = await AsyncStorage.getItem('app_yearly_snapshots');
       if (savedSnapshots) setYearlySnapshots(JSON.parse(savedSnapshots));
+      const savedRegs = await AsyncStorage.getItem('app_registration_requests');
+      if (savedRegs) setRegistrationRequests(JSON.parse(savedRegs));
     };
     load();
   }, []);
@@ -945,6 +971,28 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  const addRegistrationRequest = (r: RegistrationRequest) => {
+    setRegistrationRequests(prev => {
+      const updated = [r, ...prev];
+      AsyncStorage.setItem('app_registration_requests', JSON.stringify(updated));
+      return updated;
+    });
+  };
+  const updateRegistrationRequest = (id: string, data: Partial<RegistrationRequest>) => {
+    setRegistrationRequests(prev => {
+      const updated = prev.map(r => r.id === id ? { ...r, ...data } : r);
+      AsyncStorage.setItem('app_registration_requests', JSON.stringify(updated));
+      return updated;
+    });
+  };
+  const removeRegistrationRequest = (id: string) => {
+    setRegistrationRequests(prev => {
+      const updated = prev.filter(r => r.id !== id);
+      AsyncStorage.setItem('app_registration_requests', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
   const addGraduationYear = (year: string) => {
     const newTasks: GraduationTask[] = DEFAULT_GRADUATION_TASKS.map(t => ({
       ...t,
@@ -976,7 +1024,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     addTransportRoute, updateTransportRoute, removeTransportRoute, setTransportSubscription,
     banners, addBanner, updateBanner, removeBanner,
     yearlySnapshots, saveYearlySnapshot, removeYearlySnapshot,
-  }), [students, employees, news, inbox, messages, meetings, schedule, welcomeMessage, schoolInfo, honorWeights, annualPlan, graduationTasks, certificates, transportRoutes, transportSubscriptions, banners, yearlySnapshots]);
+    registrationRequests, addRegistrationRequest, updateRegistrationRequest, removeRegistrationRequest,
+  }), [students, employees, news, inbox, messages, meetings, schedule, welcomeMessage, schoolInfo, honorWeights, annualPlan, graduationTasks, certificates, transportRoutes, transportSubscriptions, banners, yearlySnapshots, registrationRequests]);
 
   return <AppDataContext.Provider value={value}>{children}</AppDataContext.Provider>;
 }

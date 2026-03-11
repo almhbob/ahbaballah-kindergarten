@@ -17,6 +17,7 @@ export default function ReportScreen() {
   const { students } = useAppData();
   const [activeTab, setActiveTab] = useState<'daily' | 'grades'>('daily');
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
+  const bottomPadding = Platform.OS === 'web' ? 34 : insets.bottom + 90;
 
   const child = students.find(s => s.id === user?.studentId) || students[0];
   if (!child) return null;

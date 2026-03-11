@@ -41,6 +41,7 @@ export default function CurriculumScreen() {
   const insets = useSafeAreaInsets();
   const { schedule, addPeriod, updatePeriod, removePeriod } = useAppData();
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
+  const bottomPadding = Platform.OS === 'web' ? 34 : insets.bottom + 90;
 
   const [day, setDay] = useState<ScheduleDay>('الأحد');
   const [level, setLevel] = useState<ScheduleLevel>('مستوى أول');

@@ -24,6 +24,7 @@ export default function FinanceScreen() {
   const [payAmount, setPayAmount] = useState('');
   const [payNote, setPayNote] = useState('');
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
+  const bottomPadding = Platform.OS === 'web' ? 34 : insets.bottom + 90;
 
   const FEES = useMemo(() => students.map(s => {
     const total = LEVEL_FEES[s.level] ?? 10000;
@@ -119,7 +120,7 @@ export default function FinanceScreen() {
         </View>
       </LinearGradient>
 
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: bottomPadding }}>
         <View style={styles.body}>
           {activeTab === 'fees' ? (
             <>

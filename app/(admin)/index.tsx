@@ -1,7 +1,8 @@
 import React from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, Pressable, Platform, Image, Linking, Alert
+  View, Text, StyleSheet, ScrollView, Pressable, Platform, Image, Linking, Alert,
 } from 'react-native';
+import BannerCarousel from '@/components/BannerCarousel';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -29,11 +30,13 @@ function StatCard({ label, value, sub, icon, color, bg }: {
   label: string; value: string; sub?: string; icon: string; color: string; bg: string;
 }) {
   return (
-    <View style={[styles.statCard, { backgroundColor: 'rgba(255,255,255,0.09)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)' }]}>
-      <HexFrame size={44} fill={bg} stroke={color + '50'} strokeWidth={1.5} style={{ marginBottom: 8 }}>
-        <MaterialCommunityIcons name={icon as any} size={20} color={color} />
-      </HexFrame>
-      <Text style={styles.statValue}>{value}</Text>
+    <View style={[styles.statCard, { borderLeftColor: color }]}>
+      <View style={styles.statCardTop}>
+        <Text style={[styles.statValue, { color }]}>{value}</Text>
+        <View style={[styles.statIconWrap, { backgroundColor: color + '18' }]}>
+          <MaterialCommunityIcons name={icon as any} size={18} color={color} />
+        </View>
+      </View>
       <Text style={styles.statLabel}>{label}</Text>
       {sub && <Text style={styles.statSub}>{sub}</Text>}
     </View>
@@ -45,12 +48,12 @@ function QuickAction({ icon, label, color, onPress }: {
 }) {
   return (
     <Pressable
-      style={({ pressed }) => [styles.quickAction, { opacity: pressed ? 0.75 : 1 }]}
+      style={({ pressed }) => [styles.quickAction, { opacity: pressed ? 0.78 : 1 }]}
       onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onPress(); }}
     >
-      <HexFrame size={56} fill={color + '15'} stroke={color + '40'} strokeWidth={1.5}>
-        <MaterialCommunityIcons name={icon as any} size={24} color={color} />
-      </HexFrame>
+      <View style={[styles.quickActionIcon, { backgroundColor: color + '18', borderColor: color + '30' }]}>
+        <MaterialCommunityIcons name={icon as any} size={22} color={color} />
+      </View>
       <Text style={styles.quickActionLabel}>{label}</Text>
     </Pressable>
   );
@@ -59,7 +62,7 @@ function QuickAction({ icon, label, color, onPress }: {
 export default function AdminDashboard() {
   const insets = useSafeAreaInsets();
   const { user, logout, apiLogout } = useAuth();
-  const { students, employees, news, inbox } = useAppData();
+  const { students, employees, news, inbox, registrationRequests } = useAppData();
 
   const unreadInbox = inbox.filter(m => !m.read).length;
   const totalStudents = students.length;
@@ -69,12 +72,13 @@ export default function AdminDashboard() {
   const totalPayroll = employees.reduce((a, e) => a + e.salary, 0).toLocaleString('ar-SA');
 
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
+  const bottomPadding = Platform.OS === 'web' ? 34 : insets.bottom + 90;
 
   return (
     <View style={styles.container}>
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentInsetAdjustmentBehavior="automatic"
+        contentContainerStyle={{ paddingBottom: bottomPadding }}
       >
         <LinearGradient
           colors={['#030612', '#050c38', '#0d1463']}
@@ -112,7 +116,7 @@ export default function AdminDashboard() {
             </View>
             <HexFrame size={56} fill="#FFFFFF" stroke={Colors.accent} strokeWidth={2} style={{ marginRight: 12 }}>
               <Image
-                source={require('@/assets/images/logo_new.jpg')}
+                source={require('@/assets/images/logo_main.png')}
                 style={styles.logoSmall}
                 resizeMode="contain"
               />
@@ -128,6 +132,7 @@ export default function AdminDashboard() {
         </LinearGradient>
 
         <View style={styles.body}>
+          <BannerCarousel />
           <Text style={styles.sectionTitle}>الإجراءات السريعة</Text>
           <View style={styles.quickActions}>
             <QuickAction icon="account-group" label="الطلاب" color="#3B82F6" onPress={() => router.push('/(admin)/management')} />
@@ -136,29 +141,29 @@ export default function AdminDashboard() {
             <QuickAction icon="bulletin-board" label="الأخبار" color={Colors.accent} onPress={() => router.push('/(admin)/news')} />
             <QuickAction icon="email-open-outline" label="الوارد" color={Colors.danger} onPress={() => router.push('/(admin)/inbox')} />
             <QuickAction icon="calendar-account" label="الاجتماعات" color="#7C3AED" onPress={() => router.push('/(admin)/meetings')} />
+            <QuickAction icon="chart-bar" label="النتائج" color="#0EA5E9" onPress={() => router.push('/(admin)/results')} />
+            <QuickAction icon="account-plus" label={`التسجيل${registrationRequests.filter(r => r.status === 'pending').length > 0 ? ` (${registrationRequests.filter(r => r.status === 'pending').length})` : ''}`} color="#10B981" onPress={() => router.push('/(admin)/registrations')} />
             <QuickAction icon="cog" label="الإعدادات" color="#64748B" onPress={() => router.push('/(admin)/settings')} />
-            <QuickAction icon="printer" label="طباعة" color="#0EA5E9" onPress={() => router.push('/(admin)/export')} />
+            <QuickAction icon="printer" label="طباعة" color="#F59E0B" onPress={() => router.push('/(admin)/export')} />
+            <QuickAction icon="code-braces" label="المطوّر" color="#EC4899" onPress={() => router.push('/(admin)/developer')} />
           </View>
 
           <Text style={styles.sectionTitle}>آخر الأخبار</Text>
-          {news.slice(0, 3).map(item => (
-            <View key={item.id} style={styles.newsCard}>
-              <View style={[styles.newsType, {
-                backgroundColor: item.type === 'trip' ? '#ECFDF5' : item.type === 'activity' ? '#EFF6FF' : '#FFF7ED'
-              }]}>
-                <MaterialCommunityIcons
-                  name={item.type === 'trip' ? 'bus' : item.type === 'activity' ? 'star' : 'newspaper-variant'}
-                  size={16}
-                  color={item.type === 'trip' ? Colors.success : item.type === 'activity' ? '#3B82F6' : Colors.accent}
-                />
+          {news.slice(0, 3).map(item => {
+            const nc = item.type === 'trip' ? { c: Colors.success, ic: 'bus' } : item.type === 'activity' ? { c: '#3B82F6', ic: 'star' } : { c: Colors.accent, ic: 'newspaper-variant' };
+            return (
+              <View key={item.id} style={[styles.newsCard, { borderRightColor: nc.c }]}>
+                <Ionicons name="chevron-back" size={16} color={Colors.textLight} />
+                <View style={styles.newsContent}>
+                  <Text style={styles.newsTitle}>{item.title}</Text>
+                  <Text style={styles.newsDate}>{item.date}</Text>
+                </View>
+                <View style={[styles.newsType, { backgroundColor: nc.c + '15' }]}>
+                  <MaterialCommunityIcons name={nc.ic as any} size={18} color={nc.c} />
+                </View>
               </View>
-              <View style={styles.newsContent}>
-                <Text style={styles.newsTitle}>{item.title}</Text>
-                <Text style={styles.newsDate}>{item.date}</Text>
-              </View>
-              <Ionicons name="chevron-back" size={18} color={Colors.textLight} />
-            </View>
-          ))}
+            );
+          })}
 
           <Text style={styles.sectionTitle}>نظرة مالية سريعة</Text>
           <View style={styles.financeCard}>
@@ -188,7 +193,7 @@ export default function AdminDashboard() {
           <View style={styles.designerCard}>
             <LinearGradient colors={['#030612', '#050c38', '#0d1463']} style={styles.designerGrad}>
               <HexFrame size={80} fill="#FFFFFF" stroke={Colors.accent} strokeWidth={2.5} style={{ marginBottom: 12 }}>
-                <Image source={require('@/assets/images/logo_new.jpg')} style={styles.designerLogo} resizeMode="contain" />
+                <Image source={require('@/assets/images/logo_main.png')} style={styles.designerLogo} resizeMode="contain" />
               </HexFrame>
               <View style={styles.designerBadge}>
                 <Text style={styles.designerBadgeText}>روضة أحباب الله — الخاصة</Text>

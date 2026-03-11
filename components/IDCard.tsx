@@ -115,7 +115,7 @@ const IDCard = forwardRef<View, Props>(function IDCard(
             style={[card.logoRing, { width: sz(36), height: sz(36), borderRadius: sz(8), padding: sz(2) }]}
           >
             <Image
-              source={require('@/assets/images/logo_new.jpg')}
+              source={require('@/assets/images/logo_main.png')}
               style={{ width: sz(32), height: sz(32), borderRadius: sz(6) }}
               resizeMode="cover"
             />

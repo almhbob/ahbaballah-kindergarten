@@ -199,7 +199,7 @@ export default function LoginScreen() {
                   : { shadowColor: '#c9952a', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.5, shadowRadius: 18, elevation: 10 }),
               }}
             >
-              <Image source={require('@/assets/images/logo_new.jpg')} style={s.logoImg} resizeMode="contain" />
+              <Image source={require('@/assets/images/logo_main.png')} style={s.logoImg} resizeMode="contain" />
             </HexFrame>
             <View style={s.outerHexRing} pointerEvents="none">
               <HexFrame size={162} fill="transparent" stroke="rgba(201,149,42,0.22)" strokeWidth={1} />
@@ -334,6 +334,19 @@ export default function LoginScreen() {
             </Text>
           </Pressable>
 
+          {/* ── Guest Access ── */}
+          <Pressable
+            style={({ pressed }) => [s.guestBtn, { opacity: pressed ? 0.8 : 1 }]}
+            onPress={async () => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              await login({ id: 'guest', name: 'زائر', role: 'guest' });
+              router.replace('/(guest)/');
+            }}
+          >
+            <Ionicons name="eye-outline" size={15} color="rgba(255,255,255,0.45)" />
+            <Text style={s.guestBtnTxt}>تصفح كضيف</Text>
+          </Pressable>
+
           {/* ── WhatsApp ── */}
           <Pressable
             style={({ pressed }) => [s.waCard, { opacity: pressed ? 0.82 : 1 }]}
@@ -453,4 +466,12 @@ const s = StyleSheet.create({
 
   versionRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   versionTxt: { fontSize: 9, fontFamily: 'Inter_400Regular', color: 'rgba(255,255,255,0.22)', letterSpacing: 0.3 },
+
+  guestBtn: {
+    width: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: 6, paddingVertical: 9, marginBottom: 10,
+    borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.10)',
+    backgroundColor: 'rgba(255,255,255,0.04)',
+  },
+  guestBtnTxt: { fontSize: 13, fontFamily: 'Inter_400Regular', color: 'rgba(255,255,255,0.40)' },
 });
