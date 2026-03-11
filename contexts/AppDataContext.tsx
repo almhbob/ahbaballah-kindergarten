@@ -95,6 +95,7 @@ export interface AppSettings {
   bannerAutoplay: boolean;
   maintenanceMode: boolean;
   adminPassword: string;
+  developerPassword: string;
   defaultTeacherPassword: string;
   defaultParentPassword: string;
   academicYear: string;
@@ -113,6 +114,7 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
   bannerAutoplay: true,
   maintenanceMode: false,
   adminPassword: '1234',
+  developerPassword: 'dev@2026',
   defaultTeacherPassword: '1234',
   defaultParentPassword: '1234',
   academicYear: '2025-2026',

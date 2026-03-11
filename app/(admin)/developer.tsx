@@ -90,6 +90,130 @@ function BannerFormModal({ visible, editing, onClose, onSave }: {
   );
 }
 
+const pg = StyleSheet.create({
+  root: { flex: 1 },
+  grad: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 28 },
+  iconWrap: {
+    width: 80, height: 80, borderRadius: 40,
+    backgroundColor: 'rgba(201,149,42,0.12)', borderWidth: 2, borderColor: 'rgba(201,149,42,0.40)',
+    justifyContent: 'center', alignItems: 'center', marginBottom: 22,
+    shadowColor: '#c9952a', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.50, shadowRadius: 18, elevation: 10,
+  },
+  title:    { fontSize: 22, fontFamily: 'Inter_700Bold',    color: '#FFFFFF', marginBottom: 6, textAlign: 'center' },
+  subtitle: { fontSize: 12, fontFamily: 'Inter_400Regular', color: 'rgba(255,255,255,0.45)', marginBottom: 32, textAlign: 'center', lineHeight: 20 },
+  inputWrap: {
+    width: '100%', flexDirection: 'row', alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.07)', borderRadius: 16,
+    borderWidth: 1.5, borderColor: 'rgba(201,149,42,0.35)', marginBottom: 14, paddingHorizontal: 16,
+  },
+  inputWrapErr: { borderColor: Colors.danger + '80' },
+  inputField: { flex: 1, paddingVertical: 14, fontSize: 16, fontFamily: 'Inter_500Medium', color: '#FFFFFF', textAlign: 'center', letterSpacing: 4 },
+  eyeBtn:    { padding: 6 },
+  unlockBtn: {
+    width: '100%', borderRadius: 16, overflow: 'hidden', marginBottom: 14,
+  },
+  unlockGrad: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 15 },
+  unlockTxt: { fontSize: 16, fontFamily: 'Inter_700Bold', color: '#fff' },
+  errTxt:    { fontSize: 12, fontFamily: 'Inter_500Medium', color: Colors.danger, marginBottom: 16, textAlign: 'center' },
+  backBtn:   { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 6 },
+  backTxt:   { fontSize: 13, fontFamily: 'Inter_500Medium', color: 'rgba(255,255,255,0.35)' },
+  dotsRow:   { flexDirection: 'row', gap: 6, marginBottom: 28 },
+  dot:       { width: 8, height: 8, borderRadius: 4, backgroundColor: 'rgba(201,149,42,0.30)' },
+  dotFilled: { backgroundColor: '#c9952a' },
+});
+
+function PasswordGate({ correctPassword, onUnlock }: { correctPassword: string; onUnlock: () => void }) {
+  const insets  = useSafeAreaInsets();
+  const topPad  = Platform.OS === 'web' ? 67 : insets.top;
+  const [pass,    setPass]    = useState('');
+  const [show,    setShow]    = useState(false);
+  const [error,   setError]   = useState(false);
+  const [shaking, setShaking] = useState(false);
+  const shakeAnim = useRef(new Animated.Value(0)).current;
+
+  const shake = () => {
+    setShaking(true);
+    Animated.sequence([
+      Animated.timing(shakeAnim, { toValue: 10,  duration: 60,  useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: -10, duration: 60,  useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: 8,   duration: 60,  useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: -8,  duration: 60,  useNativeDriver: true }),
+      Animated.timing(shakeAnim, { toValue: 0,   duration: 60,  useNativeDriver: true }),
+    ]).start(() => setShaking(false));
+  };
+
+  const handleUnlock = () => {
+    if (pass === correctPassword) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      onUnlock();
+    } else {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      setError(true);
+      setPass('');
+      shake();
+      setTimeout(() => setError(false), 2500);
+    }
+  };
+
+  const dots = Array.from({ length: Math.min(pass.length, correctPassword.length) });
+
+  return (
+    <View style={pg.root}>
+      <LinearGradient
+        colors={['#020817', '#040f30', '#0d1a6e', '#040f30', '#020817']}
+        start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+        style={[pg.grad, { paddingTop: topPad + 20 }]}
+      >
+        <View style={pg.iconWrap}>
+          <MaterialCommunityIcons name="shield-lock" size={38} color="#c9952a" />
+        </View>
+
+        <Text style={pg.title}>لوحة المطوّر</Text>
+        <Text style={pg.subtitle}>هذه المنطقة مقيّدة{'\n'}أدخل كلمة مرور المطوّر للمتابعة</Text>
+
+        <View style={pg.dotsRow}>
+          {Array.from({ length: correctPassword.length }).map((_, i) => (
+            <View key={i} style={[pg.dot, i < pass.length && pg.dotFilled]} />
+          ))}
+        </View>
+
+        <Animated.View style={{ width: '100%', transform: [{ translateX: shakeAnim }] }}>
+          <View style={[pg.inputWrap, error && pg.inputWrapErr]}>
+            <TextInput
+              style={pg.inputField}
+              value={pass}
+              onChangeText={v => { setError(false); setPass(v); }}
+              secureTextEntry={!show}
+              placeholder="••••••••"
+              placeholderTextColor="rgba(255,255,255,0.20)"
+              autoFocus
+              onSubmitEditing={handleUnlock}
+              returnKeyType="go"
+            />
+            <Pressable onPress={() => setShow(s => !s)} style={pg.eyeBtn}>
+              <Ionicons name={show ? 'eye-off-outline' : 'eye-outline'} size={20} color="rgba(255,255,255,0.40)" />
+            </Pressable>
+          </View>
+        </Animated.View>
+
+        {error && <Text style={pg.errTxt}>كلمة مرور خاطئة — حاول مجدداً</Text>}
+
+        <Pressable style={pg.unlockBtn} onPress={handleUnlock}>
+          <LinearGradient colors={['#c9952a', '#a87820', '#c9952a']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={pg.unlockGrad}>
+            <MaterialCommunityIcons name="lock-open" size={18} color="#fff" />
+            <Text style={pg.unlockTxt}>فتح اللوحة</Text>
+          </LinearGradient>
+        </Pressable>
+
+        <Pressable style={pg.backBtn} onPress={() => router.back()}>
+          <Ionicons name="chevron-back" size={16} color="rgba(255,255,255,0.35)" />
+          <Text style={pg.backTxt}>رجوع</Text>
+        </Pressable>
+      </LinearGradient>
+    </View>
+  );
+}
+
 type SectionKey = 'stats' | 'school' | 'features' | 'security' | 'banners' | 'dev' | 'data' | 'sysinfo' | 'danger';
 
 const SECTIONS: { key: SectionKey; icon: string; iconLib: 'ion' | 'mci'; label: string; color: string }[] = [
@@ -133,17 +257,15 @@ export default function DeveloperScreen() {
     appSettings, updateAppSettings,
   } = useAppData();
 
-  const [open, setOpen] = useState<Record<SectionKey, boolean>>({
+  const [unlocked,       setUnlocked]       = useState(false);
+  const [open,           setOpen]           = useState<Record<SectionKey, boolean>>({
     stats: true, school: false, features: false, security: false,
     banners: false, dev: false, data: false, sysinfo: false, danger: false,
   });
-  const toggle = (key: SectionKey) => setOpen(prev => ({ ...prev, [key]: !prev[key] }));
-
   const [showBannerForm, setShowBannerForm] = useState(false);
   const [editingBanner,  setEditingBanner]  = useState<Banner | null>(null);
-
-  const [schoolDraft, setSchoolDraft] = useState({ ...schoolInfo });
-  const [devDraft,    setDevDraft]    = useState({
+  const [schoolDraft,    setSchoolDraft]    = useState({ ...schoolInfo });
+  const [devDraft,       setDevDraft]       = useState({
     developerName:  appSettings.developerName,
     developerPhone: appSettings.developerPhone,
     developerEmail: appSettings.developerEmail,
@@ -152,9 +274,16 @@ export default function DeveloperScreen() {
   });
   const [secDraft, setSecDraft] = useState({
     adminPassword:          appSettings.adminPassword,
+    developerPassword:      appSettings.developerPassword,
     defaultTeacherPassword: appSettings.defaultTeacherPassword,
     defaultParentPassword:  appSettings.defaultParentPassword,
   });
+
+  const toggle = (key: SectionKey) => setOpen(prev => ({ ...prev, [key]: !prev[key] }));
+
+  if (!unlocked) {
+    return <PasswordGate correctPassword={appSettings.developerPassword} onUnlock={() => setUnlocked(true)} />;
+  }
 
   const handleSaveBanner = (data: Omit<Banner, 'id' | 'date'>) => {
     if (editingBanner) {
@@ -368,8 +497,9 @@ export default function DeveloperScreen() {
               <Text style={sty.securityNoteTxt}>هذه الكلمات السرية الافتراضية. كل حساب له كلمته الخاصة من إعدادات المستخدمين.</Text>
             </View>
             {[
-              { field: 'adminPassword',          label: 'كلمة مرور المدير',        icon: 'shield-crown', color: Colors.primary },
-              { field: 'defaultTeacherPassword', label: 'كلمة مرور المعلمين (افتراضي)', icon: 'school',   color: '#10B981' },
+              { field: 'adminPassword',          label: 'كلمة مرور المدير',           icon: 'shield-crown',       color: Colors.primary },
+              { field: 'developerPassword',      label: 'كلمة مرور المطوّر',          icon: 'code-braces',        color: '#c9952a' },
+              { field: 'defaultTeacherPassword', label: 'كلمة مرور المعلمين (افتراضي)', icon: 'school',           color: '#10B981' },
               { field: 'defaultParentPassword',  label: 'كلمة مرور الوالدين (افتراضي)', icon: 'account-multiple', color: '#8B5CF6' },
             ].map(({ field, label, icon, color }) => (
               <View key={field} style={sty.fieldWrap}>
@@ -561,7 +691,7 @@ export default function DeveloperScreen() {
                 { text: 'إعادة الضبط', style: 'destructive', onPress: () => {
                   Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
                   updateAppSettings(DEFAULT_APP_SETTINGS);
-                  setSecDraft({ adminPassword: DEFAULT_APP_SETTINGS.adminPassword, defaultTeacherPassword: DEFAULT_APP_SETTINGS.defaultTeacherPassword, defaultParentPassword: DEFAULT_APP_SETTINGS.defaultParentPassword });
+                  setSecDraft({ adminPassword: DEFAULT_APP_SETTINGS.adminPassword, developerPassword: DEFAULT_APP_SETTINGS.developerPassword, defaultTeacherPassword: DEFAULT_APP_SETTINGS.defaultTeacherPassword, defaultParentPassword: DEFAULT_APP_SETTINGS.defaultParentPassword });
                   setDevDraft({ developerName: DEFAULT_APP_SETTINGS.developerName, developerPhone: DEFAULT_APP_SETTINGS.developerPhone, developerEmail: DEFAULT_APP_SETTINGS.developerEmail, appVersion: DEFAULT_APP_SETTINGS.appVersion, academicYear: DEFAULT_APP_SETTINGS.academicYear });
                   Alert.alert('تم', 'تمت إعادة ضبط الإعدادات');
                 }},
