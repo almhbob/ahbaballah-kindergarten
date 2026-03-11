@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useRef, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getApiUrl } from '@/lib/query-client';
 
 export interface AssessmentResult {
   id: string;
@@ -628,49 +629,81 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const [appSettings, setAppSettingsState] = useState<AppSettings>(DEFAULT_APP_SETTINGS);
   const welcomeRef = useRef<string>(DEFAULT_WELCOME_MSG);
 
+  const cloudSync = (key: string, value: any) => {
+    try {
+      const url = new URL(`/api/state/${key}`, getApiUrl()).toString();
+      fetch(url, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ value }),
+      }).catch(() => {});
+    } catch {}
+  };
+
+  const saveState = (key: string, value: any) => {
+    const str = typeof value === 'string' ? value : JSON.stringify(value);
+    AsyncStorage.setItem(key, str);
+    cloudSync(key, value);
+  };
+
   useEffect(() => {
     const load = async () => {
-      const savedStudents = await AsyncStorage.getItem('app_students');
-      const savedEmployees = await AsyncStorage.getItem('app_employees');
-      const savedNews = await AsyncStorage.getItem('app_news');
-      const savedInbox = await AsyncStorage.getItem('app_inbox');
-      const savedMessages = await AsyncStorage.getItem('app_messages');
-      const savedMeetings = await AsyncStorage.getItem('app_meetings');
-      const savedSchedule = await AsyncStorage.getItem('app_schedule');
-      const savedWelcome = await AsyncStorage.getItem('app_welcome_msg');
-      const savedSchoolInfo = await AsyncStorage.getItem('app_school_info');
-      const savedHonorWeights = await AsyncStorage.getItem('app_honor_weights');
-      if (savedStudents) setStudents((JSON.parse(savedStudents) as Student[]).map(s => ({ ...s, assessments: s.assessments ?? [], parentPhone: s.parentPhone ?? '', parentPassword: s.parentPassword ?? '1234' })));
-      if (savedEmployees) setEmployees((JSON.parse(savedEmployees) as Employee[]).map(e => ({ ...e, email: e.email ?? '', password: e.password ?? '1234' })));
-      if (savedNews) setNews(JSON.parse(savedNews));
-      if (savedInbox) setInbox(JSON.parse(savedInbox));
-      if (savedMessages) setMessages(JSON.parse(savedMessages));
-      if (savedMeetings) setMeetings(JSON.parse(savedMeetings));
-      if (savedSchedule) setSchedule(JSON.parse(savedSchedule));
+      let cloud: Record<string, any> = {};
+      try {
+        const url = new URL('/api/state', getApiUrl()).toString();
+        const res = await fetch(url);
+        const json = await res.json();
+        if (json.ok) cloud = json.data ?? {};
+      } catch {}
+
+      const get = async (key: string) => {
+        if (cloud[key] !== undefined) return cloud[key];
+        const local = await AsyncStorage.getItem(key);
+        return local ? JSON.parse(local) : null;
+      };
+
+      const savedStudents = await get('app_students');
+      const savedEmployees = await get('app_employees');
+      const savedNews = await get('app_news');
+      const savedInbox = await get('app_inbox');
+      const savedMessages = await get('app_messages');
+      const savedMeetings = await get('app_meetings');
+      const savedSchedule = await get('app_schedule');
+      const savedWelcome = await get('app_welcome_msg');
+      const savedSchoolInfo = await get('app_school_info');
+      const savedHonorWeights = await get('app_honor_weights');
+      if (savedStudents) setStudents((savedStudents as Student[]).map(s => ({ ...s, assessments: s.assessments ?? [], parentPhone: s.parentPhone ?? '', parentPassword: s.parentPassword ?? '1234' })));
+      if (savedEmployees) setEmployees((savedEmployees as Employee[]).map(e => ({ ...e, email: e.email ?? '', password: e.password ?? '1234' })));
+      if (savedNews) setNews(savedNews);
+      if (savedInbox) setInbox(savedInbox);
+      if (savedMessages) setMessages(savedMessages);
+      if (savedMeetings) setMeetings(savedMeetings);
+      if (savedSchedule) setSchedule(savedSchedule);
       if (savedWelcome) {
-        setWelcomeMessageState(savedWelcome);
-        welcomeRef.current = savedWelcome;
+        const welcomeStr = typeof savedWelcome === 'string' ? savedWelcome : JSON.stringify(savedWelcome);
+        setWelcomeMessageState(welcomeStr);
+        welcomeRef.current = welcomeStr;
       }
-      if (savedSchoolInfo) setSchoolInfoState({ email: 'Ahbaballah2026@hotmail.com', ...JSON.parse(savedSchoolInfo) });
-      if (savedHonorWeights) setHonorWeightsState(JSON.parse(savedHonorWeights));
-      const savedAnnualPlan = await AsyncStorage.getItem('app_annual_plan');
-      const savedGradTasks  = await AsyncStorage.getItem('app_grad_tasks');
-      const savedCerts      = await AsyncStorage.getItem('app_certificates');
-      if (savedAnnualPlan) setAnnualPlan(JSON.parse(savedAnnualPlan));
-      if (savedGradTasks)  setGraduationTasks(JSON.parse(savedGradTasks));
-      if (savedCerts)      setCertificates(JSON.parse(savedCerts));
-      const savedRoutes = await AsyncStorage.getItem('app_transport_routes');
-      const savedSubs   = await AsyncStorage.getItem('app_transport_subs');
-      if (savedRoutes) setTransportRoutes(JSON.parse(savedRoutes));
-      if (savedSubs)   setTransportSubscriptions(JSON.parse(savedSubs));
-      const savedBanners = await AsyncStorage.getItem('app_banners');
-      if (savedBanners) setBanners(JSON.parse(savedBanners));
-      const savedSnapshots = await AsyncStorage.getItem('app_yearly_snapshots');
-      if (savedSnapshots) setYearlySnapshots(JSON.parse(savedSnapshots));
-      const savedAppSettings = await AsyncStorage.getItem('app_settings');
-      if (savedAppSettings) setAppSettingsState({ ...DEFAULT_APP_SETTINGS, ...JSON.parse(savedAppSettings) });
-      const savedRegs = await AsyncStorage.getItem('app_registration_requests');
-      if (savedRegs) setRegistrationRequests(JSON.parse(savedRegs));
+      if (savedSchoolInfo) setSchoolInfoState({ email: 'Ahbaballah2026@hotmail.com', ...savedSchoolInfo });
+      if (savedHonorWeights) setHonorWeightsState(savedHonorWeights);
+      const savedAnnualPlan = await get('app_annual_plan');
+      const savedGradTasks  = await get('app_grad_tasks');
+      const savedCerts      = await get('app_certificates');
+      if (savedAnnualPlan) setAnnualPlan(savedAnnualPlan);
+      if (savedGradTasks)  setGraduationTasks(savedGradTasks);
+      if (savedCerts)      setCertificates(savedCerts);
+      const savedRoutes = await get('app_transport_routes');
+      const savedSubs   = await get('app_transport_subs');
+      if (savedRoutes) setTransportRoutes(savedRoutes);
+      if (savedSubs)   setTransportSubscriptions(savedSubs);
+      const savedBanners = await get('app_banners');
+      if (savedBanners) setBanners(savedBanners);
+      const savedSnapshots = await get('app_yearly_snapshots');
+      if (savedSnapshots) setYearlySnapshots(savedSnapshots);
+      const savedAppSettings = await get('app_settings');
+      if (savedAppSettings) setAppSettingsState({ ...DEFAULT_APP_SETTINGS, ...savedAppSettings });
+      const savedRegs = await get('app_registration_requests');
+      if (savedRegs) setRegistrationRequests(savedRegs);
     };
     load();
   }, []);
@@ -678,23 +711,23 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const setWelcomeMessage = (msg: string) => {
     welcomeRef.current = msg;
     setWelcomeMessageState(msg);
-    AsyncStorage.setItem('app_welcome_msg', msg);
+    saveState('app_welcome_msg', msg);
   };
 
   const setSchoolInfo = (info: SchoolInfo) => {
     setSchoolInfoState(info);
-    AsyncStorage.setItem('app_school_info', JSON.stringify(info));
+    saveState('app_school_info', info);
   };
 
   const setHonorWeights = (w: HonorWeights) => {
     setHonorWeightsState(w);
-    AsyncStorage.setItem('app_honor_weights', JSON.stringify(w));
+    saveState('app_honor_weights', w);
   };
 
   const addMeeting = (m: Meeting) => {
     setMeetings(prev => {
       const updated = [m, ...prev];
-      AsyncStorage.setItem('app_meetings', JSON.stringify(updated));
+      saveState('app_meetings', updated);
       return updated;
     });
   };
@@ -702,7 +735,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const updateMeeting = (id: string, data: Partial<Meeting>) => {
     setMeetings(prev => {
       const updated = prev.map(m => m.id === id ? { ...m, ...data } : m);
-      AsyncStorage.setItem('app_meetings', JSON.stringify(updated));
+      saveState('app_meetings', updated);
       return updated;
     });
   };
@@ -710,7 +743,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const removeMeeting = (id: string) => {
     setMeetings(prev => {
       const updated = prev.filter(m => m.id !== id);
-      AsyncStorage.setItem('app_meetings', JSON.stringify(updated));
+      saveState('app_meetings', updated);
       return updated;
     });
   };
@@ -718,7 +751,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const addPeriod = (p: SchedulePeriod) => {
     setSchedule(prev => {
       const updated = [...prev, p];
-      AsyncStorage.setItem('app_schedule', JSON.stringify(updated));
+      saveState('app_schedule', updated);
       return updated;
     });
   };
@@ -726,7 +759,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const updatePeriod = (id: string, data: Partial<SchedulePeriod>) => {
     setSchedule(prev => {
       const updated = prev.map(p => p.id === id ? { ...p, ...data } : p);
-      AsyncStorage.setItem('app_schedule', JSON.stringify(updated));
+      saveState('app_schedule', updated);
       return updated;
     });
   };
@@ -734,7 +767,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const removePeriod = (id: string) => {
     setSchedule(prev => {
       const updated = prev.filter(p => p.id !== id);
-      AsyncStorage.setItem('app_schedule', JSON.stringify(updated));
+      saveState('app_schedule', updated);
       return updated;
     });
   };
@@ -742,7 +775,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const updateAppSettings = (data: Partial<AppSettings>) => {
     setAppSettingsState(prev => {
       const updated = { ...prev, ...data };
-      AsyncStorage.setItem('app_settings', JSON.stringify(updated));
+      saveState('app_settings', updated);
       return updated;
     });
   };
@@ -776,7 +809,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const updateStudent = (id: string, data: Partial<Student>) => {
     setStudents(prev => {
       const updated = prev.map(s => s.id === id ? { ...s, ...data } : s);
-      AsyncStorage.setItem('app_students', JSON.stringify(updated));
+      saveState('app_students', updated);
       return updated;
     });
   };
@@ -784,7 +817,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const addNews = (item: NewsItem) => {
     setNews(prev => {
       const updated = [item, ...prev];
-      AsyncStorage.setItem('app_news', JSON.stringify(updated));
+      saveState('app_news', updated);
       return updated;
     });
   };
@@ -792,7 +825,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const removeNews = (id: string) => {
     setNews(prev => {
       const updated = prev.filter(n => n.id !== id);
-      AsyncStorage.setItem('app_news', JSON.stringify(updated));
+      saveState('app_news', updated);
       return updated;
     });
   };
@@ -800,7 +833,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const replyInbox = (id: string, reply: string) => {
     setInbox(prev => {
       const updated = prev.map(m => m.id === id ? { ...m, reply, read: true } : m);
-      AsyncStorage.setItem('app_inbox', JSON.stringify(updated));
+      saveState('app_inbox', updated);
       return updated;
     });
   };
@@ -808,7 +841,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const markInboxRead = (id: string) => {
     setInbox(prev => {
       const updated = prev.map(m => m.id === id ? { ...m, read: true } : m);
-      AsyncStorage.setItem('app_inbox', JSON.stringify(updated));
+      saveState('app_inbox', updated);
       return updated;
     });
   };
@@ -838,7 +871,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         return withReply;
       }
 
-      AsyncStorage.setItem('app_messages', JSON.stringify(updated));
+      saveState('app_messages', updated);
       return updated;
     });
   };
@@ -846,7 +879,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const addStudent = (student: Student) => {
     setStudents(prev => {
       const updated = [...prev, student];
-      AsyncStorage.setItem('app_students', JSON.stringify(updated));
+      saveState('app_students', updated);
       return updated;
     });
   };
@@ -854,7 +887,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const removeStudent = (id: string) => {
     setStudents(prev => {
       const updated = prev.filter(s => s.id !== id);
-      AsyncStorage.setItem('app_students', JSON.stringify(updated));
+      saveState('app_students', updated);
       return updated;
     });
   };
@@ -862,7 +895,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const addEmployee = (emp: Employee) => {
     setEmployees(prev => {
       const updated = [...prev, emp];
-      AsyncStorage.setItem('app_employees', JSON.stringify(updated));
+      saveState('app_employees', updated);
       return updated;
     });
   };
@@ -870,7 +903,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const removeEmployee = (id: string) => {
     setEmployees(prev => {
       const updated = prev.filter(e => e.id !== id);
-      AsyncStorage.setItem('app_employees', JSON.stringify(updated));
+      saveState('app_employees', updated);
       return updated;
     });
   };
@@ -878,7 +911,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const updateEmployee = (id: string, data: Partial<Employee>) => {
     setEmployees(prev => {
       const updated = prev.map(e => e.id === id ? { ...e, ...data } : e);
-      AsyncStorage.setItem('app_employees', JSON.stringify(updated));
+      saveState('app_employees', updated);
       return updated;
     });
   };
@@ -886,7 +919,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const addAnnualEvent = (e: AnnualPlanEvent) => {
     setAnnualPlan(prev => {
       const updated = [...prev, e];
-      AsyncStorage.setItem('app_annual_plan', JSON.stringify(updated));
+      saveState('app_annual_plan', updated);
       return updated;
     });
   };
@@ -894,7 +927,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const removeAnnualEvent = (id: string) => {
     setAnnualPlan(prev => {
       const updated = prev.filter(e => e.id !== id);
-      AsyncStorage.setItem('app_annual_plan', JSON.stringify(updated));
+      saveState('app_annual_plan', updated);
       return updated;
     });
   };
@@ -902,7 +935,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const addGraduationTask = (t: GraduationTask) => {
     setGraduationTasks(prev => {
       const updated = [...prev, t];
-      AsyncStorage.setItem('app_grad_tasks', JSON.stringify(updated));
+      saveState('app_grad_tasks', updated);
       return updated;
     });
   };
@@ -910,7 +943,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const updateGraduationTask = (id: string, data: Partial<GraduationTask>) => {
     setGraduationTasks(prev => {
       const updated = prev.map(t => t.id === id ? { ...t, ...data } : t);
-      AsyncStorage.setItem('app_grad_tasks', JSON.stringify(updated));
+      saveState('app_grad_tasks', updated);
       return updated;
     });
   };
@@ -918,7 +951,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const removeGraduationTask = (id: string) => {
     setGraduationTasks(prev => {
       const updated = prev.filter(t => t.id !== id);
-      AsyncStorage.setItem('app_grad_tasks', JSON.stringify(updated));
+      saveState('app_grad_tasks', updated);
       return updated;
     });
   };
@@ -926,7 +959,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const addCertificate = (cert: Certificate) => {
     setCertificates(prev => {
       const updated = [cert, ...prev];
-      AsyncStorage.setItem('app_certificates', JSON.stringify(updated));
+      saveState('app_certificates', updated);
       return updated;
     });
   };
@@ -934,7 +967,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const updateCertificate = (id: string, data: Partial<Certificate>) => {
     setCertificates(prev => {
       const updated = prev.map(c => c.id === id ? { ...c, ...data } : c);
-      AsyncStorage.setItem('app_certificates', JSON.stringify(updated));
+      saveState('app_certificates', updated);
       return updated;
     });
   };
@@ -942,7 +975,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const removeCertificate = (id: string) => {
     setCertificates(prev => {
       const updated = prev.filter(c => c.id !== id);
-      AsyncStorage.setItem('app_certificates', JSON.stringify(updated));
+      saveState('app_certificates', updated);
       return updated;
     });
   };
@@ -950,7 +983,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const addTransportRoute = (route: TransportRoute) => {
     setTransportRoutes(prev => {
       const updated = [...prev, route];
-      AsyncStorage.setItem('app_transport_routes', JSON.stringify(updated));
+      saveState('app_transport_routes', updated);
       return updated;
     });
   };
@@ -958,7 +991,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const updateTransportRoute = (id: string, data: Partial<TransportRoute>) => {
     setTransportRoutes(prev => {
       const updated = prev.map(r => r.id === id ? { ...r, ...data } : r);
-      AsyncStorage.setItem('app_transport_routes', JSON.stringify(updated));
+      saveState('app_transport_routes', updated);
       return updated;
     });
   };
@@ -966,12 +999,12 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const removeTransportRoute = (id: string) => {
     setTransportRoutes(prev => {
       const updated = prev.filter(r => r.id !== id);
-      AsyncStorage.setItem('app_transport_routes', JSON.stringify(updated));
+      saveState('app_transport_routes', updated);
       return updated;
     });
     setTransportSubscriptions(prev => {
       const updated = prev.filter(s => s.routeId !== id);
-      AsyncStorage.setItem('app_transport_subs', JSON.stringify(updated));
+      saveState('app_transport_subs', updated);
       return updated;
     });
   };
@@ -989,7 +1022,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
           updated = [...prev, { studentId, routeId, subscribedAt: new Date().toISOString().split('T')[0] }];
         }
       }
-      AsyncStorage.setItem('app_transport_subs', JSON.stringify(updated));
+      saveState('app_transport_subs', updated);
       return updated;
     });
   };
@@ -997,7 +1030,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const addBanner = (b: Banner) => {
     setBanners(prev => {
       const updated = [b, ...prev];
-      AsyncStorage.setItem('app_banners', JSON.stringify(updated));
+      saveState('app_banners', updated);
       return updated;
     });
   };
@@ -1005,7 +1038,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const updateBanner = (id: string, data: Partial<Banner>) => {
     setBanners(prev => {
       const updated = prev.map(b => b.id === id ? { ...b, ...data } : b);
-      AsyncStorage.setItem('app_banners', JSON.stringify(updated));
+      saveState('app_banners', updated);
       return updated;
     });
   };
@@ -1013,7 +1046,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const removeBanner = (id: string) => {
     setBanners(prev => {
       const updated = prev.filter(b => b.id !== id);
-      AsyncStorage.setItem('app_banners', JSON.stringify(updated));
+      saveState('app_banners', updated);
       return updated;
     });
   };
@@ -1022,7 +1055,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     setYearlySnapshots(prev => {
       const filtered = prev.filter(s => s.year !== snapshot.year);
       const updated = [...filtered, snapshot].sort((a, b) => a.year.localeCompare(b.year));
-      AsyncStorage.setItem('app_yearly_snapshots', JSON.stringify(updated));
+      saveState('app_yearly_snapshots', updated);
       return updated;
     });
   };
@@ -1030,7 +1063,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const removeYearlySnapshot = (year: string) => {
     setYearlySnapshots(prev => {
       const updated = prev.filter(s => s.year !== year);
-      AsyncStorage.setItem('app_yearly_snapshots', JSON.stringify(updated));
+      saveState('app_yearly_snapshots', updated);
       return updated;
     });
   };
@@ -1038,21 +1071,21 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const addRegistrationRequest = (r: RegistrationRequest) => {
     setRegistrationRequests(prev => {
       const updated = [r, ...prev];
-      AsyncStorage.setItem('app_registration_requests', JSON.stringify(updated));
+      saveState('app_registration_requests', updated);
       return updated;
     });
   };
   const updateRegistrationRequest = (id: string, data: Partial<RegistrationRequest>) => {
     setRegistrationRequests(prev => {
       const updated = prev.map(r => r.id === id ? { ...r, ...data } : r);
-      AsyncStorage.setItem('app_registration_requests', JSON.stringify(updated));
+      saveState('app_registration_requests', updated);
       return updated;
     });
   };
   const removeRegistrationRequest = (id: string) => {
     setRegistrationRequests(prev => {
       const updated = prev.filter(r => r.id !== id);
-      AsyncStorage.setItem('app_registration_requests', JSON.stringify(updated));
+      saveState('app_registration_requests', updated);
       return updated;
     });
   };
@@ -1066,7 +1099,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     }));
     setGraduationTasks(prev => {
       const updated = [...prev, ...newTasks];
-      AsyncStorage.setItem('app_grad_tasks', JSON.stringify(updated));
+      saveState('app_grad_tasks', updated);
       return updated;
     });
   };
