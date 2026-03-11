@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Pressable, Platform, Image, Linking, Alert,
 } from 'react-native';
@@ -8,10 +8,93 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { Colors } from '@/constants/colors';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth, LoginEvent } from '@/contexts/AuthContext';
 import { useAppData } from '@/contexts/AppDataContext';
 import HexFrame from '@/components/HexFrame';
 import * as Haptics from 'expo-haptics';
+
+const ROLE_COLORS: Record<string, string> = {
+  admin: Colors.primary, teacher: '#1A6B5C', parent: '#7B3FA0', guest: Colors.accent,
+};
+const ROLE_LABELS: Record<string, string> = {
+  admin: 'مدير', teacher: 'معلمة', parent: 'ولي أمر', guest: 'زائر',
+};
+
+function LoginChart({ history }: { history: LoginEvent[] }) {
+  const days = 14;
+  const data = useMemo(() => {
+    const map: Record<string, Record<string, number>> = {};
+    const now = new Date();
+    for (let i = days - 1; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      const key = d.toISOString().split('T')[0];
+      map[key] = { admin: 0, teacher: 0, parent: 0, guest: 0 };
+    }
+    history.forEach(e => {
+      if (map[e.date]) map[e.date][e.role] = (map[e.date][e.role] || 0) + 1;
+    });
+    return Object.entries(map).map(([date, counts]) => ({
+      date,
+      label: new Date(date).toLocaleDateString('ar-SA', { day: 'numeric', month: 'numeric' }),
+      total: Object.values(counts).reduce((a, b) => a + b, 0),
+      counts,
+    }));
+  }, [history]);
+
+  const maxVal = Math.max(...data.map(d => d.total), 1);
+  const totalLogins = history.length;
+  const todayLogins = data[data.length - 1]?.total ?? 0;
+
+  const roleBreakdown = useMemo(() => {
+    const map: Record<string, number> = { admin: 0, teacher: 0, parent: 0, guest: 0 };
+    history.forEach(e => { map[e.role] = (map[e.role] || 0) + 1; });
+    return map;
+  }, [history]);
+
+  return (
+    <View style={chartSty.wrap}>
+      <View style={chartSty.header}>
+        <View>
+          <Text style={chartSty.title}>نشاط تسجيل الدخول</Text>
+          <Text style={chartSty.sub}>آخر {days} يوماً</Text>
+        </View>
+        <View style={chartSty.todayBox}>
+          <Text style={chartSty.todayVal}>{todayLogins}</Text>
+          <Text style={chartSty.todayLbl}>اليوم</Text>
+        </View>
+      </View>
+
+      <View style={chartSty.bars}>
+        {data.map((d, i) => {
+          const isToday = i === data.length - 1;
+          const barH = maxVal > 0 ? Math.max((d.total / maxVal) * 80, d.total > 0 ? 6 : 2) : 2;
+          return (
+            <View key={d.date} style={chartSty.barCol}>
+              <Text style={[chartSty.barVal, d.total === 0 && { opacity: 0 }]}>{d.total}</Text>
+              <View style={[chartSty.bar, { height: barH, backgroundColor: isToday ? Colors.accent : Colors.primary + '60' }]} />
+              <Text style={[chartSty.barLabel, isToday && { color: Colors.accent, fontFamily: 'Inter_700Bold' }]}>{d.label}</Text>
+            </View>
+          );
+        })}
+      </View>
+
+      <View style={chartSty.legend}>
+        {Object.entries(roleBreakdown).filter(([, v]) => v > 0).map(([role, count]) => (
+          <View key={role} style={chartSty.legendItem}>
+            <View style={[chartSty.legendDot, { backgroundColor: ROLE_COLORS[role] }]} />
+            <Text style={chartSty.legendTxt}>{ROLE_LABELS[role]}: {count}</Text>
+          </View>
+        ))}
+        {totalLogins > 0 && (
+          <View style={chartSty.legendItem}>
+            <Text style={[chartSty.legendTxt, { fontFamily: 'Inter_700Bold', color: Colors.text }]}>الإجمالي: {totalLogins}</Text>
+          </View>
+        )}
+      </View>
+    </View>
+  );
+}
 
 async function openLink(url: string, label = 'الرابط') {
   try {
@@ -61,8 +144,8 @@ function QuickAction({ icon, label, color, onPress }: {
 
 export default function AdminDashboard() {
   const insets = useSafeAreaInsets();
-  const { user, logout, apiLogout } = useAuth();
-  const { students, employees, news, inbox, registrationRequests } = useAppData();
+  const { user, logout, apiLogout, loginHistory } = useAuth();
+  const { students, employees, news, inbox, registrationRequests, banners } = useAppData();
 
   const unreadInbox = inbox.filter(m => !m.read).length;
   const totalStudents = students.length;
@@ -143,10 +226,13 @@ export default function AdminDashboard() {
             <QuickAction icon="calendar-account" label="الاجتماعات" color="#7C3AED" onPress={() => router.push('/(admin)/meetings')} />
             <QuickAction icon="chart-bar" label="النتائج" color="#0EA5E9" onPress={() => router.push('/(admin)/results')} />
             <QuickAction icon="account-plus" label={`التسجيل${registrationRequests.filter(r => r.status === 'pending').length > 0 ? ` (${registrationRequests.filter(r => r.status === 'pending').length})` : ''}`} color="#10B981" onPress={() => router.push('/(admin)/registrations')} />
+            <QuickAction icon="bullhorn" label={`الإعلانات${banners.length > 0 ? ` (${banners.length})` : ''}`} color="#B45309" onPress={() => router.push('/(admin)/ads')} />
             <QuickAction icon="cog" label="الإعدادات" color="#64748B" onPress={() => router.push('/(admin)/settings')} />
             <QuickAction icon="printer" label="طباعة" color="#F59E0B" onPress={() => router.push('/(admin)/export')} />
             <QuickAction icon="code-braces" label="المطوّر" color="#EC4899" onPress={() => router.push('/(admin)/developer')} />
           </View>
+
+          <LoginChart history={loginHistory} />
 
           <Text style={styles.sectionTitle}>آخر الأخبار</Text>
           {news.slice(0, 3).map(item => {
@@ -333,4 +419,28 @@ const styles = StyleSheet.create({
   designerLinkBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(255,255,255,0.1)', paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)' },
   designerLinkText: { fontSize: 11, fontFamily: 'Inter_500Medium', color: '#fff' },
   designerMotto: { fontSize: 13, fontFamily: 'Inter_600SemiBold', color: Colors.accent, letterSpacing: 2 },
+});
+
+const chartSty = StyleSheet.create({
+  wrap: {
+    backgroundColor: Colors.surface, borderRadius: 18, marginBottom: 20, padding: 18,
+    shadowColor: Colors.primary, shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.09, shadowRadius: 10, elevation: 3,
+    borderRightWidth: 4, borderRightColor: Colors.primary,
+  },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 18 },
+  title: { fontSize: 15, fontFamily: 'Inter_700Bold', color: Colors.text, textAlign: 'right' },
+  sub: { fontSize: 11, fontFamily: 'Inter_400Regular', color: Colors.textLight, textAlign: 'right', marginTop: 2 },
+  todayBox: { backgroundColor: Colors.primary + '12', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 8, alignItems: 'center', borderWidth: 1, borderColor: Colors.primary + '30' },
+  todayVal: { fontSize: 22, fontFamily: 'Inter_700Bold', color: Colors.primary },
+  todayLbl: { fontSize: 10, fontFamily: 'Inter_400Regular', color: Colors.textLight },
+  bars: { flexDirection: 'row', alignItems: 'flex-end', gap: 3, height: 110, marginBottom: 12 },
+  barCol: { flex: 1, alignItems: 'center', justifyContent: 'flex-end', gap: 3 },
+  barVal: { fontSize: 8, fontFamily: 'Inter_600SemiBold', color: Colors.textLight },
+  bar: { width: '75%', borderRadius: 4, minHeight: 2 },
+  barLabel: { fontSize: 8, fontFamily: 'Inter_400Regular', color: Colors.textLight, textAlign: 'center' },
+  legend: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'flex-end', borderTopWidth: 1, borderTopColor: Colors.border, paddingTop: 12 },
+  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  legendDot: { width: 8, height: 8, borderRadius: 4 },
+  legendTxt: { fontSize: 11, fontFamily: 'Inter_500Medium', color: Colors.textLight },
 });

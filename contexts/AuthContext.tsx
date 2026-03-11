@@ -21,10 +21,17 @@ export interface ApiAuthResult {
   error?: string;
 }
 
+export interface LoginEvent {
+  role: UserRole;
+  date: string;
+  timestamp: number;
+}
+
 interface AuthContextValue {
   user: AuthUser | null;
   isLoading: boolean;
   isBiometricEnabled: boolean;
+  loginHistory: LoginEvent[];
   login: (user: AuthUser) => Promise<void>;
   logout: () => Promise<void>;
   enableBiometric: (user: AuthUser) => Promise<void>;
@@ -63,10 +70,14 @@ async function secureDel(key: string) {
   }
 }
 
+const LOGIN_HISTORY_KEY = 'login_history';
+const MAX_HISTORY = 200;
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isBiometricEnabled, setIsBiometricEnabled] = useState(false);
+  const [loginHistory, setLoginHistory] = useState<LoginEvent[]>([]);
 
   useEffect(() => {
     const init = async () => {
@@ -74,14 +85,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (data) setUser(JSON.parse(data));
       const flag = await secureGet(BIOMETRIC_FLAG);
       setIsBiometricEnabled(flag === 'true');
+      const hist = await AsyncStorage.getItem(LOGIN_HISTORY_KEY);
+      if (hist) setLoginHistory(JSON.parse(hist));
       setIsLoading(false);
     };
     init();
   }, []);
 
+  const recordLogin = async (role: UserRole) => {
+    const event: LoginEvent = {
+      role,
+      date: new Date().toISOString().split('T')[0],
+      timestamp: Date.now(),
+    };
+    setLoginHistory(prev => {
+      const updated = [event, ...prev].slice(0, MAX_HISTORY);
+      AsyncStorage.setItem(LOGIN_HISTORY_KEY, JSON.stringify(updated));
+      return updated;
+    });
+  };
+
   const login = async (userData: AuthUser) => {
     await AsyncStorage.setItem('auth_user', JSON.stringify(userData));
     setUser(userData);
+    await recordLogin(userData.role);
   };
 
   const logout = async () => {
@@ -150,10 +177,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const value = useMemo(() => ({
-    user, isLoading, isBiometricEnabled,
+    user, isLoading, isBiometricEnabled, loginHistory,
     login, logout, enableBiometric, disableBiometric, getBiometricUser,
     apiLogin, apiRegister, apiLogout,
-  }), [user, isLoading, isBiometricEnabled]);
+  }), [user, isLoading, isBiometricEnabled, loginHistory]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

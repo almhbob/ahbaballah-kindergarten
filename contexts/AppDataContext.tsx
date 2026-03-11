@@ -208,9 +208,16 @@ export interface Banner {
   id: string;
   type: BannerType;
   title: string;
-  body: string;
+  body?: string;
+  subtitle?: string;
+  link?: string;
   active: boolean;
   date: string;
+  advertiserName?: string;
+  advertiserPhone?: string;
+  price?: number;
+  paid?: boolean;
+  endDate?: string;
 }
 
 const DEMO_TRANSPORT_ROUTES: TransportRoute[] = [
