@@ -816,8 +816,8 @@ export default function LoginScreen() {
             <Text style={s.guestBtnTxt}>تصفح كضيف</Text>
           </Pressable>
 
-          <AboutCard />
           <DesignerCard />
+          <AboutCard />
         </ScrollView>
       </KeyboardAvoidingView>
     </View>
