@@ -61,6 +61,238 @@ const ROLES: {
   },
 ];
 
+const ab = StyleSheet.create({
+  card: {
+    width: '100%', borderRadius: 24, overflow: 'hidden', marginBottom: 24,
+    borderWidth: 1.5, borderColor: 'rgba(201,149,42,0.40)',
+    shadowColor: '#c9952a', shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.22, shadowRadius: 18, elevation: 12,
+  },
+  topGrad: { paddingTop: 22, paddingHorizontal: 20, paddingBottom: 18 },
+
+  badgeRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
+  pill: {
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    backgroundColor: 'rgba(201,149,42,0.18)', paddingHorizontal: 10, paddingVertical: 4,
+    borderRadius: 20, borderWidth: 1, borderColor: 'rgba(201,149,42,0.40)',
+  },
+  pillTxt: { fontSize: 10, fontFamily: 'Inter_700Bold', color: '#e8b84b', letterSpacing: 0.5 },
+  verBadge: {
+    backgroundColor: 'rgba(255,255,255,0.08)', paddingHorizontal: 8, paddingVertical: 3,
+    borderRadius: 10, borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)',
+  },
+  verTxt: { fontSize: 9, fontFamily: 'Inter_500Medium', color: 'rgba(255,255,255,0.45)' },
+
+  heroRow: { flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 16 },
+  logoWrap: {
+    width: 68, height: 68, borderRadius: 34,
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    justifyContent: 'center', alignItems: 'center',
+    borderWidth: 2, borderColor: 'rgba(201,149,42,0.60)',
+    shadowColor: '#c9952a', shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.50, shadowRadius: 12, elevation: 8,
+  },
+  logo: { width: 52, height: 52 },
+  heroText: { flex: 1, alignItems: 'flex-end' },
+  schoolName: { fontSize: 19, fontFamily: 'Inter_700Bold', color: '#FFFFFF', textAlign: 'right', marginBottom: 3 },
+  schoolSub: { fontSize: 11, fontFamily: 'Inter_400Regular', color: 'rgba(255,255,255,0.55)', textAlign: 'right', marginBottom: 8 },
+  mottoRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 5, justifyContent: 'flex-end' },
+  mottoChip: {
+    paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8,
+    backgroundColor: 'rgba(201,149,42,0.15)', borderWidth: 1, borderColor: 'rgba(201,149,42,0.30)',
+  },
+  mottoTxt: { fontSize: 9, fontFamily: 'Inter_600SemiBold', color: '#dfb04a' },
+
+  divider: { height: 1, backgroundColor: 'rgba(255,255,255,0.08)', marginBottom: 14 },
+
+  quickRow: { flexDirection: 'row', gap: 8, marginBottom: 14 },
+  quickCard: {
+    flex: 1, alignItems: 'center', gap: 5,
+    backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 14, paddingVertical: 12,
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.10)',
+  },
+  quickLabel: { fontSize: 9, fontFamily: 'Inter_500Medium', color: 'rgba(255,255,255,0.45)', textAlign: 'center' },
+  quickValue: { fontSize: 11, fontFamily: 'Inter_700Bold', color: '#FFFFFF', textAlign: 'center' },
+
+  actRow: { flexDirection: 'row', gap: 8, marginBottom: 14 },
+  actBtn: {
+    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+    paddingVertical: 11, borderRadius: 14, borderWidth: 1.5,
+  },
+  actWa: { backgroundColor: 'rgba(37,211,102,0.12)', borderColor: 'rgba(37,211,102,0.35)' },
+  actCall: { backgroundColor: 'rgba(201,149,42,0.12)', borderColor: 'rgba(201,149,42,0.35)' },
+  actTxt: { fontSize: 13, fontFamily: 'Inter_700Bold' },
+
+  expandTrigger: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5,
+    paddingVertical: 7, borderRadius: 10,
+    backgroundColor: 'rgba(255,255,255,0.05)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)',
+  },
+  expandTriggerTxt: { fontSize: 11, fontFamily: 'Inter_500Medium', color: 'rgba(201,149,42,0.70)' },
+
+  detailsWrap: { backgroundColor: '#F8FAFC', paddingHorizontal: 18, paddingBottom: 4 },
+  detailSection: { paddingTop: 16, paddingBottom: 6 },
+  detailSectionTitle: { fontSize: 10, fontFamily: 'Inter_700Bold', color: Colors.textLight, textAlign: 'right', marginBottom: 10, letterSpacing: 0.8 },
+  detailRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, gap: 10 },
+  detailRowBorder: { borderBottomWidth: 1, borderBottomColor: '#EEF2F7' },
+  detailIconWrap: { width: 32, height: 32, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
+  detailLabel: { fontSize: 10, fontFamily: 'Inter_400Regular', color: Colors.textLight, textAlign: 'right' },
+  detailValue: { fontSize: 13, fontFamily: 'Inter_600SemiBold', color: Colors.text, textAlign: 'right' },
+  detailTexts: { flex: 1, alignItems: 'flex-end', gap: 1 },
+
+  footerGrad: { paddingVertical: 12, paddingHorizontal: 18, alignItems: 'center', gap: 4 },
+  footerLine1: { fontSize: 10, fontFamily: 'Inter_500Medium', color: 'rgba(255,255,255,0.35)' },
+  footerLine2: { fontSize: 9, fontFamily: 'Inter_400Regular', color: 'rgba(255,255,255,0.22)', letterSpacing: 0.3 },
+});
+
+const DETAIL_ITEMS = [
+  { icon: 'person-circle', iconBg: '#EFF6FF', iconColor: '#3B82F6', label: 'المديرة', value: 'أ. سلوى أحمد داموس', section: 'معلومات المؤسسة' },
+  { icon: 'location',      iconBg: '#ECFDF5', iconColor: '#10B981', label: 'الموقع',  value: 'صفيتة الغنوماب — السودان', section: 'معلومات المؤسسة' },
+  { icon: 'call',          iconBg: '#FFFBEB', iconColor: '#F59E0B', label: 'الهاتف',  value: '+249 917 545 129',          section: 'معلومات المؤسسة' },
+  { icon: 'mail',          iconBg: '#F5F3FF', iconColor: '#8B5CF6', label: 'البريد',  value: 'info@ahbaballah.edu',       section: 'معلومات المؤسسة' },
+  { icon: 'layers',        iconBg: '#FEF2F2', iconColor: '#EF4444', label: 'الإصدار', value: 'v2.0 — 2026',               section: 'معلومات التطبيق' },
+  { icon: 'code-slash',    iconBg: '#F0FDFA', iconColor: '#14B8A6', label: 'المطوّر', value: 'Ali Alnassar — DigitalMind', section: 'معلومات التطبيق' },
+];
+
+function AboutCard() {
+  const [expanded, setExpanded] = useState(false);
+
+  const openLink = async (url: string) => {
+    try {
+      const ok = await Linking.canOpenURL(url);
+      if (ok) await Linking.openURL(url);
+    } catch { /* ignore */ }
+  };
+
+  const sections = ['معلومات المؤسسة', 'معلومات التطبيق'];
+
+  return (
+    <View style={ab.card}>
+      {/* ══ DARK GRADIENT HEADER ══ */}
+      <LinearGradient
+        colors={['#040924', '#0c1155', '#161f7a', '#0c1155', '#040924']}
+        start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+        style={ab.topGrad}
+      >
+        {/* Hex decorations */}
+        <View style={StyleSheet.absoluteFill} pointerEvents="none">
+          <View style={{ position: 'absolute', right: -22, top: -22, opacity: 0.15 }}>
+            <HexFrame size={100} fill="transparent" stroke="#c9952a" strokeWidth={1.5} />
+          </View>
+          <View style={{ position: 'absolute', left: -14, bottom: -14, opacity: 0.09 }}>
+            <HexFrame size={74} fill="transparent" stroke="#ffffff" strokeWidth={1} />
+          </View>
+          <View style={{ position: 'absolute', right: 60, bottom: -30, opacity: 0.07 }}>
+            <HexFrame size={50} fill="transparent" stroke="#c9952a" strokeWidth={1} />
+          </View>
+        </View>
+
+        {/* Badge + version row */}
+        <View style={ab.badgeRow}>
+          <View style={ab.verBadge}>
+            <Text style={ab.verTxt}>v2.0 • 2026</Text>
+          </View>
+          <View style={ab.pill}>
+            <MaterialCommunityIcons name="information-outline" size={11} color="#e8b84b" />
+            <Text style={ab.pillTxt}>عن التطبيق</Text>
+          </View>
+        </View>
+
+        {/* Hero: Logo + Name */}
+        <View style={ab.heroRow}>
+          <View style={ab.logoWrap}>
+            <Image source={require('@/assets/images/logo_main.png')} style={ab.logo} resizeMode="contain" />
+          </View>
+          <View style={ab.heroText}>
+            <Text style={ab.schoolName}>روضة أحباب الله</Text>
+            <Text style={ab.schoolSub}>نظام إداري متكامل — صفيتة الغنوماب</Text>
+            <View style={ab.mottoRow}>
+              {['جودة', 'التزام', 'تميز'].map(w => (
+                <View key={w} style={ab.mottoChip}><Text style={ab.mottoTxt}>{w}</Text></View>
+              ))}
+            </View>
+          </View>
+        </View>
+
+        <View style={ab.divider} />
+
+        {/* Quick info cards */}
+        <View style={ab.quickRow}>
+          {[
+            { icon: 'account-tie', label: 'المديرة', value: 'سلوى داموس', color: '#818CF8' },
+            { icon: 'map-marker',  label: 'الموقع',  value: 'صفيتة',       color: '#34D399' },
+            { icon: 'phone',       label: 'التواصل', value: '545129',       color: '#FCD34D' },
+          ].map(q => (
+            <View key={q.label} style={ab.quickCard}>
+              <MaterialCommunityIcons name={q.icon as any} size={18} color={q.color} />
+              <Text style={ab.quickValue}>{q.value}</Text>
+              <Text style={ab.quickLabel}>{q.label}</Text>
+            </View>
+          ))}
+        </View>
+
+        {/* Action buttons */}
+        <View style={ab.actRow}>
+          <Pressable
+            style={[ab.actBtn, ab.actWa]}
+            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); openLink('https://wa.me/249917545129'); }}
+          >
+            <MaterialCommunityIcons name="whatsapp" size={17} color="#25D366" />
+            <Text style={[ab.actTxt, { color: '#25D366' }]}>واتساب</Text>
+          </Pressable>
+          <Pressable
+            style={[ab.actBtn, ab.actCall]}
+            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); openLink('tel:+249917545129'); }}
+          >
+            <Ionicons name="call" size={15} color="#e8b84b" />
+            <Text style={[ab.actTxt, { color: '#e8b84b' }]}>اتصال</Text>
+          </Pressable>
+        </View>
+
+        {/* Expand trigger */}
+        <Pressable
+          style={ab.expandTrigger}
+          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setExpanded(e => !e); }}
+        >
+          <Ionicons name={expanded ? 'chevron-up' : 'chevron-down'} size={13} color="rgba(201,149,42,0.70)" />
+          <Text style={ab.expandTriggerTxt}>{expanded ? 'إخفاء التفاصيل' : 'تفاصيل إضافية'}</Text>
+        </Pressable>
+      </LinearGradient>
+
+      {/* ══ EXPANDED DETAIL SECTION ══ */}
+      {expanded && (
+        <View style={ab.detailsWrap}>
+          {sections.map(sec => {
+            const items = DETAIL_ITEMS.filter(d => d.section === sec);
+            return (
+              <View key={sec} style={ab.detailSection}>
+                <Text style={ab.detailSectionTitle}>{sec.toUpperCase()}</Text>
+                {items.map((item, i) => (
+                  <View key={i} style={[ab.detailRow, i < items.length - 1 && ab.detailRowBorder]}>
+                    <View style={ab.detailTexts}>
+                      <Text style={ab.detailValue}>{item.value}</Text>
+                      <Text style={ab.detailLabel}>{item.label}</Text>
+                    </View>
+                    <View style={[ab.detailIconWrap, { backgroundColor: item.iconBg }]}>
+                      <Ionicons name={item.icon as any} size={16} color={item.iconColor} />
+                    </View>
+                  </View>
+                ))}
+              </View>
+            );
+          })}
+        </View>
+      )}
+
+      {/* ══ FOOTER ══ */}
+      <LinearGradient colors={['#040924', '#0c1155']} style={ab.footerGrad}>
+        <Text style={ab.footerLine1}>© 2026 جميع الحقوق محفوظة — روضة أحباب الله</Text>
+        <Text style={ab.footerLine2}>Developed by Ali Alnassar • DigitalMind Systems</Text>
+      </LinearGradient>
+    </View>
+  );
+}
+
 function HexDecor({ size, x, y, opacity }: { size: number; x: number; y: number; opacity: number }) {
   return (
     <View style={{ position: 'absolute', left: x, top: y, opacity }}>
@@ -427,35 +659,7 @@ export default function LoginScreen() {
             <Text style={s.guestBtnTxt}>تصفح كضيف</Text>
           </Pressable>
 
-          {/* ── WhatsApp ── */}
-          <Pressable
-            style={({ pressed }) => [s.waCard, { opacity: pressed ? 0.82 : 1 }]}
-            onPress={async () => {
-              try {
-                const url = 'https://wa.me/249917545129';
-                const can = await Linking.canOpenURL(url);
-                if (can) { await Linking.openURL(url); }
-                else { Alert.alert('واتساب', 'تعذّر فتح واتساب. الرقم: +249917545129'); }
-              } catch {
-                Alert.alert('واتساب', 'تعذّر فتح واتساب. الرقم: +249917545129');
-              }
-            }}
-          >
-            <HexFrame size={38} fill="rgba(37,211,102,0.15)" stroke="rgba(37,211,102,0.35)" strokeWidth={1.5}>
-              <MaterialCommunityIcons name="whatsapp" size={18} color="#25D366" />
-            </HexFrame>
-            <View style={{ flex: 1, alignItems: 'flex-end', marginRight: 8 }}>
-              <Text style={s.waName}>أ. سلوى أحمد داموس</Text>
-              <Text style={s.waSub}>مديرة الروضة — واتساب</Text>
-            </View>
-            <Text style={s.waNum}>+249917545129</Text>
-          </Pressable>
-
-          <View style={s.versionRow}>
-            <HexFrame size={10} fill="rgba(201,149,42,0.4)" stroke="rgba(201,149,42,0.6)" strokeWidth={1} />
-            <Text style={s.versionTxt}>v2.0 — Ahbab Allah Kindergarten System</Text>
-            <HexFrame size={10} fill="rgba(201,149,42,0.4)" stroke="rgba(201,149,42,0.6)" strokeWidth={1} />
-          </View>
+          <AboutCard />
         </ScrollView>
       </KeyboardAvoidingView>
     </View>
@@ -570,4 +774,10 @@ const s = StyleSheet.create({
   },
   bioBtnTitle: { fontSize: 15, fontFamily: 'Inter_700Bold', color: '#FFFFFF', marginBottom: 3 },
   bioBtnSub: { fontSize: 12, fontFamily: 'Inter_400Regular', color: 'rgba(201,149,42,0.85)' },
+
+  waCard: { flexDirection: 'row', alignItems: 'center', width: '100%' },
+  waName: { fontSize: 13, fontFamily: 'Inter_600SemiBold', color: '#FFFFFF' },
+  waSub: { fontSize: 11, fontFamily: 'Inter_400Regular', color: 'rgba(255,255,255,0.50)' },
+  waNum: { fontSize: 11, fontFamily: 'Inter_500Medium', color: '#25D366' },
 });
+
