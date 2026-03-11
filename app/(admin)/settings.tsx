@@ -280,7 +280,7 @@ export default function SettingsScreen() {
                   <Text style={styles.fieldLabel}>{f.label}</Text>
                   <TextInput
                     style={[styles.textInput, f.multi && { height: 80 }]}
-                    value={draftInfo[f.key]}
+                    value={draftInfo[f.key] as string | undefined}
                     onChangeText={v => setDraftInfo({ ...draftInfo, [f.key]: v })}
                     textAlign="right"
                     multiline={f.multi}

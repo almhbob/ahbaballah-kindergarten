@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, Pressable, TextInput,
   KeyboardAvoidingView, Platform, ScrollView, Alert, Linking, Image,
@@ -7,7 +7,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useAuth, UserRole } from '@/contexts/AuthContext';
+import * as LocalAuthentication from 'expo-local-authentication';
+import { useAuth, UserRole, AuthUser } from '@/contexts/AuthContext';
 import { useAppData } from '@/contexts/AppDataContext';
 import { Colors } from '@/constants/colors';
 import HexFrame from '@/components/HexFrame';
@@ -70,7 +71,7 @@ function HexDecor({ size, x, y, opacity }: { size: number; x: number; y: number;
 
 export default function LoginScreen() {
   const insets = useSafeAreaInsets();
-  const { login, apiLogin } = useAuth();
+  const { login, apiLogin, isBiometricEnabled, enableBiometric, getBiometricUser } = useAuth();
   const { students, employees } = useAppData();
 
   const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
@@ -78,6 +79,59 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [biometricUser, setBiometricUser] = useState<AuthUser | null>(null);
+  const [hasBiometricHW, setHasBiometricHW] = useState(false);
+
+  useEffect(() => {
+    const checkBiometric = async () => {
+      const hasHW = await LocalAuthentication.hasHardwareAsync();
+      const enrolled = await LocalAuthentication.isEnrolledAsync();
+      setHasBiometricHW(hasHW && enrolled);
+      if (isBiometricEnabled) {
+        const saved = await getBiometricUser();
+        setBiometricUser(saved);
+      }
+    };
+    checkBiometric();
+  }, [isBiometricEnabled]);
+
+  const handleBiometricLogin = async () => {
+    try {
+      const result = await LocalAuthentication.authenticateAsync({
+        promptMessage: 'تسجيل الدخول بالبصمة',
+        cancelLabel: 'إلغاء',
+        fallbackLabel: 'كلمة المرور',
+        disableDeviceFallback: false,
+      });
+      if (result.success && biometricUser) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        await login(biometricUser);
+        if (biometricUser.role === 'admin') router.replace('/(admin)');
+        else if (biometricUser.role === 'teacher') router.replace('/(teacher)');
+        else router.replace('/(parent)');
+      }
+    } catch {
+      Alert.alert('خطأ', 'تعذّر تسجيل الدخول بالبصمة');
+    }
+  };
+
+  const offerBiometricEnable = (authUser: AuthUser) => {
+    if (!hasBiometricHW || isBiometricEnabled) return;
+    Alert.alert(
+      'تسجيل الدخول بالبصمة',
+      'هل تريد تفعيل تسجيل الدخول بالبصمة في المرات القادمة؟',
+      [
+        { text: 'لاحقاً', style: 'cancel' },
+        {
+          text: 'تفعيل',
+          onPress: async () => {
+            await enableBiometric(authUser);
+            setBiometricUser(authUser);
+          },
+        },
+      ],
+    );
+  };
 
   const activeRole = ROLES.find(r => r.id === selectedRole);
 
@@ -157,6 +211,7 @@ export default function LoginScreen() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     await login(authUser);
     apiLogin(selectedRole, credential.trim(), password.trim()).catch(() => {});
+    offerBiometricEnable(authUser);
     if (selectedRole === 'admin') router.replace('/(admin)');
     else if (selectedRole === 'teacher') router.replace('/(teacher)');
     else router.replace('/(parent)');
@@ -322,6 +377,31 @@ export default function LoginScreen() {
             </LinearGradient>
           </Pressable>
 
+          {/* ── Biometric Login ── */}
+          {biometricUser && (
+            <>
+              <View style={s.bioSepRow}>
+                <View style={s.bioSepLine} />
+                <Text style={s.bioSepTxt}>أو</Text>
+                <View style={s.bioSepLine} />
+              </View>
+              <Pressable
+                style={({ pressed }) => [s.bioBtn, { opacity: pressed ? 0.82 : 1 }]}
+                onPress={handleBiometricLogin}
+              >
+                <View style={s.bioBtnInner}>
+                  <View style={s.bioIconWrap}>
+                    <Ionicons name="finger-print" size={30} color={Colors.accent} />
+                  </View>
+                  <View style={{ flex: 1, alignItems: 'flex-end' }}>
+                    <Text style={s.bioBtnTitle}>دخول بالبصمة</Text>
+                    <Text style={s.bioBtnSub}>{biometricUser.name}</Text>
+                  </View>
+                </View>
+              </Pressable>
+            </>
+          )}
+
           {/* ── Create Account ── */}
           <Pressable
             style={({ pressed }) => [s.signupLink, { opacity: pressed ? 0.8 : 1 }]}
@@ -474,4 +554,20 @@ const s = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.04)',
   },
   guestBtnTxt: { fontSize: 13, fontFamily: 'Inter_400Regular', color: 'rgba(255,255,255,0.40)' },
+
+  bioSepRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginVertical: 14 },
+  bioSepLine: { flex: 1, height: 1, backgroundColor: 'rgba(255,255,255,0.10)' },
+  bioSepTxt: { fontSize: 12, fontFamily: 'Inter_400Regular', color: 'rgba(255,255,255,0.35)' },
+  bioBtn: {
+    width: '100%', borderRadius: 18, marginBottom: 14,
+    backgroundColor: 'rgba(201,149,42,0.10)', borderWidth: 1.5,
+    borderColor: 'rgba(201,149,42,0.35)',
+  },
+  bioBtnInner: { flexDirection: 'row', alignItems: 'center', padding: 16, gap: 14 },
+  bioIconWrap: {
+    width: 52, height: 52, borderRadius: 26, justifyContent: 'center', alignItems: 'center',
+    backgroundColor: 'rgba(201,149,42,0.15)', borderWidth: 1, borderColor: 'rgba(201,149,42,0.30)',
+  },
+  bioBtnTitle: { fontSize: 15, fontFamily: 'Inter_700Bold', color: '#FFFFFF', marginBottom: 3 },
+  bioBtnSub: { fontSize: 12, fontFamily: 'Inter_400Regular', color: 'rgba(201,149,42,0.85)' },
 });

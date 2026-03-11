@@ -81,6 +81,9 @@ export interface SchoolInfo {
   email: string;
   motto: string;
   location: string;
+  lat?: number;
+  lng?: number;
+  attendanceRadius?: number;
 }
 
 export interface HonorWeights {
@@ -306,6 +309,9 @@ export const DEFAULT_SCHOOL_INFO: SchoolInfo = {
   email: 'info@ahbaballah.edu',
   motto: 'جودة • التزام • تميز',
   location: 'صفيتة الغنوماب',
+  lat: 34.8167,
+  lng: 36.1167,
+  attendanceRadius: 300,
 };
 
 export const DEFAULT_HONOR_WEIGHTS: HonorWeights = {

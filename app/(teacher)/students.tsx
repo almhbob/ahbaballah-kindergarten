@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, StyleSheet, FlatList, Pressable,
   TextInput, Modal, ScrollView, Platform, Alert,
@@ -6,10 +6,22 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import * as Location from 'expo-location';
 import { Colors } from '@/constants/colors';
 import { useAppData, Student } from '@/contexts/AppDataContext';
-
 import * as Haptics from 'expo-haptics';
+
+function haversineMeters(lat1: number, lon1: number, lat2: number, lon2: number) {
+  const R = 6371000;
+  const φ1 = lat1 * Math.PI / 180;
+  const φ2 = lat2 * Math.PI / 180;
+  const Δφ = (lat2 - lat1) * Math.PI / 180;
+  const Δλ = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(Δφ / 2) ** 2 + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+type LocationStatus = 'checking' | 'inside' | 'outside' | 'denied' | 'web';
 
 const BEHAVIOR_COLORS = {
   'ممتاز': { color: Colors.success, bg: '#ECFDF5' },
@@ -68,7 +80,7 @@ function StudentCard({ student, onPress }: { student: Student; onPress: () => vo
 
 export default function StudentsScreen() {
   const insets = useSafeAreaInsets();
-  const { students, updateStudent } = useAppData();
+  const { students, updateStudent, schoolInfo } = useAppData();
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<Student | null>(null);
   const [editNotes, setEditNotes] = useState('');
@@ -78,8 +90,36 @@ export default function StudentsScreen() {
   const [reportAte, setReportAte] = useState('');
   const [reportLearned, setReportLearned] = useState('');
   const [reportMood, setReportMood] = useState('');
+  const [locStatus, setLocStatus] = useState<LocationStatus>(Platform.OS === 'web' ? 'web' : 'checking');
+  const [distanceM, setDistanceM] = useState<number | null>(null);
+  const locInterval = useRef<ReturnType<typeof setInterval> | null>(null);
+
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
   const bottomPadding = Platform.OS === 'web' ? 34 : insets.bottom + 90;
+
+  const schoolLat = schoolInfo.lat ?? 34.8167;
+  const schoolLng = schoolInfo.lng ?? 36.1167;
+  const radius = schoolInfo.attendanceRadius ?? 300;
+  const isInsideSchool = locStatus === 'inside' || locStatus === 'web';
+
+  useEffect(() => {
+    if (Platform.OS === 'web') return;
+
+    const checkLocation = async () => {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') { setLocStatus('denied'); return; }
+      try {
+        const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+        const d = haversineMeters(pos.coords.latitude, pos.coords.longitude, schoolLat, schoolLng);
+        setDistanceM(Math.round(d));
+        setLocStatus(d <= radius ? 'inside' : 'outside');
+      } catch { setLocStatus('outside'); }
+    };
+
+    checkLocation();
+    locInterval.current = setInterval(checkLocation, 60000);
+    return () => { if (locInterval.current) clearInterval(locInterval.current); };
+  }, [schoolLat, schoolLng, radius]);
 
   const filtered = students.filter(s => s.name.includes(search) || s.level.includes(search));
 
@@ -127,6 +167,30 @@ export default function StudentsScreen() {
           </Pressable>
           <Text style={styles.headerTitle}>دفتر المتابعة</Text>
         </View>
+
+        {/* ── Location Status Bar ── */}
+        {locStatus !== 'web' && (
+          <View style={[styles.locBar, {
+            backgroundColor: locStatus === 'inside' ? 'rgba(16,185,129,0.18)' :
+              locStatus === 'checking' ? 'rgba(255,255,255,0.10)' :
+              locStatus === 'denied' ? 'rgba(245,158,11,0.18)' : 'rgba(239,68,68,0.18)',
+          }]}>
+            <Ionicons
+              name={locStatus === 'inside' ? 'location' : locStatus === 'checking' ? 'time-outline' : locStatus === 'denied' ? 'warning-outline' : 'lock-closed'}
+              size={14}
+              color={locStatus === 'inside' ? '#10B981' : locStatus === 'checking' ? '#9CA3AF' : locStatus === 'denied' ? '#F59E0B' : '#EF4444'}
+            />
+            <Text style={[styles.locBarTxt, {
+              color: locStatus === 'inside' ? '#10B981' : locStatus === 'checking' ? '#9CA3AF' : locStatus === 'denied' ? '#F59E0B' : '#EF4444',
+            }]}>
+              {locStatus === 'inside' ? `داخل الروضة${distanceM !== null ? ` — ${distanceM} م` : ''}` :
+               locStatus === 'checking' ? 'جارٍ التحقق من الموقع...' :
+               locStatus === 'denied' ? 'تسجيل الحضور يتطلب تفعيل الموقع' :
+               `خارج الروضة — تسجيل الحضور مقيّد${distanceM !== null ? ` (${distanceM} م)` : ''}`}
+            </Text>
+          </View>
+        )}
+
         <View style={styles.searchBox}>
           <Ionicons name="search" size={18} color="rgba(255,255,255,0.5)" />
           <TextInput
@@ -224,8 +288,33 @@ export default function StudentsScreen() {
                 textAlignVertical="top"
               />
 
-              <Pressable style={styles.saveBtn} onPress={handleSave}>
-                <Text style={styles.saveBtnText}>حفظ المتابعة</Text>
+              {!isInsideSchool && locStatus !== 'checking' && (
+                <View style={styles.lockNotice}>
+                  <Ionicons name="lock-closed" size={18} color="#EF4444" />
+                  <Text style={styles.lockNoticeTxt}>
+                    {locStatus === 'denied'
+                      ? 'يجب تفعيل الموقع الجغرافي لتسجيل الحضور'
+                      : 'تسجيل الحضور متاح فقط داخل الروضة'}
+                  </Text>
+                </View>
+              )}
+              <Pressable
+                style={[styles.saveBtn, !isInsideSchool && locStatus !== 'checking' && styles.saveBtnDisabled]}
+                onPress={() => {
+                  if (!isInsideSchool && locStatus !== 'checking') {
+                    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+                    Alert.alert('مقيّد', 'تسجيل الحضور والغياب متاح فقط داخل الروضة');
+                    return;
+                  }
+                  handleSave();
+                }}
+              >
+                {!isInsideSchool && locStatus !== 'checking'
+                  ? <Ionicons name="lock-closed" size={18} color="rgba(255,255,255,0.6)" />
+                  : null}
+                <Text style={styles.saveBtnText}>
+                  {isInsideSchool || locStatus === 'checking' ? 'حفظ المتابعة' : 'حفظ مقيّد'}
+                </Text>
               </Pressable>
             </ScrollView>
           </View>
@@ -271,6 +360,11 @@ const styles = StyleSheet.create({
   optionText: { fontSize: 12, fontFamily: 'Inter_500Medium', color: Colors.textSecondary },
   textInput: { backgroundColor: Colors.surfaceAlt, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, fontFamily: 'Inter_400Regular', color: Colors.text },
   textArea: { height: 80, textAlignVertical: 'top' },
-  saveBtn: { backgroundColor: '#1A6B5C', borderRadius: 14, height: 52, justifyContent: 'center', alignItems: 'center', marginTop: 20 },
+  saveBtn: { backgroundColor: '#1A6B5C', borderRadius: 14, height: 52, justifyContent: 'center', alignItems: 'center', marginTop: 20, flexDirection: 'row', gap: 8 },
+  saveBtnDisabled: { backgroundColor: '#9CA3AF', opacity: 0.75 },
   saveBtnText: { fontSize: 16, fontFamily: 'Inter_700Bold', color: '#FFFFFF' },
+  locBar: { flexDirection: 'row', alignItems: 'center', gap: 7, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 7, marginBottom: 10, borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)' },
+  locBarTxt: { fontSize: 12, fontFamily: 'Inter_500Medium', flex: 1, textAlign: 'right' },
+  lockNotice: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#FEF2F2', borderRadius: 12, padding: 12, marginTop: 16, borderWidth: 1, borderColor: '#FCA5A5' },
+  lockNoticeTxt: { flex: 1, fontSize: 13, fontFamily: 'Inter_500Medium', color: '#EF4444', textAlign: 'right' },
 });
