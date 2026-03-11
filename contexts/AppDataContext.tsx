@@ -86,6 +86,42 @@ export interface SchoolInfo {
   attendanceRadius?: number;
 }
 
+export interface AppSettings {
+  gpsAttendanceEnabled: boolean;
+  biometricLoginEnabled: boolean;
+  guestAccessEnabled: boolean;
+  bannersEnabled: boolean;
+  onlineRegistrationEnabled: boolean;
+  bannerAutoplay: boolean;
+  maintenanceMode: boolean;
+  adminPassword: string;
+  defaultTeacherPassword: string;
+  defaultParentPassword: string;
+  academicYear: string;
+  developerName: string;
+  developerPhone: string;
+  developerEmail: string;
+  appVersion: string;
+}
+
+export const DEFAULT_APP_SETTINGS: AppSettings = {
+  gpsAttendanceEnabled: true,
+  biometricLoginEnabled: true,
+  guestAccessEnabled: true,
+  bannersEnabled: true,
+  onlineRegistrationEnabled: true,
+  bannerAutoplay: true,
+  maintenanceMode: false,
+  adminPassword: '1234',
+  defaultTeacherPassword: '1234',
+  defaultParentPassword: '1234',
+  academicYear: '2025-2026',
+  developerName: 'Ali Alnassar',
+  developerPhone: '+966500000000',
+  developerEmail: 'ali@digitalmind.sa',
+  appVersion: '2.0.0',
+};
+
 export interface HonorWeights {
   grades: number;
   attendance: number;
@@ -585,6 +621,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const [banners, setBanners] = useState<Banner[]>([]);
   const [yearlySnapshots, setYearlySnapshots] = useState<YearlySnapshot[]>(DEMO_YEARLY_SNAPSHOTS);
   const [registrationRequests, setRegistrationRequests] = useState<RegistrationRequest[]>([]);
+  const [appSettings, setAppSettingsState] = useState<AppSettings>(DEFAULT_APP_SETTINGS);
   const welcomeRef = useRef<string>(DEFAULT_WELCOME_MSG);
 
   useEffect(() => {
@@ -626,6 +663,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       if (savedBanners) setBanners(JSON.parse(savedBanners));
       const savedSnapshots = await AsyncStorage.getItem('app_yearly_snapshots');
       if (savedSnapshots) setYearlySnapshots(JSON.parse(savedSnapshots));
+      const savedAppSettings = await AsyncStorage.getItem('app_settings');
+      if (savedAppSettings) setAppSettingsState({ ...DEFAULT_APP_SETTINGS, ...JSON.parse(savedAppSettings) });
       const savedRegs = await AsyncStorage.getItem('app_registration_requests');
       if (savedRegs) setRegistrationRequests(JSON.parse(savedRegs));
     };
@@ -692,6 +731,14 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     setSchedule(prev => {
       const updated = prev.filter(p => p.id !== id);
       AsyncStorage.setItem('app_schedule', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const updateAppSettings = (data: Partial<AppSettings>) => {
+    setAppSettingsState(prev => {
+      const updated = { ...prev, ...data };
+      AsyncStorage.setItem('app_settings', JSON.stringify(updated));
       return updated;
     });
   };
@@ -1038,7 +1085,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     banners, addBanner, updateBanner, removeBanner,
     yearlySnapshots, saveYearlySnapshot, removeYearlySnapshot,
     registrationRequests, addRegistrationRequest, updateRegistrationRequest, removeRegistrationRequest,
-  }), [students, employees, news, inbox, messages, meetings, schedule, welcomeMessage, schoolInfo, honorWeights, annualPlan, graduationTasks, certificates, transportRoutes, transportSubscriptions, banners, yearlySnapshots, registrationRequests]);
+    appSettings, updateAppSettings,
+  }), [students, employees, news, inbox, messages, meetings, schedule, welcomeMessage, schoolInfo, honorWeights, annualPlan, graduationTasks, certificates, transportRoutes, transportSubscriptions, banners, yearlySnapshots, registrationRequests, appSettings]);
 
   return <AppDataContext.Provider value={value}>{children}</AppDataContext.Provider>;
 }
