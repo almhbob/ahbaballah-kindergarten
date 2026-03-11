@@ -1,6 +1,7 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Pressable, Platform, Image, Alert,
+  Modal, TextInput, KeyboardAvoidingView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -11,6 +12,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useAppData, buildHonorBoard } from '@/contexts/AppDataContext';
 import HexFrame from '@/components/HexFrame';
 import * as Haptics from 'expo-haptics';
+import { getApiUrl } from '@/lib/query-client';
 
 const PARENT_COLOR = '#7B3FA0';
 
@@ -32,6 +34,37 @@ export default function ParentHomeScreen() {
     if (!myParentEntry) return null;
     return honorData.parents.findIndex(p => p.studentId === child?.id) + 1;
   }, [honorData, myParentEntry, child]);
+
+  const [showReview, setShowReview]     = useState(false);
+  const [reviewText, setReviewText]     = useState('');
+  const [reviewRating, setReviewRating] = useState(5);
+  const [submitting, setSubmitting]     = useState(false);
+  const [submitted, setSubmitted]       = useState(false);
+
+  const submitReview = async () => {
+    if (!reviewText.trim()) { Alert.alert('تنبيه', 'الرجاء كتابة رأيك أولاً'); return; }
+    setSubmitting(true);
+    try {
+      const url = new URL('/api/reviews', getApiUrl());
+      const res = await fetch(url.toString(), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          parentName: user?.name ?? 'ولي أمر',
+          childName:  child?.name ?? '',
+          content:    reviewText.trim(),
+          rating:     reviewRating,
+        }),
+      });
+      if (!res.ok) throw new Error('failed');
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setSubmitted(true);
+    } catch {
+      Alert.alert('خطأ', 'تعذّر إرسال رأيك، يرجى المحاولة مرة أخرى');
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   if (!child) return null;
 
@@ -237,8 +270,86 @@ export default function ParentHomeScreen() {
             </View>
             <Text style={styles.notesText}>{child.notes || 'لا توجد ملاحظات حالياً'}</Text>
           </View>
+
+          {/* ─── REVIEW BUTTON ─── */}
+          <Pressable
+            style={({ pressed }) => [styles.reviewBtn, { opacity: pressed ? 0.85 : 1 }]}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              setShowReview(true);
+              setSubmitted(false);
+              setReviewText('');
+              setReviewRating(5);
+            }}
+          >
+            <LinearGradient colors={['#3b1660', '#7B3FA0']} style={styles.reviewBtnGrad} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
+              <MaterialCommunityIcons name="star-plus" size={20} color="#FFD700" />
+              <Text style={styles.reviewBtnText}>شاركنا رأيك في الروضة</Text>
+            </LinearGradient>
+          </Pressable>
         </View>
       </ScrollView>
+
+      {/* ─── REVIEW MODAL ─── */}
+      <Modal visible={showReview} transparent animationType="slide" onRequestClose={() => setShowReview(false)}>
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
+          <Pressable style={styles.modalOverlay} onPress={() => setShowReview(false)} />
+          <View style={[styles.reviewSheet, { paddingBottom: Math.max(insets.bottom + 16, 30) }]}>
+            <View style={styles.reviewHandle} />
+            {submitted ? (
+              <View style={styles.reviewSuccess}>
+                <MaterialCommunityIcons name="check-circle" size={52} color={Colors.success} />
+                <Text style={styles.reviewSuccessTitle}>شكراً لك!</Text>
+                <Text style={styles.reviewSuccessDesc}>تم إرسال رأيك وسيظهر على صفحة الروضة</Text>
+                <Pressable style={styles.reviewDoneBtn} onPress={() => setShowReview(false)}>
+                  <Text style={styles.reviewDoneBtnText}>إغلاق</Text>
+                </Pressable>
+              </View>
+            ) : (
+              <>
+                <View style={styles.reviewHeader}>
+                  <Pressable onPress={() => setShowReview(false)} style={{ padding: 4 }}>
+                    <Ionicons name="close" size={22} color={Colors.text} />
+                  </Pressable>
+                  <Text style={styles.reviewTitle}>شاركنا رأيك</Text>
+                </View>
+
+                <Text style={styles.reviewLabel}>التقييم</Text>
+                <View style={styles.starsRow}>
+                  {[1, 2, 3, 4, 5].map(s => (
+                    <Pressable key={s} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setReviewRating(s); }}>
+                      <Ionicons name={s <= reviewRating ? 'star' : 'star-outline'} size={32} color="#F59E0B" />
+                    </Pressable>
+                  ))}
+                </View>
+
+                <Text style={styles.reviewLabel}>رأيك في الروضة</Text>
+                <TextInput
+                  style={styles.reviewInput}
+                  placeholder="اكتب رأيك هنا..."
+                  placeholderTextColor={Colors.textLight}
+                  multiline
+                  numberOfLines={4}
+                  textAlignVertical="top"
+                  textAlign="right"
+                  value={reviewText}
+                  onChangeText={setReviewText}
+                  maxLength={300}
+                />
+                <Text style={styles.reviewCount}>{reviewText.length}/300</Text>
+
+                <Pressable
+                  style={[styles.reviewSubmit, submitting && { opacity: 0.6 }]}
+                  onPress={submitReview}
+                  disabled={submitting}
+                >
+                  <Text style={styles.reviewSubmitText}>{submitting ? 'جارٍ الإرسال...' : 'إرسال الرأي'}</Text>
+                </Pressable>
+              </>
+            )}
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </View>
   );
 }
@@ -338,4 +449,38 @@ const styles = StyleSheet.create({
   honorMetaValue: { fontSize: 15, fontFamily: 'Inter_700Bold', color: Colors.text },
   honorMetaLabel: { fontSize: 9, fontFamily: 'Inter_400Regular', color: Colors.textSecondary },
   honorMetaSep: { width: 1, backgroundColor: Colors.borderLight, marginVertical: 2 },
+
+  reviewBtn: { borderRadius: 18, overflow: 'hidden', marginBottom: 20 },
+  reviewBtnGrad: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: 10, paddingVertical: 16,
+  },
+  reviewBtnText: { fontSize: 15, fontFamily: 'Inter_700Bold', color: '#fff' },
+
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)' },
+  reviewSheet: {
+    backgroundColor: Colors.background, borderTopLeftRadius: 28, borderTopRightRadius: 28,
+    padding: 20, paddingTop: 12, gap: 4,
+  },
+  reviewHandle: { width: 40, height: 4, backgroundColor: Colors.borderLight, borderRadius: 2, alignSelf: 'center', marginBottom: 12 },
+  reviewHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
+  reviewTitle: { fontSize: 16, fontFamily: 'Inter_700Bold', color: Colors.text },
+  reviewLabel: { fontSize: 13, fontFamily: 'Inter_600SemiBold', color: Colors.textSecondary, textAlign: 'right', marginTop: 10, marginBottom: 8 },
+  starsRow: { flexDirection: 'row', gap: 8, justifyContent: 'center', marginBottom: 4 },
+  reviewInput: {
+    backgroundColor: Colors.surface, borderRadius: 14, padding: 14, minHeight: 100,
+    fontSize: 14, fontFamily: 'Inter_400Regular', color: Colors.text,
+    borderWidth: 1, borderColor: Colors.borderLight, textAlign: 'right',
+  },
+  reviewCount: { fontSize: 11, fontFamily: 'Inter_400Regular', color: Colors.textLight, textAlign: 'left', marginBottom: 8 },
+  reviewSubmit: {
+    backgroundColor: '#7B3FA0', borderRadius: 16, paddingVertical: 15,
+    alignItems: 'center', marginTop: 6,
+  },
+  reviewSubmitText: { fontSize: 15, fontFamily: 'Inter_700Bold', color: '#fff' },
+  reviewSuccess: { alignItems: 'center', gap: 10, paddingVertical: 20 },
+  reviewSuccessTitle: { fontSize: 22, fontFamily: 'Inter_700Bold', color: Colors.text },
+  reviewSuccessDesc: { fontSize: 14, fontFamily: 'Inter_400Regular', color: Colors.textSecondary, textAlign: 'center', lineHeight: 22 },
+  reviewDoneBtn: { backgroundColor: '#7B3FA0', paddingHorizontal: 40, paddingVertical: 14, borderRadius: 16, marginTop: 8 },
+  reviewDoneBtnText: { fontSize: 15, fontFamily: 'Inter_700Bold', color: '#fff' },
 });

@@ -7,11 +7,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import { useQuery } from '@tanstack/react-query';
 import { Colors } from '@/constants/colors';
 import { useAppData, RegistrationRequest } from '@/contexts/AppDataContext';
 import { useAuth } from '@/contexts/AuthContext';
 import HexFrame from '@/components/HexFrame';
 import * as Haptics from 'expo-haptics';
+import { getApiUrl } from '@/lib/query-client';
 
 const { width: W } = Dimensions.get('window');
 
@@ -387,6 +389,21 @@ export default function GuestHomeScreen() {
   const [activeTestimonial, setActiveTestimonial] = useState(0);
   const [showRegForm, setShowRegForm] = useState(false);
 
+  const { data: liveReviews } = useQuery<{ id: string; parentName: string; childName: string; content: string; rating: number }[]>({
+    queryKey: ['/api/reviews'],
+    queryFn: async () => {
+      const url = new URL('/api/reviews', getApiUrl());
+      const res = await fetch(url.toString());
+      if (!res.ok) throw new Error('failed');
+      return res.json();
+    },
+    staleTime: 60_000,
+  });
+
+  const testimonials = (liveReviews && liveReviews.length > 0)
+    ? liveReviews.map(r => ({ name: r.parentName, text: r.content, stars: r.rating }))
+    : TESTIMONIALS;
+
   const phone = schoolInfo?.phone ?? '';
   const waNumber = phone.replace(/[^0-9]/g, '');
 
@@ -563,11 +580,11 @@ export default function GuestHomeScreen() {
           <Text style={sty.sectionTitle}>آراء أولياء الأمور</Text>
           <Text style={sty.sectionDesc}>ثقتهم بنا هي أكبر إنجازاتنا</Text>
           <View style={sty.testimonialCard}>
-            <StarsRow count={TESTIMONIALS[activeTestimonial].stars} />
-            <Text style={sty.testimonialText}>"{TESTIMONIALS[activeTestimonial].text}"</Text>
-            <Text style={sty.testimonialName}>— {TESTIMONIALS[activeTestimonial].name}</Text>
+            <StarsRow count={testimonials[Math.min(activeTestimonial, testimonials.length - 1)]?.stars ?? 5} />
+            <Text style={sty.testimonialText}>"{testimonials[Math.min(activeTestimonial, testimonials.length - 1)]?.text}"</Text>
+            <Text style={sty.testimonialName}>— {testimonials[Math.min(activeTestimonial, testimonials.length - 1)]?.name}</Text>
             <View style={sty.testimonialDots}>
-              {TESTIMONIALS.map((_, i) => (
+              {testimonials.map((_, i) => (
                 <Pressable key={i} onPress={() => setActiveTestimonial(i)}>
                   <View style={[sty.dot, i === activeTestimonial && sty.dotActive]} />
                 </Pressable>
