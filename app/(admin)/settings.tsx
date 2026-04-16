@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Pressable,
-  TextInput, Modal, Alert, Platform,
+  TextInput, Modal, Alert, Platform, Switch,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -42,13 +42,14 @@ function SectionHeader({ title }: { title: string }) {
 
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
-  const { schoolInfo, setSchoolInfo, honorWeights, setHonorWeights, welcomeMessage, setWelcomeMessage, resetAllData } = useAppData();
+  const { schoolInfo, setSchoolInfo, honorWeights, setHonorWeights, welcomeMessage, setWelcomeMessage, resetAllData, appSettings, updateAppSettings } = useAppData();
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
   const bottomPadding = Platform.OS === 'web' ? 34 : insets.bottom;
 
   const [showSchoolModal, setShowSchoolModal] = useState(false);
   const [showHonorModal, setShowHonorModal] = useState(false);
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
+  const [showPasswords, setShowPasswords] = useState(false);
 
   const [draftInfo, setDraftInfo] = useState<SchoolInfo>(schoolInfo);
   const [draftWeights, setDraftWeights] = useState<HonorWeights>(honorWeights);
@@ -218,6 +219,37 @@ export default function SettingsScreen() {
           />
         </View>
 
+        <SectionHeader title="إعدادات النظام" />
+        <View style={styles.section}>
+          {[
+            { key: 'gpsAttendanceEnabled',      label: 'تحقق GPS لتسجيل الحضور',   icon: 'map-marker-check',    color: Colors.success },
+            { key: 'guestAccessEnabled',         label: 'السماح بدخول الزوار',       icon: 'account-eye',         color: '#3B82F6' },
+            { key: 'onlineRegistrationEnabled',  label: 'التسجيل الإلكتروني',        icon: 'clipboard-text',      color: '#8B5CF6' },
+            { key: 'bannersEnabled',             label: 'عرض الإعلانات',             icon: 'image-multiple',      color: '#EC4899' },
+          ].map((item, i) => (
+            <React.Fragment key={item.key}>
+              {i > 0 && <View style={styles.rowDivider} />}
+              <View style={styles.settingRow}>
+                <Switch
+                  value={!!appSettings?.[item.key as keyof typeof appSettings]}
+                  onValueChange={val => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    updateAppSettings({ [item.key]: val });
+                  }}
+                  trackColor={{ false: Colors.borderLight, true: item.color + '60' }}
+                  thumbColor={appSettings?.[item.key as keyof typeof appSettings] ? item.color : '#ccc'}
+                />
+                <View style={styles.settingContent}>
+                  <Text style={styles.settingLabel}>{item.label}</Text>
+                </View>
+                <View style={[styles.settingIconBox, { backgroundColor: item.color + '18' }]}>
+                  <MaterialCommunityIcons name={item.icon as any} size={20} color={item.color} />
+                </View>
+              </View>
+            </React.Fragment>
+          ))}
+        </View>
+
         <SectionHeader title="حسابات الدخول التجريبية" />
         <View style={styles.section}>
           {[
@@ -231,7 +263,9 @@ export default function SettingsScreen() {
                 <View style={styles.accountBadge}>
                   <Text style={[styles.accountRole, { color: acc.color }]}>{acc.role}</Text>
                   <Text style={styles.accountCreds}>{acc.credLabel}: {acc.user}</Text>
-                  <Text style={[styles.accountCreds, { color: Colors.textLight }]}>كلمة المرور: {acc.pass}</Text>
+                  <Text style={[styles.accountCreds, { color: Colors.textLight }]}>
+                    كلمة المرور: {showPasswords ? acc.pass : '••••'}
+                  </Text>
                 </View>
                 <View style={[styles.settingIconBox, { backgroundColor: acc.color + '18' }]}>
                   <MaterialCommunityIcons name={acc.icon as any} size={20} color={acc.color} />
@@ -239,6 +273,16 @@ export default function SettingsScreen() {
               </View>
             </React.Fragment>
           ))}
+          <View style={styles.rowDivider} />
+          <Pressable
+            style={[styles.settingRow, { justifyContent: 'center' }]}
+            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowPasswords(p => !p); }}
+          >
+            <Ionicons name={showPasswords ? 'eye-off-outline' : 'eye-outline'} size={16} color={Colors.textLight} />
+            <Text style={[styles.settingValue, { marginTop: 0 }]}>
+              {showPasswords ? 'إخفاء كلمات المرور' : 'إظهار كلمات المرور'}
+            </Text>
+          </Pressable>
         </View>
 
         <SectionHeader title="خطر" />

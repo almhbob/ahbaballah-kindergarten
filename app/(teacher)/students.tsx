@@ -80,12 +80,13 @@ function StudentCard({ student, onPress }: { student: Student; onPress: () => vo
 
 export default function StudentsScreen() {
   const insets = useSafeAreaInsets();
-  const { students, updateStudent, schoolInfo } = useAppData();
+  const { students, updateStudent, schoolInfo, appSettings } = useAppData();
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<Student | null>(null);
   const [editNotes, setEditNotes] = useState('');
   const [editBehavior, setEditBehavior] = useState<Student['behavior']>('ممتاز');
   const [editHomework, setEditHomework] = useState<Student['homework']>('منجز');
+  const [attendanceStatus, setAttendanceStatus] = useState<'حاضر' | 'غائب' | 'متأخر'>('حاضر');
   const [reportDate, setReportDate] = useState(new Date().toISOString().split('T')[0]);
   const [reportAte, setReportAte] = useState('');
   const [reportLearned, setReportLearned] = useState('');
@@ -97,10 +98,11 @@ export default function StudentsScreen() {
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
   const bottomPadding = Platform.OS === 'web' ? 34 : insets.bottom + 90;
 
+  const gpsEnabled = appSettings?.gpsAttendanceEnabled !== false;
   const schoolLat = schoolInfo.lat ?? 34.8167;
   const schoolLng = schoolInfo.lng ?? 36.1167;
   const radius = schoolInfo.attendanceRadius ?? 300;
-  const isInsideSchool = locStatus === 'inside' || locStatus === 'web';
+  const isInsideSchool = !gpsEnabled || locStatus === 'inside' || locStatus === 'web';
 
   useEffect(() => {
     if (Platform.OS === 'web') return;
@@ -129,6 +131,10 @@ export default function StudentsScreen() {
     setEditNotes(s.notes);
     setEditBehavior(s.behavior);
     setEditHomework(s.homework);
+    setAttendanceStatus('حاضر');
+    setReportAte('');
+    setReportLearned('');
+    setReportMood('');
   };
 
   const handleSave = () => {
@@ -140,18 +146,20 @@ export default function StudentsScreen() {
       behaviorNote: editNotes,
       mood: reportMood || 'طبيعي',
     };
+    const newAttendancePercent = attendanceStatus === 'حاضر'
+      ? Math.min(100, selected.attendance + 1)
+      : attendanceStatus === 'متأخر'
+      ? selected.attendance
+      : Math.max(0, selected.attendance - 1);
     updateStudent(selected.id, {
       notes: editNotes,
       behavior: editBehavior,
       homework: editHomework,
+      attendance: newAttendancePercent,
       dailyReports: [todayReport, ...selected.dailyReports].slice(0, 30),
     });
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setSelected(null);
-    setReportAte('');
-    setReportLearned('');
-    setReportMood('');
-    setEditNotes('');
   };
 
   return (
@@ -229,6 +237,23 @@ export default function StudentsScreen() {
                   <Ionicons name="close" size={24} color={Colors.text} />
                 </Pressable>
                 <Text style={styles.sheetTitle}>{selected?.name}</Text>
+              </View>
+
+              <Text style={styles.fieldLabel}>الحضور اليوم</Text>
+              <View style={styles.optionsRow}>
+                {(['حاضر', 'متأخر', 'غائب'] as const).map(a => {
+                  const aColor = a === 'حاضر' ? Colors.success : a === 'متأخر' ? Colors.warning : Colors.danger;
+                  const aBg = a === 'حاضر' ? '#ECFDF5' : a === 'متأخر' ? '#FFFBEB' : '#FEF2F2';
+                  return (
+                    <Pressable
+                      key={a}
+                      style={[styles.option, attendanceStatus === a && { backgroundColor: aBg, borderColor: aColor }]}
+                      onPress={() => { setAttendanceStatus(a); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+                    >
+                      <Text style={[styles.optionText, attendanceStatus === a && { color: aColor, fontFamily: 'Inter_700Bold' }]}>{a}</Text>
+                    </Pressable>
+                  );
+                })}
               </View>
 
               <Text style={styles.fieldLabel}>السلوك</Text>

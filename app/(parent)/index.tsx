@@ -66,7 +66,25 @@ export default function ParentHomeScreen() {
     }
   };
 
-  if (!child) return null;
+  if (!child) {
+    return (
+      <View style={{ flex: 1, backgroundColor: Colors.background, justifyContent: 'center', alignItems: 'center', padding: 32 }}>
+        <MaterialCommunityIcons name="account-child-outline" size={64} color={PARENT_COLOR} style={{ opacity: 0.4 }} />
+        <Text style={{ fontSize: 18, fontFamily: 'Inter_700Bold', color: Colors.text, textAlign: 'center', marginTop: 16 }}>
+          لم يتم ربط حساب طفل
+        </Text>
+        <Text style={{ fontSize: 14, fontFamily: 'Inter_400Regular', color: Colors.textSecondary, textAlign: 'center', marginTop: 8 }}>
+          يرجى التواصل مع إدارة الروضة لربط حساب طفلك بهذا الرقم
+        </Text>
+        <Pressable
+          style={{ marginTop: 24, backgroundColor: PARENT_COLOR, paddingHorizontal: 28, paddingVertical: 14, borderRadius: 14 }}
+          onPress={() => { logout(); apiLogout(); }}
+        >
+          <Text style={{ fontSize: 15, fontFamily: 'Inter_700Bold', color: '#fff' }}>تسجيل الخروج</Text>
+        </Pressable>
+      </View>
+    );
+  }
 
   const latestReport = child.dailyReports[0];
   const avgGrade = child.grades.length > 0
