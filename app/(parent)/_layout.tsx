@@ -63,7 +63,8 @@ function ClassicParentTabs() {
           borderTopWidth: 1,
           borderTopColor: "rgba(168,85,247,0.15)",
           elevation: 0,
-          ...(isWeb ? { height: 84 } : {}),
+          height: isWeb ? 84 : isIOS ? undefined : 65,
+          paddingBottom: isWeb || isIOS ? undefined : 6,
         },
         tabBarBackground: () =>
           isIOS ? (
