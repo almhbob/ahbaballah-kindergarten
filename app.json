@@ -2,6 +2,7 @@
   "expo": {
     "name": "روضة أحباب الله",
     "slug": "ahbaballah-kindergarten",
+    "owner": "almhbob2026",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -49,7 +50,7 @@
         "origin": "https://replit.com/"
       },
       "eas": {
-        "projectId": "18435c41-07c0-42c8-9aa4-4b4635cfb7c4"
+        "projectId": "49375b1b-0c16-4d1a-bb25-2b5e7af08864"
       }
     }
   }
