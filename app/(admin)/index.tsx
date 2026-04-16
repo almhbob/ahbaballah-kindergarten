@@ -230,6 +230,8 @@ export default function AdminDashboard() {
             <QuickAction icon="cog" label="الإعدادات" color="#64748B" onPress={() => router.push('/(admin)/settings')} />
             <QuickAction icon="printer" label="طباعة" color="#F59E0B" onPress={() => router.push('/(admin)/export')} />
             <QuickAction icon="code-braces" label="المطوّر" color="#EC4899" onPress={() => router.push('/(admin)/developer')} />
+            <QuickAction icon="calendar-month" label="التقويم" color="#6366F1" onPress={() => router.push('/(admin)/calendar')} />
+            <QuickAction icon="image-multiple" label="الألبوم" color="#EC4899" onPress={() => router.push('/(admin)/gallery')} />
           </View>
 
           <LoginChart history={loginHistory} />

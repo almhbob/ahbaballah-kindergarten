@@ -77,6 +77,7 @@ function ClassicTeacherTabs() {
       <Tabs.Screen name="curriculum"    options={{ title: 'المنهج',    tabBarIcon: ({ color }) => <Ionicons name="book"              size={22} color={color} /> }} />
       <Tabs.Screen name="notifications" options={{ title: 'الإشعارات', tabBarIcon: ({ color }) => <Ionicons name="notifications"    size={22} color={color} />, tabBarBadge: unread > 0 ? unread : undefined }} />
       <Tabs.Screen name="certificates" options={{ href: null }} />
+      <Tabs.Screen name="messages"     options={{ href: null }} />
     </Tabs>
   );
 }

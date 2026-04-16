@@ -148,6 +148,16 @@ export default function ParentHomeScreen() {
         </LinearGradient>
 
         <View style={styles.body}>
+          <View style={{ flexDirection: 'row', gap: 10, marginBottom: 12 }}>
+            <Pressable style={styles.parentQuickLink} onPress={() => router.push('/(admin)/calendar')}>
+              <Ionicons name="calendar-outline" size={22} color="#6366F1" />
+              <Text style={styles.parentQuickLinkText}>التقويم المدرسي</Text>
+            </Pressable>
+            <Pressable style={styles.parentQuickLink} onPress={() => router.push('/(admin)/gallery')}>
+              <Ionicons name="images-outline" size={22} color="#EC4899" />
+              <Text style={styles.parentQuickLinkText}>ألبوم الصور</Text>
+            </Pressable>
+          </View>
           <View style={styles.statsRow}>
             <View style={[styles.statBox, { borderBottomColor: behColor }]}>
               <Text style={[styles.statBoxValue, { color: behColor }]}>{child.behavior}</Text>
@@ -394,6 +404,8 @@ const styles = StyleSheet.create({
   attendancePct: { fontSize: 14, fontFamily: 'Inter_700Bold' },
   attendanceLabel: { fontSize: 9, fontFamily: 'Inter_400Regular', color: 'rgba(255,255,255,0.6)' },
   body: { padding: 20 },
+  parentQuickLink: { flex: 1, alignItems: 'center', gap: 6, padding: 14, backgroundColor: Colors.surface, borderRadius: 14, borderWidth: 1, borderColor: Colors.border },
+  parentQuickLinkText: { fontSize: 11, fontFamily: 'Inter_500Medium', color: Colors.textLight, textAlign: 'center' },
   statsRow: { flexDirection: 'row', gap: 10, marginBottom: 20 },
   statBox: {
     flex: 1, backgroundColor: Colors.surface, borderRadius: 16, padding: 14,

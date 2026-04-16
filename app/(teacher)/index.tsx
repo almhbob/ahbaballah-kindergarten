@@ -133,6 +133,17 @@ export default function TeacherScheduleScreen() {
             })}
           </View>
 
+          <Text style={styles.sectionTitle}>روابط سريعة</Text>
+          <View style={{ flexDirection: 'row', gap: 10, marginBottom: 20 }}>
+            <Pressable style={styles.quickLink} onPress={() => router.push('/(teacher)/messages')}>
+              <Ionicons name="chatbubbles-outline" size={22} color="#1A6B5C" />
+              <Text style={styles.quickLinkText}>رسائل أولياء الأمور</Text>
+            </Pressable>
+            <Pressable style={styles.quickLink} onPress={() => router.push('/(admin)/calendar')}>
+              <Ionicons name="calendar-outline" size={22} color="#6366F1" />
+              <Text style={styles.quickLinkText}>التقويم المدرسي</Text>
+            </Pressable>
+          </View>
           <Text style={styles.sectionTitle}>أيام الأسبوع</Text>
           <View style={styles.daysRow}>
             {DAYS.map((day, i) => (
@@ -196,6 +207,8 @@ const styles = StyleSheet.create({
   scheduleTypeBadge: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 10 },
   scheduleTypeText: { fontSize: 11, fontFamily: 'Inter_600SemiBold' },
   emptySchedule: { alignItems: 'center', paddingVertical: 24, gap: 8 },
+  quickLink: { flex: 1, flexDirection: 'column', alignItems: 'center', gap: 6, padding: 14, backgroundColor: Colors.surface, borderRadius: 14, borderWidth: 1, borderColor: Colors.border },
+  quickLinkText: { fontSize: 11, fontFamily: 'Inter_500Medium', color: Colors.textLight, textAlign: 'center' },
   emptyScheduleText: { fontSize: 13, fontFamily: 'Inter_400Regular', color: Colors.textLight, textAlign: 'center' },
   daysRow: { flexDirection: 'row', gap: 6 },
   dayChip: {

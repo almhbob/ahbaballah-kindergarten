@@ -2,6 +2,7 @@ import React, { forwardRef } from 'react';
 import { View, Text, StyleSheet, Dimensions, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import QRCode from 'react-native-qrcode-svg';
 
 export type IDCardPerson =
   | { type: 'employee'; id: string; name: string; role: string; level?: string; phone: string; email: string }
@@ -225,9 +226,16 @@ const IDCard = forwardRef<View, Props>(function IDCard(
             </View>
           </View>
 
-          <View style={{ alignItems: 'flex-end', gap: sz(2) }}>
-            <Text style={[card.yearLabel, { color: t.accent + '55', fontSize: fs(6) }]}>صالحة لعام</Text>
-            <Text style={[card.yearVal, { color: t.accent, fontSize: fs(8) }]}>{year}</Text>
+          <View style={{ alignItems: 'flex-end', gap: sz(4) }}>
+            <View style={{ backgroundColor: '#fff', borderRadius: sz(4), padding: sz(3) }}>
+              <QRCode
+                value={`ahbaballah:${person.type}:${person.id}:${person.name}`}
+                size={sz(38)}
+                color="#000"
+                backgroundColor="#fff"
+              />
+            </View>
+            <Text style={[card.yearVal, { color: t.accent, fontSize: fs(7), textAlign: 'center' }]}>{year}</Text>
           </View>
         </View>
 

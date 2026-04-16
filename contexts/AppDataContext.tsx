@@ -262,6 +262,36 @@ export interface Banner {
   endDate?: string;
 }
 
+export interface SchoolEvent {
+  id: string;
+  date: string;
+  title: string;
+  type: 'exam' | 'event' | 'activity' | 'holiday';
+  description?: string;
+  time?: string;
+}
+
+export interface GalleryPhoto {
+  id: string;
+  uri: string;
+  caption?: string;
+  category: string;
+  addedBy: string;
+  date: string;
+}
+
+const DEMO_SCHOOL_EVENTS: SchoolEvent[] = [
+  { id: 'se1', date: '2026-04-20', title: 'اختبار منتصف الفصل الثاني', type: 'exam', description: 'اختبار الرياضيات واللغة العربية', time: '09:00' },
+  { id: 'se2', date: '2026-04-25', title: 'رحلة ترفيهية المستوى الأول', type: 'activity', description: 'رحلة إلى الحديقة العامة', time: '08:00' },
+  { id: 'se3', date: '2026-05-01', title: 'عطلة رسمية', type: 'holiday' },
+  { id: 'se4', date: '2026-05-10', title: 'حفل التكريم الفصلي', type: 'event', description: 'تكريم الطلاب المتفوقين في الفصل الثاني', time: '10:00' },
+  { id: 'se5', date: '2026-04-16', title: 'اجتماع أولياء الأمور', type: 'event', description: 'مناقشة نتائج التقييمات المستمرة', time: '10:00' },
+  { id: 'se6', date: '2026-04-30', title: 'الاختبار التشخيصي — براعم', type: 'exam', description: 'تقييم مستوى براعم قبل الاختبارات النهائية', time: '08:30' },
+  { id: 'se7', date: '2026-05-20', title: 'بداية الاختبارات النهائية', type: 'exam', description: 'اختبارات نهاية الفصل الثاني لجميع المستويات' },
+  { id: 'se8', date: '2026-06-05', title: 'حفل التخرج', type: 'event', description: 'حفل تخرج دفعة 2026 — يرجى الحضور بالزي الرسمي', time: '16:00' },
+  { id: 'se9', date: '2026-06-15', title: 'إغلاق العام الدراسي', type: 'holiday', description: 'آخر يوم دراسي للعام 2025–2026' },
+];
+
 const DEMO_TRANSPORT_ROUTES: TransportRoute[] = [
   {
     id: 'route1',
@@ -496,6 +526,13 @@ interface AppDataContextValue {
   resetAllData: () => void;
   appSettings: AppSettings;
   updateAppSettings: (data: Partial<AppSettings>) => void;
+  schoolEvents: SchoolEvent[];
+  addSchoolEvent: (e: SchoolEvent) => void;
+  updateSchoolEvent: (id: string, data: Partial<SchoolEvent>) => void;
+  removeSchoolEvent: (id: string) => void;
+  galleryPhotos: GalleryPhoto[];
+  addGalleryPhoto: (p: GalleryPhoto) => void;
+  removeGalleryPhoto: (id: string) => void;
 }
 
 const DEMO_YEARLY_SNAPSHOTS: YearlySnapshot[] = [
@@ -627,6 +664,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const [yearlySnapshots, setYearlySnapshots] = useState<YearlySnapshot[]>(DEMO_YEARLY_SNAPSHOTS);
   const [registrationRequests, setRegistrationRequests] = useState<RegistrationRequest[]>([]);
   const [appSettings, setAppSettingsState] = useState<AppSettings>(DEFAULT_APP_SETTINGS);
+  const [schoolEvents, setSchoolEvents] = useState<SchoolEvent[]>(DEMO_SCHOOL_EVENTS);
+  const [galleryPhotos, setGalleryPhotos] = useState<GalleryPhoto[]>([]);
   const welcomeRef = useRef<string>(DEFAULT_WELCOME_MSG);
 
   const cloudSync = (key: string, value: any) => {
@@ -704,6 +743,10 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       if (savedAppSettings) setAppSettingsState({ ...DEFAULT_APP_SETTINGS, ...savedAppSettings });
       const savedRegs = await get('app_registration_requests');
       if (savedRegs) setRegistrationRequests(savedRegs);
+      const savedEvents = await get('app_school_events');
+      const savedPhotos = await get('app_gallery_photos');
+      if (savedEvents) setSchoolEvents(savedEvents);
+      if (savedPhotos) setGalleryPhotos(savedPhotos);
     };
     load();
   }, []);
@@ -780,6 +823,42 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  const addSchoolEvent = (e: SchoolEvent) => {
+    setSchoolEvents(prev => {
+      const updated = [...prev, e].sort((a, b) => a.date.localeCompare(b.date));
+      saveState('app_school_events', updated);
+      return updated;
+    });
+  };
+  const updateSchoolEvent = (id: string, data: Partial<SchoolEvent>) => {
+    setSchoolEvents(prev => {
+      const updated = prev.map(e => e.id === id ? { ...e, ...data } : e);
+      saveState('app_school_events', updated);
+      return updated;
+    });
+  };
+  const removeSchoolEvent = (id: string) => {
+    setSchoolEvents(prev => {
+      const updated = prev.filter(e => e.id !== id);
+      saveState('app_school_events', updated);
+      return updated;
+    });
+  };
+  const addGalleryPhoto = (p: GalleryPhoto) => {
+    setGalleryPhotos(prev => {
+      const updated = [p, ...prev];
+      saveState('app_gallery_photos', updated);
+      return updated;
+    });
+  };
+  const removeGalleryPhoto = (id: string) => {
+    setGalleryPhotos(prev => {
+      const updated = prev.filter(p => p.id !== id);
+      saveState('app_gallery_photos', updated);
+      return updated;
+    });
+  };
+
   const resetAllData = () => {
     setStudents(DEMO_STUDENTS);
     setEmployees(DEMO_EMPLOYEES);
@@ -797,6 +876,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     setCertificates([]);
     setTransportRoutes(DEMO_TRANSPORT_ROUTES);
     setTransportSubscriptions([]);
+    setSchoolEvents(DEMO_SCHOOL_EVENTS);
+    setGalleryPhotos([]);
     const keysToReset = [
       'app_students', 'app_employees', 'app_news', 'app_inbox',
       'app_messages', 'app_meetings', 'app_schedule',
@@ -804,6 +885,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       'app_annual_plan', 'app_grad_tasks', 'app_certificates',
       'app_transport_routes', 'app_transport_subs',
       'app_banners', 'app_yearly_snapshots', 'app_settings', 'app_registration_requests',
+      'app_school_events', 'app_gallery_photos',
     ];
     AsyncStorage.multiRemove(keysToReset);
     keysToReset.forEach(key => {
@@ -1130,7 +1212,9 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     yearlySnapshots, saveYearlySnapshot, removeYearlySnapshot,
     registrationRequests, addRegistrationRequest, updateRegistrationRequest, removeRegistrationRequest,
     appSettings, updateAppSettings,
-  }), [students, employees, news, inbox, messages, meetings, schedule, welcomeMessage, schoolInfo, honorWeights, annualPlan, graduationTasks, certificates, transportRoutes, transportSubscriptions, banners, yearlySnapshots, registrationRequests, appSettings]);
+    schoolEvents, addSchoolEvent, updateSchoolEvent, removeSchoolEvent,
+    galleryPhotos, addGalleryPhoto, removeGalleryPhoto,
+  }), [students, employees, news, inbox, messages, meetings, schedule, welcomeMessage, schoolInfo, honorWeights, annualPlan, graduationTasks, certificates, transportRoutes, transportSubscriptions, banners, yearlySnapshots, registrationRequests, appSettings, schoolEvents, galleryPhotos]);
 
   return <AppDataContext.Provider value={value}>{children}</AppDataContext.Provider>;
 }
