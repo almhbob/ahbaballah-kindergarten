@@ -43,7 +43,7 @@ export default function ReportScreen() {
         </View>
       </View>
 
-      <ScrollView contentInsetAdjustmentBehavior="automatic" showsVerticalScrollIndicator={false}>
+      <ScrollView contentInsetAdjustmentBehavior="automatic" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: bottomPadding }}>
         <View style={styles.body}>
           {activeTab === 'daily' ? (
             child.dailyReports.length === 0 ? (

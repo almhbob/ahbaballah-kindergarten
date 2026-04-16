@@ -120,7 +120,7 @@ export default function CurriculumScreen() {
         </ScrollView>
       </LinearGradient>
 
-      <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[styles.body, { paddingBottom: bottomPadding }]} showsVerticalScrollIndicator={false}>
         <Pressable style={styles.addBtn} onPress={() => { setEditing(null); setShowForm(true); }}>
           <LinearGradient colors={['#ca9928', '#b8841c']} style={styles.addBtnGrad}>
             <Ionicons name="add" size={18} color="#fff" />

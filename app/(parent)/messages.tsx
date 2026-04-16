@@ -38,7 +38,7 @@ export default function MessagesScreen() {
   const { messages, sendMessage } = useAppData();
   const [text, setText] = useState('');
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
-  const bottomPadding = Platform.OS === 'web' ? 34 : insets.bottom;
+  const bottomPadding = Platform.OS === 'web' ? 34 : insets.bottom + 50;
 
   const myMessages = messages.filter(
     m => m.senderId === user?.id || m.receiverId === user?.id

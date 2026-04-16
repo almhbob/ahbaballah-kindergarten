@@ -62,6 +62,7 @@ export default function EmployeesScreen() {
   const [newPhone, setNewPhone] = useState('');
 
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
+  const bottomPadding = Platform.OS === 'web' ? 34 : insets.bottom + 90;
   const filtered = employees.filter(e =>
     e.name.includes(search) || e.role.includes(search)
   );
@@ -125,6 +126,7 @@ export default function EmployeesScreen() {
         style={styles.list}
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: bottomPadding }}
       >
         <View style={styles.listContent}>
           {filtered.map(emp => <EmployeeCard key={emp.id} emp={emp} />)}

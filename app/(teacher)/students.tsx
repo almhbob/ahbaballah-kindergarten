@@ -217,7 +217,7 @@ export default function StudentsScreen() {
         keyExtractor={s => s.id}
         contentInsetAdjustmentBehavior="automatic"
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.list}
+        contentContainerStyle={[styles.list, { paddingBottom: bottomPadding }]}
         renderItem={({ item }) => <StudentCard student={item} onPress={() => openEdit(item)} />}
         ListEmptyComponent={
           <View style={styles.empty}>

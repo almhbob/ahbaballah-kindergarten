@@ -1909,7 +1909,7 @@ const styles = StyleSheet.create({
   segBtnActive: { backgroundColor: '#ca9928' },
   segBtnText: { fontSize: 12, fontFamily: 'Inter_500Medium', color: 'rgba(255,255,255,0.75)' },
   segBtnTextActive: { color: '#111444', fontFamily: 'Inter_600SemiBold' },
-  listContent: { padding: 16, gap: 10 },
+  listContent: { padding: 16, gap: 10, paddingBottom: 100 },
   addBtn: { borderRadius: 14, overflow: 'hidden', marginBottom: 4 },
   addBtnGrad: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14 },
   addBtnText: { fontSize: 15, fontFamily: 'Inter_600SemiBold', color: '#fff' },

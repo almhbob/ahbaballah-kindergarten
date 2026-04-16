@@ -66,6 +66,7 @@ export default function GradesScreen() {
   const [mathMax, setMathMax] = useState('20');
 
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
+  const bottomPadding = Platform.OS === 'web' ? 34 : insets.bottom + 90;
 
   const handleAddGrade = () => {
     if (!selectedStudent || !score) return;
@@ -160,7 +161,7 @@ export default function GradesScreen() {
         </View>
       </View>
 
-      <ScrollView contentInsetAdjustmentBehavior="automatic" showsVerticalScrollIndicator={false}>
+      <ScrollView contentInsetAdjustmentBehavior="automatic" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: bottomPadding }}>
         <View style={styles.body}>
           {students.map(student => {
             if (mode === 'grades') {
