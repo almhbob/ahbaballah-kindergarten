@@ -88,8 +88,10 @@ function ClassicAdminTabs() {
       <Tabs.Screen name="developer"      options={{ href: null }} />
       <Tabs.Screen name="registrations"  options={{ href: null }} />
       <Tabs.Screen name="ads"            options={{ href: null }} />
-      <Tabs.Screen name="calendar"       options={{ href: null }} />
-      <Tabs.Screen name="gallery"        options={{ href: null }} />
+      <Tabs.Screen name="calendar"              options={{ href: null }} />
+      <Tabs.Screen name="gallery"               options={{ href: null }} />
+      <Tabs.Screen name="notifications-send"    options={{ href: null }} />
+      <Tabs.Screen name="analytics"             options={{ href: null }} />
     </Tabs>
   );
 }

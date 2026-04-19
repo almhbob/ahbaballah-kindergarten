@@ -157,6 +157,14 @@ export default function ParentHomeScreen() {
               <Ionicons name="images-outline" size={22} color="#EC4899" />
               <Text style={styles.parentQuickLinkText}>ألبوم الصور</Text>
             </Pressable>
+            <Pressable style={styles.parentQuickLink} onPress={() => router.push('/(parent)/fees')}>
+              <Ionicons name="cash-outline" size={22} color={Colors.success} />
+              <Text style={styles.parentQuickLinkText}>الرسوم الدراسية</Text>
+            </Pressable>
+            <Pressable style={styles.parentQuickLink} onPress={() => router.push('/(parent)/profile')}>
+              <Ionicons name="person-circle-outline" size={22} color="#F59E0B" />
+              <Text style={styles.parentQuickLinkText}>ملف الطالب</Text>
+            </Pressable>
           </View>
           <View style={styles.statsRow}>
             <View style={[styles.statBox, { borderBottomColor: behColor }]}>

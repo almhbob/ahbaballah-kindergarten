@@ -1,0 +1,260 @@
+import React, { useMemo } from 'react';
+import {
+  View, Text, StyleSheet, ScrollView, Pressable, Platform,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { router } from 'expo-router';
+import * as Haptics from 'expo-haptics';
+import { Colors } from '@/constants/colors';
+import { useAuth } from '@/contexts/AuthContext';
+import { useAppData } from '@/contexts/AppDataContext';
+
+const PARENT_COLOR = '#7B3FA0';
+
+function GradeBar({ score, total, color }: { score: number; total: number; color: string }) {
+  const pct = total > 0 ? (score / total) * 100 : 0;
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+      <View style={pb.barTrack}>
+        <View style={[pb.barFill, { width: `${pct}%` as any, backgroundColor: color }]} />
+      </View>
+      <Text style={[pb.score, { color }]}>{score}/{total}</Text>
+    </View>
+  );
+}
+
+export default function ChildProfileScreen() {
+  const insets = useSafeAreaInsets();
+  const { user } = useAuth();
+  const { students, appSettings } = useAppData();
+  const topPadding = Platform.OS === 'web' ? 67 : insets.top;
+  const bottomPadding = Platform.OS === 'web' ? 34 : insets.bottom + 90;
+
+  const child = students.find(s => s.id === user?.studentId) || students[0];
+  if (!child) return null;
+
+  const avgGrade = useMemo(() => {
+    if (!child.grades.length) return 0;
+    return Math.round(child.grades.reduce((a, g) => a + (g.score / g.total) * 100, 0) / child.grades.length);
+  }, [child.grades]);
+
+  const behColor = { 'ممتاز': Colors.success, 'جيد': '#3B82F6', 'مقبول': Colors.warning, 'يحتاج متابعة': Colors.danger }[child.behavior] ?? Colors.textLight;
+  const hwColor  = { 'منجز': Colors.success, 'ناقص': Colors.warning, 'لم ينجز': Colors.danger }[child.homework] ?? Colors.textLight;
+  const attColor = child.attendance >= 90 ? Colors.success : child.attendance >= 75 ? Colors.warning : Colors.danger;
+
+  const latestAssessment = child.assessments.length > 0
+    ? child.assessments[child.assessments.length - 1]
+    : null;
+
+  const latestReport = child.dailyReports.length > 0
+    ? child.dailyReports[child.dailyReports.length - 1]
+    : null;
+
+  return (
+    <View style={s.container}>
+      <LinearGradient colors={['#2d0e4e', '#4a1880', PARENT_COLOR]} style={[s.header, { paddingTop: topPadding + 12 }]}>
+        <View style={s.headerRow}>
+          <Pressable onPress={() => router.back()} style={s.backBtn}>
+            <Ionicons name="chevron-forward" size={22} color="#fff" />
+          </Pressable>
+          <View style={{ flex: 1, alignItems: 'center' }}>
+            <Text style={s.headerTitle}>ملف الطالب</Text>
+            <Text style={s.headerSub}>{appSettings.academicYear ?? '2025-2026'}</Text>
+          </View>
+          <View style={{ width: 36 }} />
+        </View>
+
+        <View style={s.childCard}>
+          <View style={s.avatar}>
+            <Text style={s.avatarText}>{child.name.charAt(0)}</Text>
+          </View>
+          <View style={{ flex: 1, alignItems: 'flex-end' }}>
+            <Text style={s.childName}>{child.name}</Text>
+            <Text style={s.childLevel}>{child.level}</Text>
+            {child.gender && <Text style={s.childMeta}>{child.gender} {child.nationality ? `· ${child.nationality}` : ''}</Text>}
+            {child.birthCertificateImages && child.birthCertificateImages.length > 0 && (
+              <Text style={s.childMeta}>تاريخ الميلاد متوفر</Text>
+            )}
+          </View>
+        </View>
+      </LinearGradient>
+
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: bottomPadding }}>
+        <Text style={s.sectionTitle}>نظرة عامة</Text>
+        <View style={s.overviewGrid}>
+          {[
+            { icon: 'calendar-check', label: 'الحضور', value: `${child.attendance}%`, color: attColor },
+            { icon: 'chart-bar',      label: 'المعدل',  value: `${avgGrade}%`,          color: avgGrade >= 80 ? Colors.success : Colors.warning },
+            { icon: 'emoticon',       label: 'السلوك',  value: child.behavior,           color: behColor },
+            { icon: 'book-check',     label: 'الواجبات',value: child.homework,            color: hwColor },
+          ].map((item, i) => (
+            <View key={i} style={s.overviewCard}>
+              <MaterialCommunityIcons name={item.icon as any} size={22} color={item.color} />
+              <Text style={[s.overviewValue, { color: item.color }]}>{item.value}</Text>
+              <Text style={s.overviewLabel}>{item.label}</Text>
+            </View>
+          ))}
+        </View>
+
+        <Text style={s.sectionTitle}>سجل الدرجات</Text>
+        {child.grades.length === 0 ? (
+          <View style={s.empty}><Text style={s.emptyText}>لا توجد درجات مسجلة بعد</Text></View>
+        ) : (
+          <View style={s.card}>
+            {child.grades.map((g, i) => {
+              const pct = g.total > 0 ? Math.round((g.score / g.total) * 100) : 0;
+              const gc = pct >= 80 ? Colors.success : pct >= 60 ? Colors.warning : Colors.danger;
+              return (
+                <View key={i} style={[s.gradeRow, i > 0 && s.gradeSep]}>
+                  <Text style={s.gradeDate}>{g.date}</Text>
+                  <GradeBar score={g.score} total={g.total} color={gc} />
+                  <Text style={s.gradeSubject}>{g.subject}</Text>
+                </View>
+              );
+            })}
+          </View>
+        )}
+
+        {latestAssessment && (
+          <>
+            <Text style={s.sectionTitle}>آخر تقييم شامل</Text>
+            <View style={s.card}>
+              <View style={s.assRow}>
+                <Text style={s.assDate}>{latestAssessment.date}</Text>
+                <View style={[s.assBadge, { backgroundColor: latestAssessment.levelLabel === 'ممتاز' ? Colors.success + '20' : Colors.warning + '20' }]}>
+                  <Text style={[s.assBadgeText, { color: latestAssessment.levelLabel === 'ممتاز' ? Colors.success : Colors.warning }]}>{latestAssessment.levelLabel}</Text>
+                </View>
+              </View>
+              {[
+                { label: 'الحروف', score: latestAssessment.lettersScore, max: latestAssessment.lettersMax },
+                { label: 'الأرقام', score: latestAssessment.numbersScore, max: latestAssessment.numbersMax },
+                { label: 'الرياضيات', score: latestAssessment.mathScore, max: latestAssessment.mathMax },
+              ].map((a, i) => {
+                const pct = a.max > 0 ? Math.round((a.score / a.max) * 100) : 0;
+                return (
+                  <View key={i} style={s.assItem}>
+                    <Text style={s.assItemLabel}>{a.label}</Text>
+                    <GradeBar score={a.score} total={a.max} color={pct >= 80 ? Colors.success : Colors.warning} />
+                  </View>
+                );
+              })}
+              <View style={s.assTotalRow}>
+                <Text style={s.assTotalLabel}>المجموع الكلي</Text>
+                <Text style={s.assTotalValue}>{latestAssessment.totalScore}/{latestAssessment.totalMax}</Text>
+              </View>
+            </View>
+          </>
+        )}
+
+        {latestReport && (
+          <>
+            <Text style={s.sectionTitle}>آخر تقرير يومي</Text>
+            <View style={s.card}>
+              <Text style={s.reportDate}>{latestReport.date}</Text>
+              <View style={s.reportGrid}>
+                {[
+                  { icon: 'food-apple', label: 'الطعام', value: latestReport.ate, color: Colors.success },
+                  { icon: 'book-open-variant', label: 'التعلم', value: latestReport.learned, color: '#3B82F6' },
+                  { icon: 'emoticon-happy-outline', label: 'المزاج', value: latestReport.mood, color: PARENT_COLOR },
+                ].map((item, i) => (
+                  <View key={i} style={s.reportItem}>
+                    <MaterialCommunityIcons name={item.icon as any} size={20} color={item.color} />
+                    <Text style={s.reportLabel}>{item.label}</Text>
+                    <Text style={[s.reportValue, { color: item.color }]}>{item.value}</Text>
+                  </View>
+                ))}
+              </View>
+              {latestReport.behaviorNote ? (
+                <View style={s.noteRow}>
+                  <Ionicons name="chatbubble-ellipses-outline" size={14} color={Colors.textLight} />
+                  <Text style={s.noteText}>{latestReport.behaviorNote}</Text>
+                </View>
+              ) : null}
+            </View>
+          </>
+        )}
+
+        {child.notes ? (
+          <>
+            <Text style={s.sectionTitle}>ملاحظات المعلمة</Text>
+            <View style={[s.card, s.notesCard]}>
+              <Ionicons name="document-text-outline" size={18} color={PARENT_COLOR} />
+              <Text style={s.notesText}>{child.notes}</Text>
+            </View>
+          </>
+        ) : null}
+
+        <View style={s.quickRow}>
+          <Pressable style={s.quickBtn} onPress={() => { router.push('/(parent)/fees'); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}>
+            <MaterialCommunityIcons name="cash-multiple" size={20} color={Colors.success} />
+            <Text style={s.quickBtnText}>الرسوم</Text>
+          </Pressable>
+          <Pressable style={s.quickBtn} onPress={() => { router.push('/(parent)/report'); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}>
+            <MaterialCommunityIcons name="clipboard-text" size={20} color="#3B82F6" />
+            <Text style={s.quickBtnText}>سجل المتابعة</Text>
+          </Pressable>
+          <Pressable style={s.quickBtn} onPress={() => { router.push('/(parent)/messages'); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}>
+            <Ionicons name="chatbubble-outline" size={20} color={PARENT_COLOR} />
+            <Text style={s.quickBtnText}>التواصل</Text>
+          </Pressable>
+        </View>
+      </ScrollView>
+    </View>
+  );
+}
+
+const s = StyleSheet.create({
+  container: { flex: 1, backgroundColor: Colors.background },
+  header: { paddingHorizontal: 16, paddingBottom: 24 },
+  headerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
+  backBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
+  headerTitle: { fontSize: 18, fontFamily: 'Inter_700Bold', color: '#fff' },
+  headerSub: { fontSize: 11, fontFamily: 'Inter_400Regular', color: 'rgba(255,255,255,0.5)', marginTop: 2 },
+  childCard: { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: 16, padding: 14 },
+  avatar: { width: 56, height: 56, borderRadius: 28, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center' },
+  avatarText: { fontSize: 24, fontFamily: 'Inter_700Bold', color: '#fff' },
+  childName: { fontSize: 17, fontFamily: 'Inter_700Bold', color: '#fff' },
+  childLevel: { fontSize: 12, fontFamily: 'Inter_500Medium', color: 'rgba(255,255,255,0.7)', marginTop: 2 },
+  childMeta: { fontSize: 11, fontFamily: 'Inter_400Regular', color: 'rgba(255,255,255,0.5)', marginTop: 1 },
+  sectionTitle: { fontSize: 15, fontFamily: 'Inter_700Bold', color: Colors.text, textAlign: 'right', borderRightWidth: 3, borderRightColor: PARENT_COLOR, paddingRight: 10 },
+  overviewGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+  overviewCard: { width: '47%', backgroundColor: Colors.surface, borderRadius: 14, padding: 14, alignItems: 'center', gap: 6, borderWidth: 1, borderColor: Colors.border },
+  overviewValue: { fontSize: 16, fontFamily: 'Inter_700Bold', textAlign: 'center' },
+  overviewLabel: { fontSize: 11, fontFamily: 'Inter_400Regular', color: Colors.textLight, textAlign: 'center' },
+  card: { backgroundColor: Colors.surface, borderRadius: 14, padding: 14, borderWidth: 1, borderColor: Colors.border },
+  gradeRow: { gap: 4, paddingVertical: 8 },
+  gradeSep: { borderTopWidth: 1, borderTopColor: Colors.border },
+  gradeSubject: { fontSize: 13, fontFamily: 'Inter_600SemiBold', color: Colors.text, textAlign: 'right' },
+  gradeDate: { fontSize: 10, fontFamily: 'Inter_400Regular', color: Colors.textLight, textAlign: 'right' },
+  assRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
+  assDate: { fontSize: 11, fontFamily: 'Inter_400Regular', color: Colors.textLight },
+  assBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10 },
+  assBadgeText: { fontSize: 12, fontFamily: 'Inter_600SemiBold' },
+  assItem: { gap: 4, marginBottom: 8 },
+  assItemLabel: { fontSize: 13, fontFamily: 'Inter_600SemiBold', color: Colors.text, textAlign: 'right' },
+  assTotalRow: { flexDirection: 'row', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: Colors.border, paddingTop: 10, marginTop: 4 },
+  assTotalLabel: { fontSize: 13, fontFamily: 'Inter_600SemiBold', color: Colors.text },
+  assTotalValue: { fontSize: 15, fontFamily: 'Inter_700Bold', color: PARENT_COLOR },
+  reportDate: { fontSize: 11, fontFamily: 'Inter_400Regular', color: Colors.textLight, textAlign: 'right', marginBottom: 10 },
+  reportGrid: { flexDirection: 'row', justifyContent: 'space-around', marginBottom: 10 },
+  reportItem: { alignItems: 'center', gap: 4 },
+  reportLabel: { fontSize: 10, fontFamily: 'Inter_400Regular', color: Colors.textLight },
+  reportValue: { fontSize: 12, fontFamily: 'Inter_600SemiBold' },
+  noteRow: { flexDirection: 'row', gap: 6, alignItems: 'flex-start', backgroundColor: Colors.background, borderRadius: 8, padding: 8 },
+  noteText: { flex: 1, fontSize: 12, fontFamily: 'Inter_400Regular', color: Colors.textLight, textAlign: 'right' },
+  notesCard: { flexDirection: 'row', gap: 10, alignItems: 'flex-start' },
+  notesText: { flex: 1, fontSize: 13, fontFamily: 'Inter_400Regular', color: Colors.text, textAlign: 'right', lineHeight: 20 },
+  empty: { padding: 20, alignItems: 'center' },
+  emptyText: { fontSize: 13, fontFamily: 'Inter_400Regular', color: Colors.textLight },
+  quickRow: { flexDirection: 'row', gap: 10 },
+  quickBtn: { flex: 1, alignItems: 'center', gap: 6, padding: 14, backgroundColor: Colors.surface, borderRadius: 14, borderWidth: 1, borderColor: Colors.border },
+  quickBtnText: { fontSize: 11, fontFamily: 'Inter_500Medium', color: Colors.textLight, textAlign: 'center' },
+});
+
+const pb = StyleSheet.create({
+  barTrack: { flex: 1, height: 6, backgroundColor: Colors.border, borderRadius: 3, overflow: 'hidden' },
+  barFill: { height: 6, borderRadius: 3 },
+  score: { fontSize: 12, fontFamily: 'Inter_600SemiBold', minWidth: 40, textAlign: 'left' },
+});

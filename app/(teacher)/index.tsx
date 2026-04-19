@@ -143,6 +143,10 @@ export default function TeacherScheduleScreen() {
               <Ionicons name="calendar-outline" size={22} color="#6366F1" />
               <Text style={styles.quickLinkText}>التقويم المدرسي</Text>
             </Pressable>
+            <Pressable style={styles.quickLink} onPress={() => router.push('/(teacher)/performance')}>
+              <Ionicons name="bar-chart-outline" size={22} color="#F59E0B" />
+              <Text style={styles.quickLinkText}>تحليل الأداء</Text>
+            </Pressable>
           </View>
           <Text style={styles.sectionTitle}>أيام الأسبوع</Text>
           <View style={styles.daysRow}>

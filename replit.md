@@ -35,10 +35,18 @@ Admin password can be changed from Settings → Developer panel → Admin passwo
 - `app_state` — cloud-synced app state (JSON key-value)
 
 ## Key Features
-- **Admin**: Dashboard stats, student management, employee management, finance/payroll, news, inbox, meetings, schedule, graduation, transport, banners, registration requests, developer panel
-- **Teacher**: Class schedule, student notebook, grades, attendance, curriculum planner
-- **Parent**: Child profile, daily reports, messages, notifications, write reviews
-- **Guest**: Landing page with school info, services, levels, reviews, registration timeline
+- **Admin**: Dashboard stats, student management, employee management, finance/payroll, news, inbox, meetings, schedule, graduation, transport, banners, registration requests, developer panel, analytics dashboard, bulk notifications, calendar, photo gallery
+- **Teacher**: Class schedule, student notebook, grades, attendance, curriculum planner, performance analytics
+- **Parent**: Child profile (ملف الطالب), daily reports, messages, notifications, fees tracker, write reviews
+- **Guest**: Landing page with school info, services, levels, reviews, registration timeline, enrollment request form (with document upload)
+
+## Screens Added (Recent)
+- `app/(admin)/analytics.tsx` — comprehensive admin analytics dashboard
+- `app/(admin)/notifications-send.tsx` — bulk notification sender
+- `app/(parent)/fees.tsx` — tuition fees tracker with installments
+- `app/(parent)/profile.tsx` — comprehensive child profile screen
+- `app/(teacher)/performance.tsx` — class performance analytics
+- `app/enrollment-request.tsx` — enrollment request form with document upload (2-step: data + docs)
 
 ## Color Theme
 - Primary: `#0c1155` (Deep Navy)

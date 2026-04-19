@@ -692,7 +692,7 @@ export default function GuestHomeScreen() {
               <Text style={s.ctaSub}>الأماكن محدودة — لا تفوّت الفرصة</Text>
 
               <Pressable style={s.ctaMainBtn}
-                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); setShowRegForm(true); }}>
+                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); router.push('/enrollment-request'); }}>
                 <LinearGradient colors={[Colors.accent, '#b8841c']} style={s.ctaMainBtnGrad} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
                   <MaterialCommunityIcons name="file-document-edit" size={18} color="#fff" />
                   <Text style={s.ctaMainBtnTxt}>تعبئة استمارة التسجيل</Text>
