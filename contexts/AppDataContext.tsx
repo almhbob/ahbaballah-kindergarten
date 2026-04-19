@@ -1,6 +1,17 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useRef, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getApiUrl } from '@/lib/query-client';
+import { initFirebase, isFirebaseReady } from '@/lib/firebase';
+import {
+  fsUpsertStudent, fsDeleteStudent, fsListenStudents,
+  fsUpsertEmployee, fsDeleteEmployee, fsListenEmployees,
+  fsSendMessage, fsListenMessages,
+  fsAddNews, fsDeleteNews, fsListenNews,
+  fsAddRegistrationRequest, fsUpdateRegistrationRequest, fsDeleteRegistrationRequest, fsListenRegistrationRequests,
+  fsAddSchoolEvent, fsUpdateSchoolEvent, fsDeleteSchoolEvent, fsListenSchoolEvents,
+  fsAddGalleryPhoto, fsDeleteGalleryPhoto, fsListenGalleryPhotos,
+  fsBulkUploadStudents, fsBulkUploadEmployees,
+} from '@/lib/firestore-service';
 
 export interface AssessmentResult {
   id: string;
@@ -751,6 +762,61 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     load();
   }, []);
 
+  // ─── Firebase real-time listeners ─────────────────────────────────────────
+  useEffect(() => {
+    const ready = initFirebase();
+    if (!ready) return;
+    const unsubs: (() => void)[] = [];
+    const firstLoad = { students: false, employees: false };
+
+    unsubs.push(fsListenStudents(data => {
+      if (data.length > 0) {
+        setStudents(data.map(s => ({
+          ...s,
+          assessments: s.assessments ?? [],
+          parentPhone: s.parentPhone ?? '',
+          parentPassword: s.parentPassword ?? '1234',
+        })));
+      } else if (!firstLoad.students) {
+        firstLoad.students = true;
+      }
+    }));
+
+    unsubs.push(fsListenEmployees(data => {
+      if (data.length > 0) {
+        setEmployees(data.map(e => ({
+          ...e,
+          email: e.email ?? '',
+          password: e.password ?? '1234',
+        })));
+      } else if (!firstLoad.employees) {
+        firstLoad.employees = true;
+      }
+    }));
+
+    unsubs.push(fsListenMessages(data => {
+      if (data.length > 0) setMessages(data);
+    }));
+
+    unsubs.push(fsListenNews(data => {
+      if (data.length > 0) setNews(data);
+    }));
+
+    unsubs.push(fsListenRegistrationRequests(data => {
+      setRegistrationRequests(data);
+    }));
+
+    unsubs.push(fsListenSchoolEvents(data => {
+      if (data.length > 0) setSchoolEvents(data.sort((a, b) => a.date.localeCompare(b.date)));
+    }));
+
+    unsubs.push(fsListenGalleryPhotos(data => {
+      if (data.length > 0) setGalleryPhotos(data);
+    }));
+
+    return () => unsubs.forEach(u => u());
+  }, []);
+
   const setWelcomeMessage = (msg: string) => {
     welcomeRef.current = msg;
     setWelcomeMessageState(msg);
@@ -827,6 +893,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     setSchoolEvents(prev => {
       const updated = [...prev, e].sort((a, b) => a.date.localeCompare(b.date));
       saveState('app_school_events', updated);
+      fsAddSchoolEvent(e).catch(() => {});
       return updated;
     });
   };
@@ -834,6 +901,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     setSchoolEvents(prev => {
       const updated = prev.map(e => e.id === id ? { ...e, ...data } : e);
       saveState('app_school_events', updated);
+      fsUpdateSchoolEvent(id, data).catch(() => {});
       return updated;
     });
   };
@@ -841,6 +909,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     setSchoolEvents(prev => {
       const updated = prev.filter(e => e.id !== id);
       saveState('app_school_events', updated);
+      fsDeleteSchoolEvent(id).catch(() => {});
       return updated;
     });
   };
@@ -848,6 +917,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     setGalleryPhotos(prev => {
       const updated = [p, ...prev];
       saveState('app_gallery_photos', updated);
+      fsAddGalleryPhoto(p).catch(() => {});
       return updated;
     });
   };
@@ -855,6 +925,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     setGalleryPhotos(prev => {
       const updated = prev.filter(p => p.id !== id);
       saveState('app_gallery_photos', updated);
+      fsDeleteGalleryPhoto(id).catch(() => {});
       return updated;
     });
   };
@@ -899,6 +970,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     setStudents(prev => {
       const updated = prev.map(s => s.id === id ? { ...s, ...data } : s);
       saveState('app_students', updated);
+      const updatedStudent = updated.find(s => s.id === id);
+      if (updatedStudent) fsUpsertStudent(updatedStudent).catch(() => {});
       return updated;
     });
   };
@@ -907,6 +980,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     setNews(prev => {
       const updated = [item, ...prev];
       saveState('app_news', updated);
+      fsAddNews(item).catch(() => {});
       return updated;
     });
   };
@@ -915,6 +989,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     setNews(prev => {
       const updated = prev.filter(n => n.id !== id);
       saveState('app_news', updated);
+      fsDeleteNews(id).catch(() => {});
       return updated;
     });
   };
@@ -961,6 +1036,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       }
 
       saveState('app_messages', updated);
+      fsSendMessage(msg).catch(() => {});
       return updated;
     });
   };
@@ -969,6 +1045,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     setStudents(prev => {
       const updated = [...prev, student];
       saveState('app_students', updated);
+      fsUpsertStudent(student).catch(() => {});
       return updated;
     });
   };
@@ -977,6 +1054,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     setStudents(prev => {
       const updated = prev.filter(s => s.id !== id);
       saveState('app_students', updated);
+      fsDeleteStudent(id).catch(() => {});
       return updated;
     });
   };
@@ -985,6 +1063,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     setEmployees(prev => {
       const updated = [...prev, emp];
       saveState('app_employees', updated);
+      fsUpsertEmployee(emp).catch(() => {});
       return updated;
     });
   };
@@ -993,6 +1072,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     setEmployees(prev => {
       const updated = prev.filter(e => e.id !== id);
       saveState('app_employees', updated);
+      fsDeleteEmployee(id).catch(() => {});
       return updated;
     });
   };
@@ -1001,6 +1081,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     setEmployees(prev => {
       const updated = prev.map(e => e.id === id ? { ...e, ...data } : e);
       saveState('app_employees', updated);
+      const updatedEmp = updated.find(e => e.id === id);
+      if (updatedEmp) fsUpsertEmployee(updatedEmp).catch(() => {});
       return updated;
     });
   };
@@ -1161,6 +1243,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     setRegistrationRequests(prev => {
       const updated = [r, ...prev];
       saveState('app_registration_requests', updated);
+      fsAddRegistrationRequest(r).catch(() => {});
       return updated;
     });
   };
@@ -1168,6 +1251,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     setRegistrationRequests(prev => {
       const updated = prev.map(r => r.id === id ? { ...r, ...data } : r);
       saveState('app_registration_requests', updated);
+      fsUpdateRegistrationRequest(id, data).catch(() => {});
       return updated;
     });
   };
@@ -1175,6 +1259,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     setRegistrationRequests(prev => {
       const updated = prev.filter(r => r.id !== id);
       saveState('app_registration_requests', updated);
+      fsDeleteRegistrationRequest(id).catch(() => {});
       return updated;
     });
   };

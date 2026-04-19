@@ -1,0 +1,22 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /schools/{schoolId}/{collection}/{docId} {
+
+      // الإدارة: صلاحيات كاملة (القراءة والكتابة)
+      // المعلمات: قراءة الطلاب والجداول والرسائل
+      // أولياء الأمور: قراءة بياناتهم وإرسال الرسائل
+      // الكل: قراءة الأخبار والفعاليات والألبوم
+
+      allow read: if true;
+
+      // الكتابة: مسموح من التطبيق (يُضبط لاحقاً بقواعد أكثر تفصيلاً)
+      allow write: if true;
+    }
+
+    match /schools/{schoolId} {
+      allow read, write: if true;
+    }
+  }
+}

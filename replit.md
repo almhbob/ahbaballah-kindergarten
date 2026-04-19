@@ -40,6 +40,20 @@ Admin password can be changed from Settings → Developer panel → Admin passwo
 - **Parent**: Child profile (ملف الطالب), daily reports, messages, notifications, fees tracker, write reviews
 - **Guest**: Landing page with school info, services, levels, reviews, registration timeline, enrollment request form (with document upload)
 
+## Firebase Integration
+- **SDK**: `firebase` JS SDK (Expo Go compatible — no native build required)
+- **Config**: env vars with `EXPO_PUBLIC_FIREBASE_*` prefix (set in Replit Secrets)
+- **Project**: `ahbabullah-e85a6` (Firestore + Storage)
+- **Files**:
+  - `lib/firebase.ts` — init, getDb(), getFirebaseStorage(), isFirebaseReady()
+  - `lib/firestore-service.ts` — CRUD + real-time listeners for all collections
+  - `components/FirebaseSyncStatus.tsx` — sync indicator + bulk upload button (on admin home)
+  - `firestore.rules` — Firestore security rules (open for now, tighten before prod)
+- **Data model**: `schools/ahbabullah/{collection}/{docId}`
+  - Collections: students, employees, messages, news, inbox, registrationRequests, schoolEvents, galleryPhotos
+- **Sync strategy**: Local state (AsyncStorage) + Express API + Firestore (triple-layer). Firestore listeners override local on mount. Each write goes to all three.
+- **Missing**: EXPO_PUBLIC_FIREBASE_API_KEY must be added to Replit Secrets
+
 ## Screens Added (Recent)
 - `app/(admin)/analytics.tsx` — comprehensive admin analytics dashboard
 - `app/(admin)/notifications-send.tsx` — bulk notification sender
