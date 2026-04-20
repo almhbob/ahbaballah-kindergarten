@@ -69,6 +69,12 @@ Admin password can be changed from Settings → Developer panel → Admin passwo
   - `app/(admin)/branding.tsx` — visual identity editor (logo, colors, preview)
   - Developer panel → "إدارة الروضات (SaaS)" section — add/edit/delete/switch schools
 - **Multi-school SaaS**: Developer panel allows registering unlimited schools, each with unique ID, colors, subscription status, expiry date
+- **Subscription tiers**: `lib/subscription-tiers.ts` — Trial/Basic/Professional/Enterprise with student/teacher/gallery limits and SAR pricing
+- **Firebase Auth per-school**: `lib/school-auth.ts` — `createSchoolAdminAccount()` creates Firebase Auth user linked to schoolId in `schoolAccounts/{uid}`; `schoolAdminSignIn()` returns schoolId + tier
+- **School login screen**: `app/school-login.tsx` — Firebase Auth login for school admins (routes to /(admin) after auth)
+- **Firestore rules**: `schoolAccounts/{uid}` — users can only read their own account doc; school data fully accessible (tighten in production)
+- **Capacity system**: `checkCapacity(current, limit)` + `capacityColor()` — shows % bars on school cards; unlimited tier shows ∞
+- **SaaS overview chips**: developer panel shows tier distribution (🆓/⭐/💎/🏆) + total count + school-login button
 
 ## Screens Added (Recent)
 - `app/(admin)/analytics.tsx` — comprehensive admin analytics dashboard

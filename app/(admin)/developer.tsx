@@ -12,6 +12,8 @@ import { Colors } from '@/constants/colors';
 import { useAppData, Banner, BannerType, AppSettings, DEFAULT_APP_SETTINGS } from '@/contexts/AppDataContext';
 import { useSchoolTheme, SchoolRegistration, COLOR_PRESETS } from '@/contexts/SchoolThemeContext';
 import * as Haptics from 'expo-haptics';
+import { SUBSCRIPTION_TIERS, TIER_ORDER, getTierById, checkCapacity, capacityColor, SubscriptionTier } from '@/lib/subscription-tiers';
+import { createSchoolAdminAccount } from '@/lib/school-auth';
 
 function genId() {
   return Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
@@ -273,9 +275,11 @@ export default function DeveloperScreen() {
   // School registration form
   const [showSchoolForm, setShowSchoolForm] = useState(false);
   const [editingSchool,  setEditingSchool]  = useState<SchoolRegistration | null>(null);
-  const [schoolFormDraft, setSchoolFormDraft] = useState<Partial<SchoolRegistration>>({
-    primaryColor: '#0c1155', accentColor: '#c9952a', status: 'trial',
+  const [schoolFormDraft, setSchoolFormDraft] = useState<Partial<SchoolRegistration & { adminPassword?: string }>>({
+    primaryColor: '#0c1155', accentColor: '#c9952a', status: 'trial', tier: 'trial',
   });
+  const [authCreating, setAuthCreating] = useState(false);
+  const [authResult,   setAuthResult]   = useState<{ ok: boolean; msg: string } | null>(null);
   const [schoolFormSaving, setSchoolFormSaving] = useState(false);
   const [showBannerForm, setShowBannerForm] = useState(false);
   const [editingBanner,  setEditingBanner]  = useState<Banner | null>(null);
@@ -430,13 +434,40 @@ export default function DeveloperScreen() {
               </Pressable>
             </View>
 
+            {/* SaaS overview stats */}
+            <View style={{ flexDirection: 'row', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
+              {TIER_ORDER.map(tid => {
+                const count = schools.filter(s => (s.tier ?? 'trial') === tid).length;
+                if (count === 0) return null;
+                const t = SUBSCRIPTION_TIERS[tid];
+                return (
+                  <View key={tid} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, backgroundColor: t.color + '18', borderWidth: 1, borderColor: t.color + '40' }}>
+                    <Text style={{ fontSize: 12 }}>{t.emoji}</Text>
+                    <Text style={{ fontSize: 11, fontFamily: 'Inter_600SemiBold', color: t.color }}>{count}</Text>
+                  </View>
+                );
+              })}
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, backgroundColor: Colors.borderLight }}>
+                <MaterialCommunityIcons name="domain" size={13} color={Colors.textLight} />
+                <Text style={{ fontSize: 11, fontFamily: 'Inter_600SemiBold', color: Colors.textSecondary }}>{schools.length} روضة</Text>
+              </View>
+              <Pressable
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, backgroundColor: '#3b82f615', borderWidth: 1, borderColor: '#3b82f640' }}
+                onPress={() => router.push('/school-login')}
+              >
+                <MaterialCommunityIcons name="login" size={13} color="#3b82f6" />
+                <Text style={{ fontSize: 11, fontFamily: 'Inter_600SemiBold', color: '#3b82f6' }}>دخول الروضة</Text>
+              </Pressable>
+            </View>
+
             {/* Registered schools list */}
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginVertical: 8 }}>
               <Pressable
                 style={sty.addSchoolBtn}
                 onPress={() => {
                   setEditingSchool(null);
-                  setSchoolFormDraft({ primaryColor: '#0c1155', accentColor: '#c9952a', status: 'trial' });
+                  setSchoolFormDraft({ primaryColor: '#0c1155', accentColor: '#c9952a', status: 'trial', tier: 'trial' });
+                  setAuthResult(null);
                   setShowSchoolForm(true);
                 }}
               >
@@ -461,18 +492,27 @@ export default function DeveloperScreen() {
               const statusLabels: Record<string, string> = {
                 active: 'نشطة', trial: 'تجريبية', suspended: 'موقوفة',
               };
+              const tierDef = getTierById(sch.tier ?? 'trial');
+              const schStudents = isActive ? students.length : 0;
+              const capStu = checkCapacity(schStudents, tierDef.limits.students);
               return (
-                <View key={sch.id} style={[sty.schoolCard, isActive && { borderColor: '#A855F7' }]}>
+                <View key={sch.id} style={[sty.schoolCard, isActive && { borderColor: tierDef.color + '80', borderWidth: 2 }]}>
                   <View style={s2.schoolCardTop}>
                     <View style={{ flex: 1 }}>
                       <Text style={sty.schoolCardName}>{sch.name}</Text>
                       <Text style={sty.schoolCardId}>ID: {sch.id}</Text>
-                      <Text style={sty.schoolCardPhone}>{sch.adminPhone}</Text>
+                      {sch.adminEmail ? <Text style={sty.schoolCardPhone}>📧 {sch.adminEmail}</Text> : null}
+                      {sch.adminPhone ? <Text style={sty.schoolCardPhone}>📞 {sch.adminPhone}</Text> : null}
                     </View>
-                    <View style={{ alignItems: 'flex-end', gap: 6 }}>
+                    <View style={{ alignItems: 'flex-end', gap: 5 }}>
                       <View style={[s2.statusBadge, { backgroundColor: statusColors[sch.status] + '20' }]}>
                         <Text style={[s2.statusTxt, { color: statusColors[sch.status] }]}>
                           {statusLabels[sch.status]}
+                        </Text>
+                      </View>
+                      <View style={[s2.statusBadge, { backgroundColor: tierDef.color + '20' }]}>
+                        <Text style={[s2.statusTxt, { color: tierDef.color }]}>
+                          {tierDef.emoji} {tierDef.nameAr}
                         </Text>
                       </View>
                       <View style={{ flexDirection: 'row', gap: 4 }}>
@@ -481,6 +521,29 @@ export default function DeveloperScreen() {
                       </View>
                     </View>
                   </View>
+
+                  {/* Capacity bar (only for active school) */}
+                  {isActive && !capStu.isUnlimited && (
+                    <View style={{ marginTop: 8 }}>
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 3 }}>
+                        <Text style={{ fontSize: 10, color: capacityColor(capStu), fontFamily: 'Inter_500Medium' }}>
+                          {capStu.pct}%
+                        </Text>
+                        <Text style={{ fontSize: 10, color: Colors.textLight, fontFamily: 'Inter_400Regular' }}>
+                          الطلاب: {schStudents} / {tierDef.limits.students}
+                        </Text>
+                      </View>
+                      <View style={{ height: 4, backgroundColor: Colors.borderLight, borderRadius: 2 }}>
+                        <View style={{ height: 4, width: `${capStu.pct}%`, backgroundColor: capacityColor(capStu), borderRadius: 2 }} />
+                      </View>
+                    </View>
+                  )}
+                  {isActive && capStu.isUnlimited && (
+                    <Text style={{ fontSize: 10, color: '#10b981', fontFamily: 'Inter_500Medium', marginTop: 6, textAlign: 'right' }}>
+                      ✦ طلاب غير محدودين
+                    </Text>
+                  )}
+
                   <View style={s2.schoolCardActions}>
                     {!isActive && (
                       <Pressable
@@ -512,6 +575,7 @@ export default function DeveloperScreen() {
                       onPress={() => {
                         setEditingSchool(sch);
                         setSchoolFormDraft({ ...sch });
+                        setAuthResult(null);
                         setShowSchoolForm(true);
                       }}
                     >
@@ -874,18 +938,40 @@ export default function DeveloperScreen() {
                   return;
                 }
                 setSchoolFormSaving(true);
+                setAuthResult(null);
+                const sid = schoolFormDraft.id!.trim().replace(/\s+/g, '_').toLowerCase();
                 const school: SchoolRegistration = {
-                  id:           schoolFormDraft.id!.trim().replace(/\s+/g, '_').toLowerCase(),
+                  id:           sid,
                   name:         schoolFormDraft.name!.trim(),
                   logoUrl:      schoolFormDraft.logoUrl,
                   primaryColor: schoolFormDraft.primaryColor ?? '#0c1155',
                   accentColor:  schoolFormDraft.accentColor  ?? '#c9952a',
                   adminPhone:   schoolFormDraft.adminPhone   ?? '',
+                  adminEmail:   schoolFormDraft.adminEmail?.trim().toLowerCase(),
+                  tier:         schoolFormDraft.tier         ?? 'trial',
                   status:       schoolFormDraft.status       ?? 'trial',
                   createdAt:    editingSchool?.createdAt ?? new Date().toISOString().split('T')[0],
                   expiresAt:    schoolFormDraft.expiresAt,
                   notes:        schoolFormDraft.notes,
                 };
+                // Create Firebase Auth account for new schools with email+password
+                if (!editingSchool && school.adminEmail && (schoolFormDraft as any).adminPassword) {
+                  setAuthCreating(true);
+                  const result = await createSchoolAdminAccount(
+                    sid,
+                    school.adminEmail,
+                    (schoolFormDraft as any).adminPassword,
+                    school.name,
+                    school.tier,
+                  );
+                  setAuthCreating(false);
+                  if (!result.ok) {
+                    setAuthResult({ ok: false, msg: result.error ?? 'فشل إنشاء الحساب' });
+                    setSchoolFormSaving(false);
+                    return;
+                  }
+                  setAuthResult({ ok: true, msg: 'تم إنشاء حساب المدير بنجاح ✓' });
+                }
                 if (editingSchool) {
                   await editSchoolEntry(editingSchool.id, school);
                 } else {
@@ -908,18 +994,36 @@ export default function DeveloperScreen() {
           </View>
 
           <ScrollView style={{ flex: 1, padding: 20 }} keyboardShouldPersistTaps="handled">
+
+            {/* Auth result message */}
+            {authResult && (
+              <View style={{
+                flexDirection: 'row', alignItems: 'center', gap: 8, padding: 10, borderRadius: 10, marginBottom: 12,
+                backgroundColor: authResult.ok ? Colors.success + '15' : Colors.danger + '15',
+                borderWidth: 1, borderColor: authResult.ok ? Colors.success + '40' : Colors.danger + '40',
+              }}>
+                <Ionicons name={authResult.ok ? 'checkmark-circle' : 'alert-circle'} size={16}
+                  color={authResult.ok ? Colors.success : Colors.danger} />
+                <Text style={{ fontSize: 12, fontFamily: 'Inter_500Medium', color: authResult.ok ? Colors.success : Colors.danger, flex: 1, textAlign: 'right' }}>
+                  {authResult.msg}
+                </Text>
+              </View>
+            )}
+
+            {/* Basic info */}
             {[
               { key: 'name',       label: 'اسم الروضة *',            placeholder: 'روضة أحباب الله' },
-              { key: 'id',         label: 'المعرّف (ID) *',           placeholder: 'ahbabullah_2' },
+              { key: 'id',         label: 'المعرّف (ID) *',           placeholder: 'ahbabullah_2',  disabled: !!editingSchool },
               { key: 'adminPhone', label: 'هاتف المدير',             placeholder: '+249912345678' },
               { key: 'logoUrl',    label: 'رابط الشعار',              placeholder: 'https://...' },
               { key: 'expiresAt',  label: 'تاريخ انتهاء الاشتراك',   placeholder: '2026-09-01' },
               { key: 'notes',      label: 'ملاحظات',                  placeholder: 'أي ملاحظات...' },
-            ].map(({ key, label, placeholder }) => (
+            ].map(({ key, label, placeholder, disabled }) => (
               <View key={key}>
                 <Text style={m.label}>{label}</Text>
                 <TextInput
-                  style={m.input}
+                  style={[m.input, disabled && { opacity: 0.5 }]}
+                  editable={!disabled}
                   value={(schoolFormDraft as any)[key] ?? ''}
                   onChangeText={v => setSchoolFormDraft(p => ({ ...p, [key]: v }))}
                   placeholder={placeholder}
@@ -930,7 +1034,83 @@ export default function DeveloperScreen() {
               </View>
             ))}
 
-            <Text style={m.label}>الحالة</Text>
+            {/* Admin credentials (new schools only) */}
+            {!editingSchool && (
+              <View style={{ backgroundColor: Colors.surfaceAlt, borderRadius: 12, padding: 14, marginBottom: 16, borderWidth: 1, borderColor: '#A855F730' }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, justifyContent: 'flex-end', marginBottom: 10 }}>
+                  <Text style={{ fontSize: 13, fontFamily: 'Inter_700Bold', color: '#A855F7' }}>حساب مدير الروضة</Text>
+                  <MaterialCommunityIcons name="account-key" size={16} color="#A855F7" />
+                </View>
+                <Text style={{ fontSize: 11, color: Colors.textLight, fontFamily: 'Inter_400Regular', textAlign: 'right', marginBottom: 10, lineHeight: 16 }}>
+                  اختياري: أنشئ حساب Firebase للمدير ليسجّل دخوله بالبريد الإلكتروني مستقبلاً
+                </Text>
+                <Text style={m.label}>بريد المدير</Text>
+                <TextInput
+                  style={m.input}
+                  value={(schoolFormDraft as any).adminEmail ?? ''}
+                  onChangeText={v => setSchoolFormDraft(p => ({ ...p, adminEmail: v }))}
+                  placeholder="admin@ahbabullah.edu"
+                  placeholderTextColor={Colors.textLight}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  textAlign="left"
+                />
+                <Text style={m.label}>كلمة مرور المدير</Text>
+                <TextInput
+                  style={m.input}
+                  value={(schoolFormDraft as any).adminPassword ?? ''}
+                  onChangeText={v => setSchoolFormDraft(p => ({ ...p, adminPassword: v }))}
+                  placeholder="6 أحرف على الأقل"
+                  placeholderTextColor={Colors.textLight}
+                  secureTextEntry
+                  textAlign="right"
+                />
+                {authCreating && (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, justifyContent: 'center' }}>
+                    <ActivityIndicator size="small" color="#A855F7" />
+                    <Text style={{ fontSize: 12, color: '#A855F7', fontFamily: 'Inter_500Medium' }}>يُنشئ حساب Firebase...</Text>
+                  </View>
+                )}
+              </View>
+            )}
+
+            {/* Subscription tier selection */}
+            <Text style={m.label}>مستوى الاشتراك</Text>
+            {TIER_ORDER.map(tid => {
+              const t = SUBSCRIPTION_TIERS[tid];
+              const isSelected = (schoolFormDraft.tier ?? 'trial') === tid;
+              return (
+                <Pressable key={tid}
+                  style={[{
+                    flexDirection: 'row', alignItems: 'center', gap: 10,
+                    padding: 12, borderRadius: 12, marginBottom: 8, borderWidth: 1.5,
+                    borderColor: isSelected ? t.color : Colors.borderLight,
+                    backgroundColor: isSelected ? t.color + '12' : Colors.background,
+                  }]}
+                  onPress={() => setSchoolFormDraft(p => ({ ...p, tier: tid }))}>
+                  <Text style={{ fontSize: 20 }}>{t.emoji}</Text>
+                  <View style={{ flex: 1 }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                      <Text style={{ fontSize: 11, color: t.color, fontFamily: 'Inter_500Medium' }}>{t.badgeAr}</Text>
+                      <Text style={{ fontSize: 13, fontFamily: 'Inter_700Bold', color: isSelected ? t.color : Colors.text }}>
+                        {t.nameAr}
+                      </Text>
+                    </View>
+                    <Text style={{ fontSize: 10, color: Colors.textLight, fontFamily: 'Inter_400Regular', textAlign: 'right', marginTop: 2 }}>
+                      {t.limits.students === -1 ? '∞ طالب' : `${t.limits.students} طالب`}
+                      {' · '}
+                      {t.limits.teachers === -1 ? '∞ معلمة' : `${t.limits.teachers} معلمات`}
+                      {' · '}
+                      {t.limits.galleryPhotos === -1 ? '∞ صورة' : `${t.limits.galleryPhotos} صورة`}
+                    </Text>
+                  </View>
+                  {isSelected && <Ionicons name="checkmark-circle" size={18} color={t.color} />}
+                </Pressable>
+              );
+            })}
+
+            {/* Status chips */}
+            <Text style={[m.label, { marginTop: 8 }]}>حالة الاشتراك</Text>
             <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16 }}>
               {(['active', 'trial', 'suspended'] as const).map(s => {
                 const cols: Record<string, string> = { active: Colors.success, trial: Colors.warning, suspended: Colors.danger };
@@ -945,6 +1125,7 @@ export default function DeveloperScreen() {
               })}
             </View>
 
+            {/* Color palette */}
             <Text style={m.label}>لوحة الألوان</Text>
             {COLOR_PRESETS.map((p, i) => (
               <Pressable key={i}
@@ -961,6 +1142,8 @@ export default function DeveloperScreen() {
                 </Text>
               </Pressable>
             ))}
+
+            <View style={{ height: 40 }} />
           </ScrollView>
         </View>
       </Modal>

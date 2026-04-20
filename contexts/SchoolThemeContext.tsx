@@ -29,6 +29,8 @@ export interface SchoolRegistration {
   primaryColor: string;
   accentColor:  string;
   adminPhone:   string;
+  adminEmail?:  string;
+  tier:         'trial' | 'basic' | 'professional' | 'enterprise';
   status:       'active' | 'trial' | 'suspended';
   createdAt:    string;
   expiresAt?:   string;

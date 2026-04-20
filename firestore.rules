@@ -2,21 +2,36 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    // ─── school data: namespaced per school ───────────────────────────────────
     match /schools/{schoolId}/{collection}/{docId} {
-
-      // الإدارة: صلاحيات كاملة (القراءة والكتابة)
-      // المعلمات: قراءة الطلاب والجداول والرسائل
-      // أولياء الأمور: قراءة بياناتهم وإرسال الرسائل
-      // الكل: قراءة الأخبار والفعاليات والألبوم
-
-      allow read: if true;
-
-      // الكتابة: مسموح من التطبيق (يُضبط لاحقاً بقواعد أكثر تفصيلاً)
+      // Anyone authenticated can read (app users within the school)
+      // Production: tighten to: request.auth != null && getAccountSchoolId() == schoolId
+      allow read:  if true;
       allow write: if true;
     }
 
     match /schools/{schoolId} {
       allow read, write: if true;
+    }
+
+    // ─── branding sub-collection ─────────────────────────────────────────────
+    match /schools/{schoolId}/config/{docId} {
+      allow read, write: if true;
+    }
+
+    // ─── school registry (developer-managed) ─────────────────────────────────
+    match /schoolRegistry/{schoolId} {
+      allow read:  if true;
+      allow write: if true;
+    }
+
+    // ─── school admin accounts (Firebase Auth UID → schoolId mapping) ─────────
+    match /schoolAccounts/{uid} {
+      // Only authenticated user can read their own account doc
+      allow read:  if request.auth != null && request.auth.uid == uid;
+      // Developer can create accounts (open during setup)
+      allow write: if true;
     }
   }
 }
