@@ -1,0 +1,104 @@
+name: Publish — نشر على المتاجر
+
+on:
+  # يعمل تلقائياً بعد اكتمال بناء الإصدار
+  workflow_run:
+    workflows: ["Build Android — بناء تطبيق أندرويد"]
+    types: [completed]
+    branches: ['main']
+
+  # أو يدوياً
+  workflow_dispatch:
+    inputs:
+      track:
+        description: 'Google Play Track'
+        required: true
+        default: 'internal'
+        type: choice
+        options:
+          - internal
+          - alpha
+          - beta
+          - production
+      version_name:
+        description: 'Version name (e.g. 1.0.0)'
+        required: false
+        default: ''
+
+env:
+  EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+jobs:
+  # ─── النشر على Google Play ─────────────────────────────────────────────────
+  submit-google-play:
+    name: Submit to Google Play
+    runs-on: ubuntu-latest
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success')
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Setup EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Decode Google Play Service Account Key
+        run: |
+          echo '${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_KEY }}' > google-play-key.json
+          echo "✓ Service account key written"
+
+      - name: Submit to Google Play (${{ github.event.inputs.track || 'internal' }} track)
+        run: |
+          eas submit --platform android \
+            --profile play-store \
+            --non-interactive \
+            --latest
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ./google-play-key.json
+          EXPO_PUBLIC_FIREBASE_API_KEY: ${{ secrets.EXPO_PUBLIC_FIREBASE_API_KEY }}
+
+      - name: Cleanup credentials
+        if: always()
+        run: rm -f google-play-key.json
+
+      - name: Submission summary
+        if: success()
+        run: |
+          TRACK="${{ github.event.inputs.track || 'internal' }}"
+          echo "## ✅ تم النشر على Google Play!" >> $GITHUB_STEP_SUMMARY
+          echo "- **Track:** $TRACK" >> $GITHUB_STEP_SUMMARY
+          echo "- **Package:** com.ahbaballah.kindergarten" >> $GITHUB_STEP_SUMMARY
+          echo "- **Time:** $(date -u '+%Y-%m-%d %H:%M UTC')" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "🔗 [فتح Google Play Console](https://play.google.com/console/developers)" >> $GITHUB_STEP_SUMMARY
+
+  # ─── إشعار النتيجة ──────────────────────────────────────────────────────────
+  notify:
+    name: Notify Result
+    runs-on: ubuntu-latest
+    needs: submit-google-play
+    if: always()
+    steps:
+      - name: Success notification
+        if: needs.submit-google-play.result == 'success'
+        run: |
+          echo "🎉 تم نشر التطبيق بنجاح على Google Play!"
+          echo "Package: com.ahbaballah.kindergarten"
+
+      - name: Failure notification
+        if: needs.submit-google-play.result == 'failure'
+        run: |
+          echo "❌ فشل النشر — راجع السجلات"
+          exit 1
