@@ -7,6 +7,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "@/constants/colors";
 import { useAppData } from "@/contexts/AppDataContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { useEffect } from "react";
+import { registerForPushNotifications } from "@/lib/notifications";
 
 function NativeAdminTabs() {
   const { inbox } = useAppData();
@@ -98,6 +100,11 @@ function ClassicAdminTabs() {
 
 export default function AdminLayout() {
   const { user, isLoading } = useAuth();
+
+  useEffect(() => {
+    registerForPushNotifications().catch(() => {});
+  }, []);
+
   if (isLoading) {
     return (
       <View style={{ flex: 1, backgroundColor: '#030612', justifyContent: 'center', alignItems: 'center' }}>

@@ -13,6 +13,7 @@ import { useAppData } from '@/contexts/AppDataContext';
 import HexFrame from '@/components/HexFrame';
 import * as Haptics from 'expo-haptics';
 import FirebaseSyncStatus from '@/components/FirebaseSyncStatus';
+import SubscriptionExpiryBanner from '@/components/SubscriptionExpiryBanner';
 
 const ROLE_COLORS: Record<string, string> = {
   admin: Colors.primary, teacher: '#1A6B5C', parent: '#7B3FA0', guest: Colors.accent,
@@ -216,6 +217,7 @@ export default function AdminDashboard() {
         </LinearGradient>
 
         <View style={styles.body}>
+          <SubscriptionExpiryBanner />
           <BannerCarousel />
           <Text style={styles.sectionTitle}>الإجراءات السريعة</Text>
           <View style={styles.quickActions}>

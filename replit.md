@@ -93,13 +93,25 @@ Admin password can be changed from Settings → Developer panel → Admin passwo
 ## Routes
 - `/login` — role selection & login
 - `/register` — create teacher/parent account
+- `/school-login` — Firebase Auth login for school admins
+- `/privacy` — Privacy Policy & Terms of Service (Arabic, tabbed)
+- `/onboarding` — 5-step onboarding guide for new school admins
 - `/(admin)/` — admin dashboard tabs
 - `/(teacher)/` — teacher interface tabs
 - `/(parent)/` — parent portal tabs
 - `/(guest)/` — public landing page
 
+## SaaS Multi-Tenant Features
+- `lib/subscription-tiers.ts` — 4 tiers: Trial/Basic(99)/Pro(199)/Enterprise(349)
+- `lib/school-auth.ts` — Firebase Auth per-school admin accounts
+- `lib/notifications.ts` — Push notifications via expo-notifications
+- `components/SubscriptionExpiryBanner.tsx` — Warning banner when subscription expires ≤14 days
+- Admin dashboard shows live subscription expiry warning
+
 ## Important Notes
 - School email: Ahbaballah2026@hotmail.com
 - Default admin password: 1234 (configurable via developer panel)
+- Firebase project: ahbabullah-e85a6
 - All AsyncStorage saves also sync to PostgreSQL cloud via /api/state
 - Frontend ENOENT error on Metro watcher: transient, restart frontend workflow resolves it
+- expo-notifications registered for push on admin login

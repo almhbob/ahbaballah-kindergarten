@@ -30,6 +30,8 @@ function RootLayoutNav() {
       <Stack.Screen name="(admin)"      options={{ headerShown: false }} />
       <Stack.Screen name="(teacher)"    options={{ headerShown: false }} />
       <Stack.Screen name="(parent)"     options={{ headerShown: false }} />
+      <Stack.Screen name="privacy"      options={{ headerShown: false }} />
+      <Stack.Screen name="onboarding"   options={{ headerShown: false }} />
     </Stack>
   );
 }

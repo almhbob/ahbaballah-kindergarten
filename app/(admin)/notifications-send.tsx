@@ -10,6 +10,7 @@ import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { Colors } from '@/constants/colors';
 import { useAppData } from '@/contexts/AppDataContext';
+import { sendLocalNotificationNow } from '@/lib/notifications';
 
 type Audience = 'all' | 'parents' | 'teachers' | 'level_براعم' | 'level_مستوى أول' | 'level_مستوى ثاني';
 type NotifType = 'general' | 'exam' | 'event' | 'urgent' | 'financial';
@@ -54,14 +55,14 @@ export default function NotificationsSendScreen() {
     return students.filter(s => s.level === level).length;
   })();
 
-  function handleSend() {
+  async function handleSend() {
     if (!title.trim() || !body.trim()) {
       Alert.alert('تنبيه', 'الرجاء إدخال العنوان والمحتوى');
       return;
     }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setSending(true);
-    setTimeout(() => {
+    try {
       const now = new Date().toISOString();
       const typeOpt = TYPE_OPTIONS.find(t => t.key === type)!;
       addNews({
@@ -71,11 +72,17 @@ export default function NotificationsSendScreen() {
         date: now.split('T')[0],
         type: 'news',
       });
-      setSending(false);
-      setSent(true);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      setTimeout(() => { setSent(false); setTitle(''); setBody(''); }, 3000);
-    }, 800);
+      await sendLocalNotificationNow(
+        `${typeOpt.label}: ${title.trim()}`,
+        body.trim(),
+      );
+    } catch (e) {
+      console.warn('[Notif] send error:', e);
+    }
+    setSending(false);
+    setSent(true);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setTimeout(() => { setSent(false); setTitle(''); setBody(''); }, 3000);
   }
 
   return (

@@ -285,6 +285,16 @@ export default function SettingsScreen() {
           </Pressable>
         </View>
 
+        <SectionHeader title="قانوني" />
+        <View style={styles.section}>
+          <SettingRow
+            icon="shield-check"
+            label="سياسة الخصوصية والشروط"
+            onPress={() => router.push('/privacy')}
+            color="#6366F1"
+          />
+        </View>
+
         <SectionHeader title="خطر" />
         <View style={styles.section}>
           <Pressable
