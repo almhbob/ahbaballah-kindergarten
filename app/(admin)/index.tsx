@@ -235,6 +235,7 @@ export default function AdminDashboard() {
             <QuickAction icon="image-multiple" label="الألبوم" color="#EC4899" onPress={() => router.push('/(admin)/gallery')} />
             <QuickAction icon="bell-plus" label="إشعار جماعي" color="#7C3AED" onPress={() => router.push('/(admin)/notifications-send')} />
             <QuickAction icon="chart-donut" label="التحليلات" color="#06B6D4" onPress={() => router.push('/(admin)/analytics')} />
+            <QuickAction icon="palette" label="الهوية البصرية" color="#A855F7" onPress={() => router.push('/(admin)/branding')} />
           </View>
 
           <LoginChart history={loginHistory} />

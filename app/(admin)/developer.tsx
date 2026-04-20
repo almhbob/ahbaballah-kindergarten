@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Pressable, Platform, Alert,
-  Switch, TextInput, Modal, Animated,
+  Switch, TextInput, Modal, Animated, ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -10,6 +10,7 @@ import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors } from '@/constants/colors';
 import { useAppData, Banner, BannerType, AppSettings, DEFAULT_APP_SETTINGS } from '@/contexts/AppDataContext';
+import { useSchoolTheme, SchoolRegistration, COLOR_PRESETS } from '@/contexts/SchoolThemeContext';
 import * as Haptics from 'expo-haptics';
 
 function genId() {
@@ -214,18 +215,19 @@ function PasswordGate({ correctPassword, onUnlock }: { correctPassword: string; 
   );
 }
 
-type SectionKey = 'stats' | 'school' | 'features' | 'security' | 'banners' | 'dev' | 'data' | 'sysinfo' | 'danger';
+type SectionKey = 'stats' | 'schools' | 'school' | 'features' | 'security' | 'banners' | 'dev' | 'data' | 'sysinfo' | 'danger';
 
 const SECTIONS: { key: SectionKey; icon: string; iconLib: 'ion' | 'mci'; label: string; color: string }[] = [
   { key: 'stats',    icon: 'bar-chart',          iconLib: 'ion', label: 'إحصاءات التطبيق',   color: '#3B82F6' },
-  { key: 'school',   icon: 'school',              iconLib: 'mci', label: 'إعدادات الروضة',   color: '#10B981' },
-  { key: 'features', icon: 'toggle-switch',       iconLib: 'mci', label: 'مفاتيح الميزات',    color: '#8B5CF6' },
-  { key: 'security', icon: 'shield-lock',         iconLib: 'mci', label: 'الأمان وكلمات المرور', color: '#F59E0B' },
-  { key: 'banners',  icon: 'bullhorn',            iconLib: 'mci', label: 'الإعلانات والبنرات', color: Colors.accent },
-  { key: 'dev',      icon: 'code-braces',         iconLib: 'mci', label: 'معلومات المطوّر',   color: '#14B8A6' },
-  { key: 'data',     icon: 'database',            iconLib: 'mci', label: 'إدارة البيانات',    color: '#6366F1' },
-  { key: 'sysinfo',  icon: 'information-outline', iconLib: 'mci', label: 'معلومات النظام',    color: '#64748B' },
-  { key: 'danger',   icon: 'alert-circle',        iconLib: 'mci', label: 'منطقة الخطر',       color: Colors.danger },
+  { key: 'schools',  icon: 'domain',             iconLib: 'mci', label: 'إدارة الروضات (SaaS)', color: '#A855F7' },
+  { key: 'school',   icon: 'school',             iconLib: 'mci', label: 'إعدادات الروضة النشطة', color: '#10B981' },
+  { key: 'features', icon: 'toggle-switch',      iconLib: 'mci', label: 'مفاتيح الميزات',    color: '#8B5CF6' },
+  { key: 'security', icon: 'shield-lock',        iconLib: 'mci', label: 'الأمان وكلمات المرور', color: '#F59E0B' },
+  { key: 'banners',  icon: 'bullhorn',           iconLib: 'mci', label: 'الإعلانات والبنرات', color: Colors.accent },
+  { key: 'dev',      icon: 'code-braces',        iconLib: 'mci', label: 'معلومات المطوّر',   color: '#14B8A6' },
+  { key: 'data',     icon: 'database',           iconLib: 'mci', label: 'إدارة البيانات',    color: '#6366F1' },
+  { key: 'sysinfo',  icon: 'information-outline',iconLib: 'mci', label: 'معلومات النظام',    color: '#64748B' },
+  { key: 'danger',   icon: 'alert-circle',       iconLib: 'mci', label: 'منطقة الخطر',       color: Colors.danger },
 ];
 
 function SectionHeader({ sectionKey, open, onToggle }: { sectionKey: SectionKey; open: boolean; onToggle: () => void }) {
@@ -257,11 +259,24 @@ export default function DeveloperScreen() {
     appSettings, updateAppSettings,
   } = useAppData();
 
+  const {
+    schools, activeSchoolId, switchSchool, registerSchool,
+    editSchoolEntry, removeSchool, refreshSchools, branding,
+  } = useSchoolTheme();
+
   const [unlocked,       setUnlocked]       = useState(false);
   const [open,           setOpen]           = useState<Record<SectionKey, boolean>>({
-    stats: true, school: false, features: false, security: false,
+    stats: true, schools: false, school: false, features: false, security: false,
     banners: false, dev: false, data: false, sysinfo: false, danger: false,
   });
+
+  // School registration form
+  const [showSchoolForm, setShowSchoolForm] = useState(false);
+  const [editingSchool,  setEditingSchool]  = useState<SchoolRegistration | null>(null);
+  const [schoolFormDraft, setSchoolFormDraft] = useState<Partial<SchoolRegistration>>({
+    primaryColor: '#0c1155', accentColor: '#c9952a', status: 'trial',
+  });
+  const [schoolFormSaving, setSchoolFormSaving] = useState(false);
   const [showBannerForm, setShowBannerForm] = useState(false);
   const [editingBanner,  setEditingBanner]  = useState<Banner | null>(null);
   const [schoolDraft,    setSchoolDraft]    = useState({ ...schoolInfo });
@@ -391,6 +406,135 @@ export default function DeveloperScreen() {
                 </View>
               ))}
             </View>
+          </View>
+        )}
+
+        {/* ══ SCHOOLS (SaaS) ══ */}
+        <SectionHeader sectionKey="schools" open={open.schools} onToggle={() => toggle('schools')} />
+        {open.schools && (
+          <View style={sty.secBody}>
+
+            {/* Active school badge */}
+            <View style={[sty.schoolActiveBadge, { borderColor: branding.accentColor + '60', backgroundColor: branding.primaryColor + '15' }]}>
+              <MaterialCommunityIcons name="check-circle" size={16} color={branding.accentColor} />
+              <View style={{ flex: 1 }}>
+                <Text style={[sty.schoolActiveName, { color: branding.primaryColor }]}>{branding.name}</Text>
+                <Text style={sty.schoolActiveId}>ID: {activeSchoolId}</Text>
+              </View>
+              <Pressable
+                style={[sty.schoolBrandBtn, { backgroundColor: branding.primaryColor }]}
+                onPress={() => router.push('/(admin)/branding')}
+              >
+                <MaterialCommunityIcons name="palette" size={14} color={branding.accentColor} />
+                <Text style={[sty.schoolBrandBtnTxt, { color: branding.accentColor }]}>الهوية</Text>
+              </Pressable>
+            </View>
+
+            {/* Registered schools list */}
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginVertical: 8 }}>
+              <Pressable
+                style={sty.addSchoolBtn}
+                onPress={() => {
+                  setEditingSchool(null);
+                  setSchoolFormDraft({ primaryColor: '#0c1155', accentColor: '#c9952a', status: 'trial' });
+                  setShowSchoolForm(true);
+                }}
+              >
+                <Ionicons name="add" size={16} color="#A855F7" />
+                <Text style={sty.addSchoolTxt}>إضافة روضة</Text>
+              </Pressable>
+              <Pressable onPress={refreshSchools}>
+                <Ionicons name="refresh" size={18} color={Colors.textLight} />
+              </Pressable>
+            </View>
+
+            {schools.length === 0 ? (
+              <View style={sty.emptySchools}>
+                <MaterialCommunityIcons name="domain-off" size={32} color={Colors.textLight} />
+                <Text style={sty.emptySchoolsTxt}>لا توجد روضات مسجّلة{'\n'}أضف روضتك الأولى الآن</Text>
+              </View>
+            ) : schools.map(sch => {
+              const isActive = sch.id === activeSchoolId;
+              const statusColors: Record<string, string> = {
+                active: Colors.success, trial: Colors.warning, suspended: Colors.danger,
+              };
+              const statusLabels: Record<string, string> = {
+                active: 'نشطة', trial: 'تجريبية', suspended: 'موقوفة',
+              };
+              return (
+                <View key={sch.id} style={[sty.schoolCard, isActive && { borderColor: '#A855F7' }]}>
+                  <View style={s2.schoolCardTop}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={sty.schoolCardName}>{sch.name}</Text>
+                      <Text style={sty.schoolCardId}>ID: {sch.id}</Text>
+                      <Text style={sty.schoolCardPhone}>{sch.adminPhone}</Text>
+                    </View>
+                    <View style={{ alignItems: 'flex-end', gap: 6 }}>
+                      <View style={[s2.statusBadge, { backgroundColor: statusColors[sch.status] + '20' }]}>
+                        <Text style={[s2.statusTxt, { color: statusColors[sch.status] }]}>
+                          {statusLabels[sch.status]}
+                        </Text>
+                      </View>
+                      <View style={{ flexDirection: 'row', gap: 4 }}>
+                        <View style={[s2.colorDot, { backgroundColor: sch.primaryColor }]} />
+                        <View style={[s2.colorDot, { backgroundColor: sch.accentColor }]} />
+                      </View>
+                    </View>
+                  </View>
+                  <View style={s2.schoolCardActions}>
+                    {!isActive && (
+                      <Pressable
+                        style={[s2.actionBtn, { backgroundColor: '#A855F720', borderColor: '#A855F760' }]}
+                        onPress={() => {
+                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+                          Alert.alert(
+                            'تبديل الروضة',
+                            `ستنتقل إلى روضة "${sch.name}". سيتم إعادة تحميل بيانات الروضة.`,
+                            [
+                              { text: 'إلغاء', style: 'cancel' },
+                              { text: 'تبديل', onPress: () => switchSchool(sch.id) },
+                            ]
+                          );
+                        }}
+                      >
+                        <MaterialCommunityIcons name="swap-horizontal" size={14} color="#A855F7" />
+                        <Text style={[s2.actionTxt, { color: '#A855F7' }]}>تبديل</Text>
+                      </Pressable>
+                    )}
+                    {isActive && (
+                      <View style={[s2.actionBtn, { backgroundColor: Colors.success + '15', borderColor: Colors.success + '40' }]}>
+                        <Ionicons name="checkmark" size={14} color={Colors.success} />
+                        <Text style={[s2.actionTxt, { color: Colors.success }]}>نشطة الآن</Text>
+                      </View>
+                    )}
+                    <Pressable
+                      style={[s2.actionBtn, { backgroundColor: Colors.info + '15', borderColor: Colors.info + '40' }]}
+                      onPress={() => {
+                        setEditingSchool(sch);
+                        setSchoolFormDraft({ ...sch });
+                        setShowSchoolForm(true);
+                      }}
+                    >
+                      <Ionicons name="pencil" size={14} color={Colors.info} />
+                      <Text style={[s2.actionTxt, { color: Colors.info }]}>تعديل</Text>
+                    </Pressable>
+                    <Pressable
+                      style={[s2.actionBtn, { backgroundColor: Colors.danger + '15', borderColor: Colors.danger + '40' }]}
+                      onPress={() => Alert.alert('حذف الروضة', `حذف "${sch.name}"؟`, [
+                        { text: 'إلغاء', style: 'cancel' },
+                        { text: 'حذف', style: 'destructive', onPress: () => removeSchool(sch.id) },
+                      ])}
+                    >
+                      <Ionicons name="trash" size={14} color={Colors.danger} />
+                      <Text style={[s2.actionTxt, { color: Colors.danger }]}>حذف</Text>
+                    </Pressable>
+                  </View>
+                  {sch.expiresAt && (
+                    <Text style={s2.expiresTxt}>ينتهي: {sch.expiresAt}</Text>
+                  )}
+                </View>
+              );
+            })}
           </View>
         )}
 
@@ -718,6 +862,108 @@ export default function DeveloperScreen() {
         onClose={() => setShowBannerForm(false)}
         onSave={handleSaveBanner}
       />
+
+      {/* ═══ School Registration Modal ═══ */}
+      <Modal visible={showSchoolForm} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowSchoolForm(false)}>
+        <View style={{ flex: 1, backgroundColor: Colors.background }}>
+          <View style={[m.modalHead, { paddingTop: insets.top + 16 }]}>
+            <Pressable
+              onPress={async () => {
+                if (!schoolFormDraft.name?.trim() || !schoolFormDraft.id?.trim()) {
+                  Alert.alert('تنبيه', 'يرجى ملء اسم الروضة والمعرّف');
+                  return;
+                }
+                setSchoolFormSaving(true);
+                const school: SchoolRegistration = {
+                  id:           schoolFormDraft.id!.trim().replace(/\s+/g, '_').toLowerCase(),
+                  name:         schoolFormDraft.name!.trim(),
+                  logoUrl:      schoolFormDraft.logoUrl,
+                  primaryColor: schoolFormDraft.primaryColor ?? '#0c1155',
+                  accentColor:  schoolFormDraft.accentColor  ?? '#c9952a',
+                  adminPhone:   schoolFormDraft.adminPhone   ?? '',
+                  status:       schoolFormDraft.status       ?? 'trial',
+                  createdAt:    editingSchool?.createdAt ?? new Date().toISOString().split('T')[0],
+                  expiresAt:    schoolFormDraft.expiresAt,
+                  notes:        schoolFormDraft.notes,
+                };
+                if (editingSchool) {
+                  await editSchoolEntry(editingSchool.id, school);
+                } else {
+                  await registerSchool(school);
+                }
+                setSchoolFormSaving(false);
+                setShowSchoolForm(false);
+              }}
+              style={m.saveBtn}
+            >
+              {schoolFormSaving
+                ? <ActivityIndicator size="small" color="#fff" />
+                : <Text style={m.saveBtnTxt}>{editingSchool ? 'تحديث' : 'تسجيل'}</Text>
+              }
+            </Pressable>
+            <Text style={m.modalTitle}>{editingSchool ? 'تعديل الروضة' : 'تسجيل روضة جديدة'}</Text>
+            <Pressable onPress={() => setShowSchoolForm(false)}>
+              <Text style={m.cancelTxt}>إلغاء</Text>
+            </Pressable>
+          </View>
+
+          <ScrollView style={{ flex: 1, padding: 20 }} keyboardShouldPersistTaps="handled">
+            {[
+              { key: 'name',       label: 'اسم الروضة *',            placeholder: 'روضة أحباب الله' },
+              { key: 'id',         label: 'المعرّف (ID) *',           placeholder: 'ahbabullah_2' },
+              { key: 'adminPhone', label: 'هاتف المدير',             placeholder: '+249912345678' },
+              { key: 'logoUrl',    label: 'رابط الشعار',              placeholder: 'https://...' },
+              { key: 'expiresAt',  label: 'تاريخ انتهاء الاشتراك',   placeholder: '2026-09-01' },
+              { key: 'notes',      label: 'ملاحظات',                  placeholder: 'أي ملاحظات...' },
+            ].map(({ key, label, placeholder }) => (
+              <View key={key}>
+                <Text style={m.label}>{label}</Text>
+                <TextInput
+                  style={m.input}
+                  value={(schoolFormDraft as any)[key] ?? ''}
+                  onChangeText={v => setSchoolFormDraft(p => ({ ...p, [key]: v }))}
+                  placeholder={placeholder}
+                  placeholderTextColor={Colors.textLight}
+                  textAlign="right"
+                  autoCapitalize="none"
+                />
+              </View>
+            ))}
+
+            <Text style={m.label}>الحالة</Text>
+            <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16 }}>
+              {(['active', 'trial', 'suspended'] as const).map(s => {
+                const cols: Record<string, string> = { active: Colors.success, trial: Colors.warning, suspended: Colors.danger };
+                const labs: Record<string, string> = { active: 'نشطة', trial: 'تجريبية', suspended: 'موقوفة' };
+                return (
+                  <Pressable key={s}
+                    style={[m.typeChip, schoolFormDraft.status === s && { backgroundColor: cols[s] + '30', borderColor: cols[s] }]}
+                    onPress={() => setSchoolFormDraft(p => ({ ...p, status: s }))}>
+                    <Text style={[m.typeText, schoolFormDraft.status === s && { color: cols[s], fontFamily: 'Inter_700Bold' }]}>{labs[s]}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            <Text style={m.label}>لوحة الألوان</Text>
+            {COLOR_PRESETS.map((p, i) => (
+              <Pressable key={i}
+                style={[m.typeChip, { marginBottom: 8, justifyContent: 'flex-start', gap: 10 },
+                  schoolFormDraft.primaryColor === p.primary && { borderColor: p.accent, backgroundColor: p.primary + '15' }]}
+                onPress={() => setSchoolFormDraft(prev => ({ ...prev, primaryColor: p.primary, accentColor: p.accent }))}>
+                <View style={{ flexDirection: 'row', gap: 4 }}>
+                  <View style={{ width: 16, height: 16, borderRadius: 8, backgroundColor: p.dark1 }} />
+                  <View style={{ width: 16, height: 16, borderRadius: 8, backgroundColor: p.primary }} />
+                  <View style={{ width: 16, height: 16, borderRadius: 8, backgroundColor: p.accent }} />
+                </View>
+                <Text style={[m.typeText, schoolFormDraft.primaryColor === p.primary && { fontFamily: 'Inter_700Bold', color: Colors.text }]}>
+                  {p.label}
+                </Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -807,4 +1053,33 @@ const sty = StyleSheet.create({
 
   emptyBox: { alignItems: 'center', padding: 24, gap: 8 },
   emptyTxt: { fontSize: 13, color: Colors.textLight, fontFamily: 'Inter_400Regular' },
+
+  // Schools SaaS styles
+  schoolActiveBadge: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12, borderRadius: 12, borderWidth: 1.5, marginBottom: 8 },
+  schoolActiveName:  { fontSize: 14, fontFamily: 'Inter_700Bold' },
+  schoolActiveId:    { fontSize: 10, fontFamily: 'Inter_400Regular', color: Colors.textLight, marginTop: 1 },
+  schoolBrandBtn:    { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 },
+  schoolBrandBtnTxt: { fontSize: 11, fontFamily: 'Inter_600SemiBold' },
+
+  addSchoolBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 7, backgroundColor: '#A855F715', borderRadius: 10, borderWidth: 1, borderColor: '#A855F730' },
+  addSchoolTxt: { fontSize: 13, fontFamily: 'Inter_600SemiBold', color: '#A855F7' },
+
+  emptySchools:    { alignItems: 'center', padding: 24, gap: 8 },
+  emptySchoolsTxt: { fontSize: 12, color: Colors.textLight, fontFamily: 'Inter_400Regular', textAlign: 'center', lineHeight: 18 },
+
+  schoolCard:     { backgroundColor: Colors.background, borderRadius: 12, padding: 12, borderWidth: 1, borderColor: Colors.border, marginBottom: 10 },
+  schoolCardName: { fontSize: 14, fontFamily: 'Inter_700Bold', color: Colors.text, textAlign: 'right' },
+  schoolCardId:   { fontSize: 10, fontFamily: 'Inter_400Regular', color: Colors.textLight, marginTop: 2, textAlign: 'right' },
+  schoolCardPhone:{ fontSize: 11, fontFamily: 'Inter_400Regular', color: Colors.textSecondary, marginTop: 1, textAlign: 'right' },
+});
+
+const s2 = StyleSheet.create({
+  schoolCardTop:    { flexDirection: 'row', gap: 10 },
+  schoolCardActions:{ flexDirection: 'row', gap: 6, marginTop: 10, flexWrap: 'wrap' },
+  actionBtn:        { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, borderWidth: 1 },
+  actionTxt:        { fontSize: 11, fontFamily: 'Inter_600SemiBold' },
+  statusBadge:      { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
+  statusTxt:        { fontSize: 10, fontFamily: 'Inter_600SemiBold' },
+  colorDot:         { width: 14, height: 14, borderRadius: 7, borderWidth: 1, borderColor: 'rgba(0,0,0,0.1)' },
+  expiresTxt:       { fontSize: 10, fontFamily: 'Inter_400Regular', color: Colors.textLight, textAlign: 'right', marginTop: 6 },
 });

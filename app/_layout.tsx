@@ -15,6 +15,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { queryClient } from "@/lib/query-client";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { AppDataProvider } from "@/contexts/AppDataContext";
+import { SchoolThemeProvider } from "@/contexts/SchoolThemeContext";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 SplashScreen.preventAutoHideAsync();
@@ -54,11 +55,13 @@ export default function RootLayout() {
         <SafeAreaProvider>
           <GestureHandlerRootView style={{ flex: 1 }}>
             <KeyboardProvider>
-              <AuthProvider>
-                <AppDataProvider>
-                  <RootLayoutNav />
-                </AppDataProvider>
-              </AuthProvider>
+              <SchoolThemeProvider>
+                <AuthProvider>
+                  <AppDataProvider>
+                    <RootLayoutNav />
+                  </AppDataProvider>
+                </AuthProvider>
+              </SchoolThemeProvider>
             </KeyboardProvider>
           </GestureHandlerRootView>
         </SafeAreaProvider>

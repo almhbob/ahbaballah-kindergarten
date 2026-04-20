@@ -54,6 +54,22 @@ Admin password can be changed from Settings → Developer panel → Admin passwo
 - **Sync strategy**: Local state (AsyncStorage) + Express API + Firestore (triple-layer). Firestore listeners override local on mount. Each write goes to all three.
 - **Missing**: EXPO_PUBLIC_FIREBASE_API_KEY must be added to Replit Secrets
 
+## School Branding & Multi-School System
+- **Architecture**: `SchoolThemeContext` provides `branding` + `DynamicTheme` to entire app
+- **Active school**: stored in `lib/active-school.ts` (module var + AsyncStorage `active_school_id`)
+- **Firestore paths**:
+  - Branding: `schools/{schoolId}/config/branding`
+  - School registry: `schoolRegistry/{schoolId}` (root level — cross-school)
+- **Color presets**: 6 curated palettes in `COLOR_PRESETS` array (SchoolThemeContext)
+- **Hooks**: `useSchoolTheme()` → `{ branding, theme, schools, activeSchoolId, updateBranding, switchSchool, registerSchool, ... }`
+- **DynamicTheme**: `primary`, `accent`, `adminGrad`, `goldGrad`, etc. — derived from branding colors
+- **Key files**:
+  - `lib/active-school.ts` — active schoolId module
+  - `contexts/SchoolThemeContext.tsx` — full branding system
+  - `app/(admin)/branding.tsx` — visual identity editor (logo, colors, preview)
+  - Developer panel → "إدارة الروضات (SaaS)" section — add/edit/delete/switch schools
+- **Multi-school SaaS**: Developer panel allows registering unlimited schools, each with unique ID, colors, subscription status, expiry date
+
 ## Screens Added (Recent)
 - `app/(admin)/analytics.tsx` — comprehensive admin analytics dashboard
 - `app/(admin)/notifications-send.tsx` — bulk notification sender
