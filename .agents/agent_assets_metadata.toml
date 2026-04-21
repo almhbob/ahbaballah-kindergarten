@@ -1,0 +1,14 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "F4m6i41miE4T82MhQlO8a"
+uri = "file://docs/vital-data.md"
+type = "text"
+title = "البيانات الحيوية — روضة أحباب الله"
+
+[[outputs]]
+id = "mnnCHWCVGtrmH_0j3sl_7"
+uri = "file://docs/google-play-publishing-guide.md"
+type = "text"
+title = "دليل النشر الاحترافي على Google Play"
