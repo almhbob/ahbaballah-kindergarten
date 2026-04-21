@@ -13,40 +13,54 @@ const firebaseConfig = {
   measurementId:     process.env.EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID     ?? '',
 };
 
-let app: FirebaseApp;
-let db: Firestore;
-let storage: FirebaseStorage;
-let auth: Auth;
+let app: FirebaseApp | null = null;
+let db: Firestore | null = null;
+let storage: FirebaseStorage | null = null;
+let auth: Auth | null = null;
 
-export function initFirebase() {
-  if (!firebaseConfig.projectId) {
-    console.warn('[Firebase] EXPO_PUBLIC_FIREBASE_PROJECT_ID not set — Firebase disabled');
+export function initFirebase(): boolean {
+  if (!firebaseConfig.projectId || !firebaseConfig.apiKey) {
+    console.warn('[Firebase] Missing config — Firebase disabled');
     return false;
   }
-  if (getApps().length === 0) {
-    app = initializeApp(firebaseConfig);
-  } else {
-    app = getApps()[0];
+  try {
+    if (getApps().length === 0) {
+      app = initializeApp(firebaseConfig);
+    } else {
+      app = getApps()[0];
+    }
+    db      = getFirestore(app);
+    storage = getStorage(app);
+    auth    = getAuth(app);
+    return true;
+  } catch (err) {
+    console.error('[Firebase] initFirebase failed:', err);
+    return false;
   }
-  db      = getFirestore(app);
-  storage = getStorage(app);
-  auth    = getAuth(app);
-  return true;
 }
 
 export function getDb(): Firestore {
-  if (!db) initFirebase();
-  return db;
+  if (!db) {
+    const ok = initFirebase();
+    if (!ok || !db) throw new Error('[Firebase] Firestore not initialized — check env vars');
+  }
+  return db!;
 }
 
 export function getFirebaseStorage(): FirebaseStorage {
-  if (!storage) initFirebase();
-  return storage;
+  if (!storage) {
+    const ok = initFirebase();
+    if (!ok || !storage) throw new Error('[Firebase] Storage not initialized');
+  }
+  return storage!;
 }
 
 export function getFirebaseAuth(): Auth {
-  if (!auth) initFirebase();
-  return auth;
+  if (!auth) {
+    const ok = initFirebase();
+    if (!ok || !auth) throw new Error('[Firebase] Auth not initialized');
+  }
+  return auth!;
 }
 
 export function isFirebaseReady(): boolean {

@@ -18,8 +18,12 @@ function docRef(path: string, id: string) {
 }
 
 function guard(): boolean {
-  if (!isFirebaseReady()) { console.warn('[Firestore] Firebase not ready'); return false; }
+  if (!isFirebaseReady()) { console.warn('[Firestore] Firebase not ready — skipping sync'); return false; }
   return true;
+}
+
+function onSnapErr(label: string) {
+  return (err: Error) => console.error(`[Firestore] ${label} listener error:`, err.message);
 }
 
 // ─── Students ────────────────────────────────────────────────────────────────
@@ -36,9 +40,11 @@ export async function fsDeleteStudent(id: string) {
 
 export function fsListenStudents(cb: (students: Student[]) => void): Unsubscribe {
   if (!guard()) return () => {};
-  return onSnapshot(col('students'), snap => {
-    cb(snap.docs.map(d => d.data() as Student));
-  });
+  return onSnapshot(
+    col('students'),
+    snap => { cb(snap.docs.map(d => d.data() as Student)); },
+    onSnapErr('students'),
+  );
 }
 
 export async function fsFetchStudents(): Promise<Student[]> {
@@ -61,9 +67,11 @@ export async function fsDeleteEmployee(id: string) {
 
 export function fsListenEmployees(cb: (employees: Employee[]) => void): Unsubscribe {
   if (!guard()) return () => {};
-  return onSnapshot(col('employees'), snap => {
-    cb(snap.docs.map(d => d.data() as Employee));
-  });
+  return onSnapshot(
+    col('employees'),
+    snap => { cb(snap.docs.map(d => d.data() as Employee)); },
+    onSnapErr('employees'),
+  );
 }
 
 export async function fsFetchEmployees(): Promise<Employee[]> {
@@ -82,9 +90,11 @@ export async function fsSendMessage(msg: Message) {
 export function fsListenMessages(cb: (msgs: Message[]) => void): Unsubscribe {
   if (!guard()) return () => {};
   const q = query(col('messages'), orderBy('date', 'asc'), limit(200));
-  return onSnapshot(q, snap => {
-    cb(snap.docs.map(d => d.data() as Message));
-  });
+  return onSnapshot(
+    q,
+    snap => { cb(snap.docs.map(d => d.data() as Message)); },
+    onSnapErr('messages'),
+  );
 }
 
 // ─── News ────────────────────────────────────────────────────────────────────
@@ -102,9 +112,11 @@ export async function fsDeleteNews(id: string) {
 export function fsListenNews(cb: (news: NewsItem[]) => void): Unsubscribe {
   if (!guard()) return () => {};
   const q = query(col('news'), orderBy('date', 'desc'), limit(50));
-  return onSnapshot(q, snap => {
-    cb(snap.docs.map(d => d.data() as NewsItem));
-  });
+  return onSnapshot(
+    q,
+    snap => { cb(snap.docs.map(d => d.data() as NewsItem)); },
+    onSnapErr('news'),
+  );
 }
 
 // ─── Inbox ────────────────────────────────────────────────────────────────────
@@ -122,9 +134,11 @@ export async function fsUpdateInbox(id: string, data: Partial<InboxMessage>) {
 export function fsListenInbox(cb: (inbox: InboxMessage[]) => void): Unsubscribe {
   if (!guard()) return () => {};
   const q = query(col('inbox'), orderBy('date', 'desc'), limit(100));
-  return onSnapshot(q, snap => {
-    cb(snap.docs.map(d => d.data() as InboxMessage));
-  });
+  return onSnapshot(
+    q,
+    snap => { cb(snap.docs.map(d => d.data() as InboxMessage)); },
+    onSnapErr('inbox'),
+  );
 }
 
 // ─── Registration Requests ────────────────────────────────────────────────────
@@ -147,9 +161,11 @@ export async function fsDeleteRegistrationRequest(id: string) {
 export function fsListenRegistrationRequests(cb: (reqs: RegistrationRequest[]) => void): Unsubscribe {
   if (!guard()) return () => {};
   const q = query(col('registrationRequests'), orderBy('createdAt', 'desc'));
-  return onSnapshot(q, snap => {
-    cb(snap.docs.map(d => d.data() as RegistrationRequest));
-  });
+  return onSnapshot(
+    q,
+    snap => { cb(snap.docs.map(d => d.data() as RegistrationRequest)); },
+    onSnapErr('registrationRequests'),
+  );
 }
 
 // ─── School Events ────────────────────────────────────────────────────────────
@@ -171,9 +187,12 @@ export async function fsDeleteSchoolEvent(id: string) {
 
 export function fsListenSchoolEvents(cb: (events: SchoolEvent[]) => void): Unsubscribe {
   if (!guard()) return () => {};
-  return onSnapshot(col('schoolEvents'), snap => {
-    cb(snap.docs.map(d => d.data() as SchoolEvent));
-  });
+  const q = query(col('schoolEvents'), orderBy('date', 'asc'));
+  return onSnapshot(
+    q,
+    snap => { cb(snap.docs.map(d => d.data() as SchoolEvent)); },
+    onSnapErr('schoolEvents'),
+  );
 }
 
 // ─── Gallery ──────────────────────────────────────────────────────────────────
@@ -191,9 +210,11 @@ export async function fsDeleteGalleryPhoto(id: string) {
 export function fsListenGalleryPhotos(cb: (photos: GalleryPhoto[]) => void): Unsubscribe {
   if (!guard()) return () => {};
   const q = query(col('galleryPhotos'), orderBy('date', 'desc'));
-  return onSnapshot(q, snap => {
-    cb(snap.docs.map(d => d.data() as GalleryPhoto));
-  });
+  return onSnapshot(
+    q,
+    snap => { cb(snap.docs.map(d => d.data() as GalleryPhoto)); },
+    onSnapErr('galleryPhotos'),
+  );
 }
 
 // ─── School Settings ──────────────────────────────────────────────────────────
@@ -205,9 +226,11 @@ export async function fsSaveSettings(data: Record<string, unknown>) {
 
 export function fsListenSettings(cb: (data: DocumentData) => void): Unsubscribe {
   if (!guard()) return () => {};
-  return onSnapshot(doc(getDb(), 'schools', sid()), snap => {
-    if (snap.exists()) cb(snap.data());
-  });
+  return onSnapshot(
+    doc(getDb(), 'schools', sid()),
+    snap => { if (snap.exists()) cb(snap.data()); },
+    onSnapErr('settings'),
+  );
 }
 
 // ─── School Branding ──────────────────────────────────────────────────────────
@@ -229,9 +252,11 @@ export async function fsGetSchoolBranding(schoolId: string): Promise<SchoolBrand
 
 export function fsListenSchoolBranding(schoolId: string, cb: (b: SchoolBranding | null) => void): Unsubscribe {
   if (!guard()) return () => {};
-  return onSnapshot(doc(getDb(), 'schools', schoolId, 'config', 'branding'), snap => {
-    cb(snap.exists() ? (snap.data() as SchoolBranding) : null);
-  });
+  return onSnapshot(
+    doc(getDb(), 'schools', schoolId, 'config', 'branding'),
+    snap => { cb(snap.exists() ? (snap.data() as SchoolBranding) : null); },
+    onSnapErr('branding'),
+  );
 }
 
 // ─── School Registry (SaaS multi-school) ─────────────────────────────────────

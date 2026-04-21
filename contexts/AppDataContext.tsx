@@ -7,6 +7,7 @@ import {
   fsUpsertEmployee, fsDeleteEmployee, fsListenEmployees,
   fsSendMessage, fsListenMessages,
   fsAddNews, fsDeleteNews, fsListenNews,
+  fsAddInbox, fsUpdateInbox, fsListenInbox,
   fsAddRegistrationRequest, fsUpdateRegistrationRequest, fsDeleteRegistrationRequest, fsListenRegistrationRequests,
   fsAddSchoolEvent, fsUpdateSchoolEvent, fsDeleteSchoolEvent, fsListenSchoolEvents,
   fsAddGalleryPhoto, fsDeleteGalleryPhoto, fsListenGalleryPhotos,
@@ -814,6 +815,10 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       if (data.length > 0) setGalleryPhotos(data);
     }));
 
+    unsubs.push(fsListenInbox(data => {
+      if (data.length > 0) setInbox(data);
+    }));
+
     return () => unsubs.forEach(u => u());
   }, []);
 
@@ -998,6 +1003,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     setInbox(prev => {
       const updated = prev.map(m => m.id === id ? { ...m, reply, read: true } : m);
       saveState('app_inbox', updated);
+      fsUpdateInbox(id, { reply, read: true }).catch(() => {});
       return updated;
     });
   };
@@ -1006,6 +1012,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     setInbox(prev => {
       const updated = prev.map(m => m.id === id ? { ...m, read: true } : m);
       saveState('app_inbox', updated);
+      fsUpdateInbox(id, { read: true }).catch(() => {});
       return updated;
     });
   };
@@ -1017,6 +1024,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         msg.receiverId === 'admin' &&
         msg.senderId !== 'admin' &&
         !prev.some(m => m.senderId === msg.senderId && m.receiverId === 'admin');
+
+      fsSendMessage(msg).catch(() => {});
 
       const updated = [...prev, msg];
 
@@ -1030,13 +1039,13 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
           date: new Date(new Date(msg.date).getTime() + 800).toISOString(),
           read: false,
         };
+        fsSendMessage(autoReply).catch(() => {});
         const withReply = [...updated, autoReply];
         saveState('app_messages', withReply);
         return withReply;
       }
 
       saveState('app_messages', updated);
-      fsSendMessage(msg).catch(() => {});
       return updated;
     });
   };
