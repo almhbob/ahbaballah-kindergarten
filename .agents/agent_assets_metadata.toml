@@ -12,3 +12,9 @@ id = "mnnCHWCVGtrmH_0j3sl_7"
 uri = "file://docs/google-play-publishing-guide.md"
 type = "text"
 title = "دليل النشر الاحترافي على Google Play"
+
+[[outputs]]
+id = "T925M1zC6UfPKwdu7UIqX"
+uri = "file://docs/secrets-setup-guide.md"
+type = "text"
+title = "دليل إعداد النشر التلقائي — 7 خطوات كاملة"
