@@ -10,6 +10,7 @@ import { router } from 'expo-router';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { useAuth, UserRole, AuthUser } from '@/contexts/AuthContext';
 import { useAppData } from '@/contexts/AppDataContext';
+import { useSchoolTheme } from '@/contexts/SchoolThemeContext';
 import { Colors } from '@/constants/colors';
 import HexFrame from '@/components/HexFrame';
 import * as Haptics from 'expo-haptics';
@@ -145,16 +146,10 @@ const ab = StyleSheet.create({
   footerLine2: { fontSize: 9, fontFamily: 'Inter_400Regular', color: 'rgba(255,255,255,0.22)', letterSpacing: 0.3 },
 });
 
-const DETAIL_ITEMS = [
-  { icon: 'person-circle', iconBg: '#EFF6FF', iconColor: '#3B82F6', label: 'المديرة', value: 'أ. سلوى أحمد داموس', section: 'معلومات المؤسسة' },
-  { icon: 'location',      iconBg: '#ECFDF5', iconColor: '#10B981', label: 'الموقع',  value: 'صفيتة الغنوماب — السودان', section: 'معلومات المؤسسة' },
-  { icon: 'mail',          iconBg: '#F5F3FF', iconColor: '#8B5CF6', label: 'البريد',  value: 'Ahbaballah2026@hotmail.com', section: 'معلومات المؤسسة' },
-  { icon: 'layers',        iconBg: '#FEF2F2', iconColor: '#EF4444', label: 'الإصدار', value: 'v2.0 — 2026',               section: 'معلومات التطبيق' },
-  { icon: 'code-slash',    iconBg: '#F0FDFA', iconColor: '#14B8A6', label: 'المطوّر', value: 'Ali Alnassar — DigitalMind', section: 'معلومات التطبيق' },
-];
 
 function AboutCard() {
   const [expanded, setExpanded] = useState(false);
+  const { branding } = useSchoolTheme();
 
   const openLink = async (url: string) => {
     try {
@@ -163,17 +158,23 @@ function AboutCard() {
     } catch { /* ignore */ }
   };
 
+  const mottoWords = (branding.slogan ?? 'جودة • التزام • تميز').split('•').map(w => w.trim()).filter(Boolean);
   const sections = ['معلومات المؤسسة', 'معلومات التطبيق'];
+
+  const dynamicDetails = [
+    { icon: 'layers',     iconBg: '#FEF2F2', iconColor: '#EF4444', label: 'الإصدار', value: 'v2.0 — 2026',               section: 'معلومات التطبيق' },
+    { icon: 'code-slash', iconBg: '#F0FDFA', iconColor: '#14B8A6', label: 'المطوّر', value: 'Ali Alnassar — DigitalMind', section: 'معلومات التطبيق' },
+    { icon: 'business',   iconBg: '#EFF6FF', iconColor: '#3B82F6', label: 'الروضة',  value: branding.name,               section: 'معلومات المؤسسة' },
+    { icon: 'globe',      iconBg: '#ECFDF5', iconColor: '#10B981', label: 'المنصة',  value: 'نُظُم — رياض الأطفال',       section: 'معلومات المؤسسة' },
+  ];
 
   return (
     <View style={ab.card}>
-      {/* ══ DARK GRADIENT HEADER ══ */}
       <LinearGradient
         colors={['#040924', '#0c1155', '#161f7a', '#0c1155', '#040924']}
         start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
         style={ab.topGrad}
       >
-        {/* Hex decorations */}
         <View style={StyleSheet.absoluteFill} pointerEvents="none">
           <View style={{ position: 'absolute', right: -22, top: -22, opacity: 0.15 }}>
             <HexFrame size={100} fill="transparent" stroke="#c9952a" strokeWidth={1.5} />
@@ -181,12 +182,8 @@ function AboutCard() {
           <View style={{ position: 'absolute', left: -14, bottom: -14, opacity: 0.09 }}>
             <HexFrame size={74} fill="transparent" stroke="#ffffff" strokeWidth={1} />
           </View>
-          <View style={{ position: 'absolute', right: 60, bottom: -30, opacity: 0.07 }}>
-            <HexFrame size={50} fill="transparent" stroke="#c9952a" strokeWidth={1} />
-          </View>
         </View>
 
-        {/* Badge + version row */}
         <View style={ab.badgeRow}>
           <View style={ab.verBadge}>
             <Text style={ab.verTxt}>v2.0 • 2026</Text>
@@ -197,16 +194,18 @@ function AboutCard() {
           </View>
         </View>
 
-        {/* Hero: Logo + Name */}
         <View style={ab.heroRow}>
           <View style={ab.logoWrap}>
-            <Image source={require('@/assets/images/logo_main.png')} style={ab.logo} resizeMode="contain" />
+            {branding.logoUrl
+              ? <Image source={{ uri: branding.logoUrl }} style={ab.logo} resizeMode="contain" />
+              : <Image source={require('@/assets/images/logo_main.png')} style={ab.logo} resizeMode="contain" />
+            }
           </View>
           <View style={ab.heroText}>
-            <Text style={ab.schoolName}>روضة أحباب الله</Text>
-            <Text style={ab.schoolSub}>نظام إداري متكامل — صفيتة الغنوماب</Text>
+            <Text style={ab.schoolName} numberOfLines={2}>{branding.name}</Text>
+            <Text style={ab.schoolSub} numberOfLines={1}>{branding.slogan ?? 'نظام إداري متكامل'}</Text>
             <View style={ab.mottoRow}>
-              {['جودة', 'التزام', 'تميز'].map(w => (
+              {mottoWords.map(w => (
                 <View key={w} style={ab.mottoChip}><Text style={ab.mottoTxt}>{w}</Text></View>
               ))}
             </View>
@@ -215,12 +214,11 @@ function AboutCard() {
 
         <View style={ab.divider} />
 
-        {/* Quick info cards */}
         <View style={ab.quickRow}>
           {[
-            { icon: 'account-tie', label: 'المديرة', value: 'سلوى داموس', color: '#818CF8' },
-            { icon: 'map-marker',  label: 'الموقع',  value: 'صفيتة',       color: '#34D399' },
-            { icon: 'calendar',    label: 'التأسيس', value: '2015',         color: '#FCD34D' },
+            { icon: 'domain',    label: 'المنصة',   value: 'نُظُم',   color: '#818CF8' },
+            { icon: 'star',      label: 'الجودة',   value: 'ممتاز',  color: '#34D399' },
+            { icon: 'calendar',  label: 'الإصدار',  value: '2026',   color: '#FCD34D' },
           ].map(q => (
             <View key={q.label} style={ab.quickCard}>
               <MaterialCommunityIcons name={q.icon as any} size={18} color={q.color} />
@@ -230,7 +228,6 @@ function AboutCard() {
           ))}
         </View>
 
-        {/* Action buttons */}
         <View style={ab.actRow}>
           <Pressable
             style={[ab.actBtn, ab.actWa]}
@@ -248,7 +245,6 @@ function AboutCard() {
           </Pressable>
         </View>
 
-        {/* Expand trigger */}
         <Pressable
           style={ab.expandTrigger}
           onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setExpanded(e => !e); }}
@@ -258,11 +254,10 @@ function AboutCard() {
         </Pressable>
       </LinearGradient>
 
-      {/* ══ EXPANDED DETAIL SECTION ══ */}
       {expanded && (
         <View style={ab.detailsWrap}>
           {sections.map(sec => {
-            const items = DETAIL_ITEMS.filter(d => d.section === sec);
+            const items = dynamicDetails.filter(d => d.section === sec);
             return (
               <View key={sec} style={ab.detailSection}>
                 <Text style={ab.detailSectionTitle}>{sec.toUpperCase()}</Text>
@@ -285,7 +280,7 @@ function AboutCard() {
 
       {/* ══ FOOTER ══ */}
       <LinearGradient colors={['#040924', '#0c1155']} style={ab.footerGrad}>
-        <Text style={ab.footerLine1}>© 2026 جميع الحقوق محفوظة — روضة أحباب الله</Text>
+        <Text style={ab.footerLine1}>© 2026 جميع الحقوق محفوظة — نُظُم · {branding.name}</Text>
         <Text style={ab.footerLine2}>Developed by Ali Alnassar • DigitalMind Systems</Text>
       </LinearGradient>
     </View>
@@ -305,6 +300,7 @@ export default function LoginScreen() {
   const insets = useSafeAreaInsets();
   const { login, apiLogin, isBiometricEnabled, enableBiometric, getBiometricUser } = useAuth();
   const { students, employees, appSettings } = useAppData();
+  const { branding } = useSchoolTheme();
 
   const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
   const [credential, setCredential] = useState('');
@@ -487,22 +483,25 @@ export default function LoginScreen() {
                   : { shadowColor: '#c9952a', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.5, shadowRadius: 18, elevation: 10 }),
               }}
             >
-              <Image source={require('@/assets/images/logo_main.png')} style={s.logoImg} resizeMode="contain" />
+              {branding.logoUrl
+                ? <Image source={{ uri: branding.logoUrl }} style={s.logoImg} resizeMode="contain" />
+                : <Image source={require('@/assets/images/logo_main.png')} style={s.logoImg} resizeMode="contain" />
+              }
             </HexFrame>
             <View style={s.outerHexRing} pointerEvents="none">
               <HexFrame size={162} fill="transparent" stroke="rgba(201,149,42,0.22)" strokeWidth={1} />
             </View>
           </View>
 
-          {/* ── School Name ── */}
+          {/* ── School Name (dynamic) ── */}
           <View style={s.schoolNameBlock}>
-            <Text style={s.schoolAr}>روضة أحباب الله</Text>
+            <Text style={s.schoolAr} numberOfLines={2}>{branding.name}</Text>
             <View style={s.schoolLine} />
-            <Text style={s.schoolSub}>الخاصة — صفيتة الغنوماب</Text>
+            <Text style={s.schoolSub} numberOfLines={1}>{branding.slogan ?? 'نظام إداري متكامل'}</Text>
           </View>
 
           <View style={s.mottoRow}>
-            {['جودة', 'التزام', 'تميز'].map((w, i) => (
+            {(branding.slogan ?? 'جودة • التزام • تميز').split('•').map(w => w.trim()).filter(Boolean).map((w, i) => (
               <View key={i} style={s.mottoChip}>
                 <Text style={s.mottoChipText}>{w}</Text>
               </View>

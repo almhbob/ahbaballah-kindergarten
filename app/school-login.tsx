@@ -64,8 +64,11 @@ export default function SchoolLoginScreen() {
           <View style={s.logoIcon}>
             <MaterialCommunityIcons name="domain" size={36} color="#c9952a" />
           </View>
-          <Text style={s.title}>تسجيل دخول الروضة</Text>
-          <Text style={s.subtitle}>ادخل ببريدك الإلكتروني المخصّص لروضتك</Text>
+          <View style={s.platformBadge}>
+            <Text style={s.platformBadgeTxt}>نُظُم — رياض الأطفال</Text>
+          </View>
+          <Text style={s.title}>دخول مدير الروضة</Text>
+          <Text style={s.subtitle}>أدخل البريد الإلكتروني وكلمة مرور حساب روضتك</Text>
         </View>
       </LinearGradient>
 
@@ -164,6 +167,13 @@ const s = StyleSheet.create({
     backgroundColor: 'rgba(201,149,42,0.12)', borderWidth: 2, borderColor: 'rgba(201,149,42,0.40)',
     justifyContent: 'center', alignItems: 'center',
   },
+  platformBadge: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: 'rgba(201,149,42,0.12)', paddingHorizontal: 12, paddingVertical: 4,
+    borderRadius: 20, borderWidth: 1, borderColor: 'rgba(201,149,42,0.30)',
+    marginBottom: 10,
+  },
+  platformBadgeTxt: { fontSize: 11, fontFamily: 'Inter_700Bold', color: '#e8b84b', letterSpacing: 0.5 },
   title:    { fontSize: 22, fontFamily: 'Inter_700Bold', color: '#fff', marginBottom: 6 },
   subtitle: { fontSize: 12, fontFamily: 'Inter_400Regular', color: 'rgba(255,255,255,0.50)', textAlign: 'center' },
 

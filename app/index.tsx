@@ -21,12 +21,12 @@ export default function Index() {
     );
   }
 
-  if (!user) return <Redirect href="/login" />;
+  if (!user) return <Redirect href="/platform" />;
 
   if (user.role === 'admin')   return <Redirect href="/(admin)" />;
   if (user.role === 'teacher') return <Redirect href="/(teacher)" />;
   if (user.role === 'parent')  return <Redirect href="/(parent)" />;
   if (user.role === 'guest')   return <Redirect href="/(guest)" />;
 
-  return <Redirect href="/login" />;
+  return <Redirect href="/platform" />;
 }

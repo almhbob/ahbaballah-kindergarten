@@ -142,6 +142,33 @@ function deriveDynamicTheme(b: SchoolBranding): DynamicTheme {
   };
 }
 
+// ─── Demo School Default ───────────────────────────────────────────────────────
+
+export const DEMO_SCHOOL_REGISTRATION: SchoolRegistration = {
+  id:           'demo',
+  name:         'روضة تجريبية — نُظُم',
+  primaryColor: '#064e3b',
+  accentColor:  '#f59e0b',
+  adminPhone:   '+000000000',
+  tier:         'trial',
+  status:       'trial',
+  createdAt:    '2026-01-01',
+  notes:        'روضة تجريبية لعرض النظام على العملاء الجدد',
+};
+
+export const AHBABULLAH_REGISTRATION: SchoolRegistration = {
+  id:           'ahbabullah',
+  name:         'روضة أحباب الله الخاصة',
+  primaryColor: '#0c1155',
+  accentColor:  '#c9952a',
+  adminPhone:   '+249917545129',
+  adminEmail:   'Ahbaballah2026@hotmail.com',
+  tier:         'professional',
+  status:       'active',
+  createdAt:    '2015-01-01',
+  notes:        'صفيتة الغنوماب — السودان',
+};
+
 // ─── Context ──────────────────────────────────────────────────────────────────
 
 const SchoolThemeContext = createContext<SchoolThemeContextValue | null>(null);
@@ -205,7 +232,24 @@ export function SchoolThemeProvider({ children }: { children: ReactNode }) {
   const refreshSchools = useCallback(async () => {
     if (!isFirebaseReady()) return;
     const list = await fsListSchools().catch(() => []);
-    setSchools(list);
+    if (list.length === 0) {
+      await fsRegisterSchool(AHBABULLAH_REGISTRATION).catch(() => {});
+      await fsRegisterSchool(DEMO_SCHOOL_REGISTRATION).catch(() => {});
+      setSchools([AHBABULLAH_REGISTRATION, DEMO_SCHOOL_REGISTRATION]);
+    } else {
+      const hasDemo = list.some(s => s.id === 'demo');
+      const hasAhbab = list.some(s => s.id === 'ahbabullah');
+      const updated = [...list];
+      if (!hasAhbab) {
+        await fsRegisterSchool(AHBABULLAH_REGISTRATION).catch(() => {});
+        updated.push(AHBABULLAH_REGISTRATION);
+      }
+      if (!hasDemo) {
+        await fsRegisterSchool(DEMO_SCHOOL_REGISTRATION).catch(() => {});
+        updated.push(DEMO_SCHOOL_REGISTRATION);
+      }
+      setSchools(updated);
+    }
   }, []);
 
   useEffect(() => { refreshSchools(); }, []);

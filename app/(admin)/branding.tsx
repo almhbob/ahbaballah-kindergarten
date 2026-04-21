@@ -7,8 +7,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as ImagePicker from 'expo-image-picker';
 import { Colors } from '@/constants/colors';
 import { useSchoolTheme, COLOR_PRESETS, SchoolBranding } from '@/contexts/SchoolThemeContext';
+import { uploadSchoolLogo } from '@/lib/firebase-storage';
 import * as Haptics from 'expo-haptics';
 
 function hexValid(h: string) {
@@ -73,16 +75,68 @@ export default function BrandingScreen() {
   const topPad = Platform.OS === 'web' ? 67 : insets.top;
   const botPad = Platform.OS === 'web' ? 34 : insets.bottom + 16;
 
-  const { branding, updateBranding, theme } = useSchoolTheme();
+  const { branding, updateBranding, theme, activeSchoolId } = useSchoolTheme();
 
-  const [draft, setDraft]       = useState<SchoolBranding>({ ...branding });
-  const [saving, setSaving]     = useState(false);
-  const [primaryHex, setPrimaryHex] = useState(branding.primaryColor);
-  const [accentHex, setAccentHex]   = useState(branding.accentColor);
+  const [draft, setDraft]             = useState<SchoolBranding>({ ...branding });
+  const [saving, setSaving]           = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [primaryHex, setPrimaryHex]   = useState(branding.primaryColor);
+  const [accentHex, setAccentHex]     = useState(branding.accentColor);
 
   const patch = useCallback(<K extends keyof SchoolBranding>(key: K, val: SchoolBranding[K]) => {
     setDraft(prev => ({ ...prev, [key]: val }));
   }, []);
+
+  const handlePickLogo = useCallback(async () => {
+    try {
+      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!perm.granted) {
+        Alert.alert('إذن مطلوب', 'يرجى السماح بالوصول إلى مكتبة الصور');
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.85,
+      });
+      if (result.canceled || !result.assets[0]) return;
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      setUploadingLogo(true);
+      const url = await uploadSchoolLogo(activeSchoolId, result.assets[0].uri);
+      patch('logoUrl', url);
+      Alert.alert('تم الرفع ✓', 'تم رفع الشعار. اضغط حفظ لتطبيقه.');
+    } catch {
+      Alert.alert('خطأ', 'فشل رفع الشعار. تحقق من الاتصال بالإنترنت.');
+    } finally {
+      setUploadingLogo(false);
+    }
+  }, [activeSchoolId, patch]);
+
+  const handleCameraLogo = useCallback(async () => {
+    try {
+      const perm = await ImagePicker.requestCameraPermissionsAsync();
+      if (!perm.granted) {
+        Alert.alert('إذن مطلوب', 'يرجى السماح بالوصول إلى الكاميرا');
+        return;
+      }
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.85,
+      });
+      if (result.canceled || !result.assets[0]) return;
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      setUploadingLogo(true);
+      const url = await uploadSchoolLogo(activeSchoolId, result.assets[0].uri);
+      patch('logoUrl', url);
+      Alert.alert('تم الرفع ✓', 'تم رفع الشعار. اضغط حفظ لتطبيقه.');
+    } catch {
+      Alert.alert('خطأ', 'فشل رفع الشعار.');
+    } finally {
+      setUploadingLogo(false);
+    }
+  }, [activeSchoolId, patch]);
 
   const applyPreset = (p: typeof COLOR_PRESETS[0]) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -165,7 +219,56 @@ export default function BrandingScreen() {
             placeholderTextColor={Colors.textLight}
           />
 
-          <Text style={s.label}>رابط الشعار (Logo URL)</Text>
+          <Text style={s.label}>شعار الروضة</Text>
+
+          {/* Logo preview */}
+          <View style={s.logoPickerWrap}>
+            {uploadingLogo ? (
+              <View style={s.logoUploading}>
+                <ActivityIndicator color={draft.accentColor} size="large" />
+                <Text style={[s.logoUploadingTxt, { color: draft.accentColor }]}>جاري رفع الشعار...</Text>
+              </View>
+            ) : draft.logoUrl ? (
+              <Image source={{ uri: draft.logoUrl }} style={s.logoPreviewBig} resizeMode="contain" />
+            ) : (
+              <View style={[s.logoEmpty, { borderColor: draft.accentColor + '50' }]}>
+                <MaterialCommunityIcons name="image-plus" size={36} color={draft.accentColor} style={{ opacity: 0.6 }} />
+                <Text style={[s.logoEmptyTxt, { color: draft.accentColor }]}>لا يوجد شعار</Text>
+              </View>
+            )}
+          </View>
+
+          {/* Upload buttons */}
+          <View style={s.logoActRow}>
+            <Pressable
+              onPress={handlePickLogo}
+              disabled={uploadingLogo}
+              style={({ pressed }) => [s.logoBtn, { borderColor: draft.accentColor + '60', opacity: pressed || uploadingLogo ? 0.7 : 1 }]}
+            >
+              <Ionicons name="images-outline" size={18} color={draft.accentColor} />
+              <Text style={[s.logoBtnTxt, { color: draft.accentColor }]}>من المعرض</Text>
+            </Pressable>
+            <Pressable
+              onPress={handleCameraLogo}
+              disabled={uploadingLogo}
+              style={({ pressed }) => [s.logoBtn, { borderColor: draft.accentColor + '60', opacity: pressed || uploadingLogo ? 0.7 : 1 }]}
+            >
+              <Ionicons name="camera-outline" size={18} color={draft.accentColor} />
+              <Text style={[s.logoBtnTxt, { color: draft.accentColor }]}>التقاط صورة</Text>
+            </Pressable>
+            {!!draft.logoUrl && (
+              <Pressable
+                onPress={() => patch('logoUrl', '')}
+                style={({ pressed }) => [s.logoBtn, { borderColor: Colors.danger + '60', opacity: pressed ? 0.7 : 1 }]}
+              >
+                <Ionicons name="trash-outline" size={18} color={Colors.danger} />
+                <Text style={[s.logoBtnTxt, { color: Colors.danger }]}>حذف</Text>
+              </Pressable>
+            )}
+          </View>
+
+          {/* Optional manual URL override */}
+          <Text style={[s.label, { marginTop: 8 }]}>أو أدخل رابط الشعار يدوياً</Text>
           <TextInput
             style={s.input} value={draft.logoUrl ?? ''} textAlign="left"
             onChangeText={v => patch('logoUrl', v)}
@@ -173,14 +276,6 @@ export default function BrandingScreen() {
             placeholderTextColor={Colors.textLight}
             keyboardType="url" autoCapitalize="none"
           />
-          {!!draft.logoUrl && (
-            <Image
-              source={{ uri: draft.logoUrl }}
-              style={s.logoPreview}
-              resizeMode="contain"
-              onError={() => Alert.alert('خطأ', 'رابط الشعار غير صحيح أو الصورة غير متاحة')}
-            />
-          )}
         </View>
 
         {/* Color Presets */}
@@ -388,6 +483,24 @@ const s = StyleSheet.create({
   previewBadgeTxt: { fontSize: 9, fontFamily: 'Inter_500Medium', color: 'rgba(255,255,255,0.55)', letterSpacing: 0.5 },
 
   logoPreview:  { width: '100%', height: 80, borderRadius: 10, backgroundColor: Colors.surfaceAlt, marginTop: 4, marginBottom: 4 },
+  logoPickerWrap: {
+    width: '100%', height: 130, borderRadius: 14, overflow: 'hidden',
+    backgroundColor: Colors.surfaceAlt, borderWidth: 1.5,
+    borderColor: Colors.borderLight, borderStyle: 'dashed',
+    marginBottom: 10, justifyContent: 'center', alignItems: 'center',
+  },
+  logoPreviewBig:   { width: '100%', height: '100%' },
+  logoUploading:    { alignItems: 'center', gap: 8 },
+  logoUploadingTxt: { fontSize: 12, fontFamily: 'Inter_500Medium' },
+  logoEmpty:        { alignItems: 'center', gap: 8, borderWidth: 2, borderStyle: 'dashed', borderRadius: 14, padding: 24 },
+  logoEmptyTxt:     { fontSize: 12, fontFamily: 'Inter_400Regular' },
+  logoActRow:  { flexDirection: 'row', gap: 8, marginBottom: 10 },
+  logoBtn:     {
+    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+    paddingVertical: 10, borderRadius: 10, borderWidth: 1.5,
+    backgroundColor: Colors.surfaceAlt,
+  },
+  logoBtnTxt:  { fontSize: 12, fontFamily: 'Inter_600SemiBold' },
 
   saveFab:      { borderRadius: 14, overflow: 'hidden' },
   saveFabGrad:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 16 },
