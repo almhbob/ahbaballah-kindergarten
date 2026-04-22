@@ -1,0 +1,9 @@
+node_modules
+.expo
+.git
+android
+ios
+docs
+attached_assets
+*.log
+.env.local

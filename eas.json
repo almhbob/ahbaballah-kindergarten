@@ -18,21 +18,16 @@
     "apk": {
       "distribution": "internal",
       "android": {
-        "buildType": "apk",
-        "gradleCommand": ":app:assembleRelease"
+        "buildType": "apk"
       },
       "channel": "production"
     },
     "play-store": {
-      "distribution": "store",
+      "distribution": "internal",
       "android": {
-        "buildType": "app-bundle",
-        "credentialsSource": "remote"
+        "buildType": "app-bundle"
       },
-      "channel": "production",
-      "env": {
-        "APP_ENV": "production"
-      }
+      "channel": "production"
     },
     "app-store": {
       "distribution": "store",
@@ -40,10 +35,7 @@
         "autoIncrement": true,
         "credentialsSource": "remote"
       },
-      "channel": "production",
-      "env": {
-        "APP_ENV": "production"
-      }
+      "channel": "production"
     }
   },
   "submit": {
@@ -51,15 +43,7 @@
       "android": {
         "serviceAccountKeyPath": "./google-play-key.json",
         "track": "internal",
-        "releaseStatus": "draft",
-        "changesNotSentForReview": false
-      }
-    },
-    "app-store": {
-      "ios": {
-        "appleId": "",
-        "ascAppId": "",
-        "appleTeamId": ""
+        "releaseStatus": "draft"
       }
     }
   }
