@@ -7,3 +7,6 @@ docs
 attached_assets
 *.log
 .env.local
+attached_assets
+.local
+screenshots
