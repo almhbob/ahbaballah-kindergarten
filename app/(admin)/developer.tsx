@@ -235,15 +235,22 @@ const SECTIONS: { key: SectionKey; icon: string; iconLib: 'ion' | 'mci'; label: 
 function SectionHeader({ sectionKey, open, onToggle }: { sectionKey: SectionKey; open: boolean; onToggle: () => void }) {
   const cfg = SECTIONS.find(s => s.key === sectionKey)!;
   return (
-    <Pressable style={[sty.secHead, open && { borderBottomLeftRadius: 0, borderBottomRightRadius: 0 }]}
-      onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onToggle(); }}>
-      <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={16} color={Colors.textLight} />
+    <Pressable
+      style={[sty.secHead, open && { borderBottomLeftRadius: 0, borderBottomRightRadius: 0, borderBottomWidth: 1, borderBottomColor: cfg.color + '20' }]}
+      onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onToggle(); }}
+    >
+      <View style={[sty.secChevron, open && { backgroundColor: cfg.color + '15' }]}>
+        <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={15} color={open ? cfg.color : Colors.textLight} />
+      </View>
       <View style={{ flex: 1 }} />
-      <Text style={sty.secHeadTxt}>{cfg.label}</Text>
-      <View style={[sty.secIconWrap, { backgroundColor: cfg.color + '18', borderColor: cfg.color + '40' }]}>
+      <View style={{ alignItems: 'flex-end' }}>
+        <Text style={sty.secHeadTxt}>{cfg.label}</Text>
+        {open && <View style={[sty.secActiveLine, { backgroundColor: cfg.color }]} />}
+      </View>
+      <View style={[sty.secIconWrap, { backgroundColor: cfg.color + '15', borderColor: cfg.color + '35' }]}>
         {cfg.iconLib === 'mci'
-          ? <MaterialCommunityIcons name={cfg.icon as any} size={18} color={cfg.color} />
-          : <Ionicons name={cfg.icon as any} size={18} color={cfg.color} />}
+          ? <MaterialCommunityIcons name={cfg.icon as any} size={22} color={cfg.color} />
+          : <Ionicons name={cfg.icon as any} size={22} color={cfg.color} />}
       </View>
     </Pressable>
   );
@@ -374,11 +381,20 @@ export default function DeveloperScreen() {
           </Pressable>
           <View style={{ flex: 1, alignItems: 'flex-end' }}>
             <Text style={sty.headerTitle}>لوحة المطوّر</Text>
-            <Text style={sty.headerSub}>إعدادات شاملة للتطبيق</Text>
+            <Text style={sty.headerSub}>نُظُم — رياض الأطفال · SaaS Platform</Text>
           </View>
-          <View style={sty.devBadge}>
-            <MaterialCommunityIcons name="code-braces" size={20} color="#c9952a" />
+          <LinearGradient colors={['rgba(201,149,42,0.25)', 'rgba(201,149,42,0.10)']} style={sty.devBadge}>
+            <MaterialCommunityIcons name="code-braces" size={22} color="#c9952a" />
+          </LinearGradient>
+        </View>
+
+        {/* Active school info bar */}
+        <View style={sty.headerSchoolBar}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <View style={[sty.headerDot, { backgroundColor: branding.accentColor }]} />
+            <Text style={sty.headerSchoolName}>{branding.name}</Text>
           </View>
+          <Text style={sty.headerSchoolId}>ID: {activeSchoolId} · {schools.length} روضة</Text>
         </View>
 
         <View style={sty.headerChips}>
@@ -403,10 +419,14 @@ export default function DeveloperScreen() {
           <View style={sty.secBody}>
             <View style={sty.statsGrid}>
               {stats.map(s => (
-                <View key={s.label} style={[sty.statCard, { borderTopColor: s.color }]}>
-                  <MaterialCommunityIcons name={s.icon as any} size={20} color={s.color} />
-                  <Text style={[sty.statVal, { color: s.color }]}>{s.value}</Text>
-                  <Text style={sty.statLbl}>{s.label}</Text>
+                <View key={s.label} style={[sty.statCard, { borderLeftColor: s.color, borderRightColor: s.color }]}>
+                  <View style={[sty.statIconWrap, { backgroundColor: s.color + '15' }]}>
+                    <MaterialCommunityIcons name={s.icon as any} size={24} color={s.color} />
+                  </View>
+                  <View style={{ flex: 1, alignItems: 'flex-end' }}>
+                    <Text style={[sty.statVal, { color: s.color }]}>{s.value}</Text>
+                    <Text style={sty.statLbl}>{s.label}</Text>
+                  </View>
                 </View>
               ))}
             </View>
@@ -1166,32 +1186,52 @@ const m = StyleSheet.create({
 const sty = StyleSheet.create({
   root: { flex: 1, backgroundColor: Colors.background },
   header: { paddingHorizontal: 20, paddingBottom: 18 },
-  headerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 14 },
+  headerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
   backBtn: { padding: 6, marginLeft: 8 },
-  headerTitle: { fontSize: 21, fontFamily: 'Inter_700Bold', color: '#fff' },
-  headerSub: { fontSize: 11, fontFamily: 'Inter_400Regular', color: 'rgba(255,255,255,0.50)', marginTop: 2 },
-  devBadge: { width: 42, height: 42, borderRadius: 21, backgroundColor: 'rgba(201,149,42,0.15)', borderWidth: 1.5, borderColor: 'rgba(201,149,42,0.40)', justifyContent: 'center', alignItems: 'center' },
+  headerTitle: { fontSize: 23, fontFamily: 'Inter_700Bold', color: '#fff' },
+  headerSub: { fontSize: 11, fontFamily: 'Inter_400Regular', color: 'rgba(255,255,255,0.45)', marginTop: 3 },
+  devBadge: { width: 46, height: 46, borderRadius: 23, borderWidth: 1.5, borderColor: 'rgba(201,149,42,0.50)', justifyContent: 'center', alignItems: 'center' },
+
+  headerSchoolBar: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 10,
+    paddingHorizontal: 14, paddingVertical: 9, marginBottom: 14,
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.09)',
+  },
+  headerDot: { width: 8, height: 8, borderRadius: 4 },
+  headerSchoolName: { fontSize: 13, fontFamily: 'Inter_600SemiBold', color: 'rgba(255,255,255,0.90)' },
+  headerSchoolId:   { fontSize: 10, fontFamily: 'Inter_400Regular',  color: 'rgba(255,255,255,0.40)' },
+
   headerChips: { flexDirection: 'row', gap: 8, justifyContent: 'flex-end' },
-  headerChip: { backgroundColor: 'rgba(255,255,255,0.08)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10, borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)' },
-  headerChipTxt: { fontSize: 10, fontFamily: 'Inter_600SemiBold', color: 'rgba(255,255,255,0.55)' },
+  headerChip: { backgroundColor: 'rgba(255,255,255,0.08)', paddingHorizontal: 12, paddingVertical: 5, borderRadius: 10, borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)' },
+  headerChipTxt: { fontSize: 11, fontFamily: 'Inter_600SemiBold', color: 'rgba(255,255,255,0.65)' },
 
   secHead: {
-    flexDirection: 'row', alignItems: 'center', gap: 10,
-    backgroundColor: Colors.surface, borderRadius: 14, padding: 14,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 4, elevation: 1,
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    backgroundColor: Colors.surface, borderRadius: 16, paddingVertical: 15, paddingHorizontal: 14,
+    shadowColor: '#0c1155', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2,
   },
-  secHeadTxt: { fontSize: 14, fontFamily: 'Inter_700Bold', color: Colors.text, flex: 1, textAlign: 'right' },
-  secIconWrap: { width: 36, height: 36, borderRadius: 10, justifyContent: 'center', alignItems: 'center', borderWidth: 1 },
+  secHeadTxt: { fontSize: 15, fontFamily: 'Inter_700Bold', color: Colors.text, textAlign: 'right' },
+  secActiveLine: { height: 2, borderRadius: 1, marginTop: 3, width: '100%' },
+  secChevron: { width: 28, height: 28, borderRadius: 8, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.borderLight },
+  secIconWrap: { width: 44, height: 44, borderRadius: 13, justifyContent: 'center', alignItems: 'center', borderWidth: 1.5 },
   secBody: {
-    backgroundColor: Colors.surface, borderBottomLeftRadius: 14, borderBottomRightRadius: 14,
+    backgroundColor: Colors.surface, borderBottomLeftRadius: 16, borderBottomRightRadius: 16,
     padding: 16, marginTop: -2,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 6, elevation: 1,
+    shadowColor: '#0c1155', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 2,
   },
 
-  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  statCard: { width: '22.5%', backgroundColor: Colors.background, borderRadius: 12, padding: 12, alignItems: 'center', gap: 3, borderTopWidth: 3 },
-  statVal: { fontSize: 20, fontFamily: 'Inter_700Bold' },
-  statLbl: { fontSize: 9, fontFamily: 'Inter_400Regular', color: Colors.textLight, textAlign: 'center' },
+  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  statCard: {
+    width: '47.5%', backgroundColor: Colors.background, borderRadius: 14,
+    paddingVertical: 14, paddingHorizontal: 14,
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    borderWidth: 1, borderColor: Colors.borderLight,
+    borderLeftWidth: 3, borderRightWidth: 3,
+  },
+  statIconWrap: { width: 44, height: 44, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
+  statVal: { fontSize: 24, fontFamily: 'Inter_700Bold', lineHeight: 28 },
+  statLbl: { fontSize: 11, fontFamily: 'Inter_500Medium', color: Colors.textSecondary, marginTop: 2 },
 
   fieldWrap: { marginBottom: 12 },
   fieldLabel: { fontSize: 12, fontFamily: 'Inter_600SemiBold', color: Colors.textSecondary, textAlign: 'right', marginBottom: 6 },
@@ -1199,10 +1239,10 @@ const sty = StyleSheet.create({
   saveGreenBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#10B981', borderRadius: 14, padding: 13, marginTop: 6 },
   saveGreenBtnTxt: { fontSize: 14, fontFamily: 'Inter_700Bold', color: '#fff' },
 
-  toggleRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: Colors.borderLight },
-  toggleLabel: { fontSize: 13, fontFamily: 'Inter_600SemiBold', color: Colors.text },
-  toggleSub: { fontSize: 10, fontFamily: 'Inter_400Regular', color: Colors.textLight },
-  toggleIcon: { width: 36, height: 36, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
+  toggleRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: Colors.borderLight },
+  toggleLabel: { fontSize: 14, fontFamily: 'Inter_600SemiBold', color: Colors.text },
+  toggleSub: { fontSize: 11, fontFamily: 'Inter_400Regular', color: Colors.textLight, marginTop: 2 },
+  toggleIcon: { width: 40, height: 40, borderRadius: 12, justifyContent: 'center', alignItems: 'center' },
 
   securityNote: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, backgroundColor: '#FFFBEB', borderRadius: 10, padding: 12, marginBottom: 16, borderWidth: 1, borderColor: '#FCD34D' },
   securityNoteTxt: { fontSize: 11, fontFamily: 'Inter_400Regular', color: '#92400E', flex: 1, textAlign: 'right', lineHeight: 18 },
@@ -1222,9 +1262,9 @@ const sty = StyleSheet.create({
   dataKey: { fontSize: 9, fontFamily: 'Inter_400Regular', color: Colors.textLight },
   dataIcon: { width: 34, height: 34, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
 
-  infoRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: Colors.borderLight },
-  infoKey: { fontSize: 12, fontFamily: 'Inter_500Medium', color: Colors.textSecondary },
-  infoVal: { fontSize: 13, fontFamily: 'Inter_600SemiBold', color: Colors.text },
+  infoRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: Colors.borderLight },
+  infoKey: { fontSize: 13, fontFamily: 'Inter_500Medium', color: Colors.textSecondary },
+  infoVal: { fontSize: 14, fontFamily: 'Inter_700Bold', color: Colors.text },
 
   dangerNote: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, backgroundColor: Colors.danger + '08', borderRadius: 10, padding: 12, marginBottom: 14, borderWidth: 1, borderColor: Colors.danger + '25' },
   dangerNoteTxt: { fontSize: 11, fontFamily: 'Inter_400Regular', color: Colors.danger, flex: 1, textAlign: 'right', lineHeight: 18 },
