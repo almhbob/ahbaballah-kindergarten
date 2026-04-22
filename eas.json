@@ -26,7 +26,8 @@
     "play-store": {
       "distribution": "store",
       "android": {
-        "buildType": "app-bundle"
+        "buildType": "app-bundle",
+        "credentialsSource": "remote"
       },
       "channel": "production",
       "env": {
@@ -36,7 +37,8 @@
     "app-store": {
       "distribution": "store",
       "ios": {
-        "autoIncrement": true
+        "autoIncrement": true,
+        "credentialsSource": "remote"
       },
       "channel": "production",
       "env": {
