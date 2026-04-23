@@ -10,6 +10,7 @@ import * as Location from 'expo-location';
 import { Colors } from '@/constants/colors';
 import { useAppData, Student } from '@/contexts/AppDataContext';
 import * as Haptics from 'expo-haptics';
+import { notifyDailyReport, notifyAttendanceAlert } from '@/lib/push-service';
 
 function haversineMeters(lat1: number, lon1: number, lat2: number, lon2: number) {
   const R = 6371000;
@@ -137,14 +138,15 @@ export default function StudentsScreen() {
     setReportMood('');
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!selected) return;
+    const mood = reportMood || 'طبيعي';
     const todayReport = {
       date: reportDate,
       ate: reportAte || 'أكل وجبته',
       learned: reportLearned || 'متابعة المنهج',
       behaviorNote: editNotes,
-      mood: reportMood || 'طبيعي',
+      mood,
     };
     const newAttendancePercent = attendanceStatus === 'حاضر'
       ? Math.min(100, selected.attendance + 1)
@@ -158,6 +160,10 @@ export default function StudentsScreen() {
       attendance: newAttendancePercent,
       dailyReports: [todayReport, ...selected.dailyReports].slice(0, 30),
     });
+    notifyDailyReport({ studentId: selected.id, studentName: selected.name, mood }).catch(() => {});
+    if (newAttendancePercent < 70 && newAttendancePercent < selected.attendance) {
+      notifyAttendanceAlert({ studentId: selected.id, studentName: selected.name, attendance: newAttendancePercent }).catch(() => {});
+    }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setSelected(null);
   };
@@ -166,13 +172,22 @@ export default function StudentsScreen() {
     <View style={styles.container}>
       <View style={[styles.header, { paddingTop: topPadding + 12 }]}>
         <View style={styles.headerTopRow}>
-          <Pressable
-            style={styles.certBtn}
-            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/(teacher)/certificates'); }}
-          >
-            <MaterialCommunityIcons name="certificate" size={14} color="#6EE7B7" />
-            <Text style={styles.certBtnText}>الشهادات</Text>
-          </Pressable>
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            <Pressable
+              style={styles.certBtn}
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/(teacher)/qr-scan' as any); }}
+            >
+              <Ionicons name="qr-code-outline" size={14} color="#6EE7B7" />
+              <Text style={styles.certBtnText}>QR</Text>
+            </Pressable>
+            <Pressable
+              style={styles.certBtn}
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/(teacher)/certificates'); }}
+            >
+              <MaterialCommunityIcons name="certificate" size={14} color="#6EE7B7" />
+              <Text style={styles.certBtnText}>الشهادات</Text>
+            </Pressable>
+          </View>
           <Text style={styles.headerTitle}>دفتر المتابعة</Text>
         </View>
 

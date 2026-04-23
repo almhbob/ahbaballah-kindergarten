@@ -9,6 +9,7 @@ import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/colors';
 import { useAppData, Student } from '@/contexts/AppDataContext';
 import * as Haptics from 'expo-haptics';
+import { notifyPaymentReminder, getAllTokensByRole, sendToTokens } from '@/lib/push-service';
 
 const LEVEL_FEES: Record<string, number> = {
   'براعم':       8000,
@@ -60,9 +61,39 @@ export default function FinanceScreen() {
     }
     const total = LEVEL_FEES[editingStudent.level] ?? 10000;
     const newPaid = Math.min(total, amount);
+    const remaining = total - newPaid;
     updateStudent(editingStudent.id, { paidFees: newPaid });
+    if (remaining > 0) {
+      notifyPaymentReminder({
+        studentId: editingStudent.id,
+        studentName: editingStudent.name,
+        remaining,
+        totalFees: total,
+      }).catch(() => {});
+    }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setEditingStudent(null);
+  }
+
+  async function handleSendFeeReminders() {
+    const overdue = FEES.filter(f => f.status === 'متأخر' || f.status === 'جزئي');
+    if (overdue.length === 0) {
+      Alert.alert('لا يوجد', 'جميع الرسوم مسددة');
+      return;
+    }
+    const parentTokens = await getAllTokensByRole('parent');
+    if (parentTokens.length === 0) {
+      Alert.alert('تنبيه', `سيتم إرسال التذكير لـ ${overdue.length} طالب عند اتصالهم بالتطبيق`);
+      return;
+    }
+    await sendToTokens({
+      tokens: parentTokens,
+      title: '💳 تذكير بالرسوم الدراسية',
+      body: `يُرجى مراجعة رسوم أبنائكم — ${overdue.length} طالب لديهم رسوم متبقية`,
+      data: { type: 'fee_reminder' },
+    });
+    Alert.alert('تم الإرسال', `تم إرسال تذكير الرسوم لـ ${parentTokens.length} ولي أمر`);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   }
 
   function handleResetFees(studentId: string, name: string) {
@@ -117,6 +148,12 @@ export default function FinanceScreen() {
               <Text style={[styles.tabText, activeTab === t.id && styles.tabTextActive]}>{t.label}</Text>
             </Pressable>
           ))}
+          {activeTab === 'fees' && (
+            <Pressable style={styles.reminderBtn} onPress={handleSendFeeReminders}>
+              <Ionicons name="notifications-outline" size={15} color={Colors.accent} />
+              <Text style={styles.reminderBtnText}>تذكير</Text>
+            </Pressable>
+          )}
         </View>
       </LinearGradient>
 
@@ -293,11 +330,13 @@ const styles = StyleSheet.create({
   balanceCardMain: { backgroundColor: 'rgba(244,160,28,0.15)', borderWidth: 1, borderColor: 'rgba(244,160,28,0.3)' },
   balanceValue: { fontSize: 18, fontFamily: 'Inter_700Bold', color: '#FFFFFF' },
   balanceLabel: { fontSize: 10, fontFamily: 'Inter_400Regular', color: 'rgba(255,255,255,0.6)', textAlign: 'center' },
-  tabs: { flexDirection: 'row', backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 12, padding: 3, marginBottom: 0 },
+  tabs: { flexDirection: 'row', backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 12, padding: 3, marginBottom: 0, alignItems: 'center' },
   tab: { flex: 1, paddingVertical: 10, borderRadius: 10, alignItems: 'center' },
   tabActive: { backgroundColor: Colors.accent },
   tabText: { fontSize: 13, fontFamily: 'Inter_500Medium', color: 'rgba(255,255,255,0.6)' },
   tabTextActive: { color: '#FFFFFF', fontFamily: 'Inter_700Bold' },
+  reminderBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 8, borderRadius: 10, backgroundColor: 'rgba(201,149,42,0.15)' },
+  reminderBtnText: { fontSize: 11, fontFamily: 'Inter_600SemiBold', color: Colors.accent },
   body: { padding: 16, gap: 12 },
   emptyCard: { backgroundColor: Colors.surface, borderRadius: 16, padding: 40, alignItems: 'center', gap: 10 },
   emptyTxt: { fontSize: 14, fontFamily: 'Inter_500Medium', color: Colors.textLight },

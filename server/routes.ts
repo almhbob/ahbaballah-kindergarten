@@ -5,12 +5,14 @@ import authRouter, { seedAdminAccount } from "./auth-routes";
 import fileRouter from "./file-routes";
 import reviewRouter from "./review-routes";
 import stateRouter from "./state-routes";
+import pushRouter from "./push-routes";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api/auth', authRouter);
   app.use('/api/files', fileRouter);
   app.use('/api/reviews', reviewRouter);
   app.use('/api/state', stateRouter);
+  app.use('/api/push', pushRouter);
 
   app.get('/api/health', (_req, res) => {
     res.json({ ok: true, service: 'روضة أحباب الله API', version: '2.0' });

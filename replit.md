@@ -35,9 +35,35 @@ Admin password can be changed from Settings → Developer panel → Admin passwo
 - `app_state` — cloud-synced app state (JSON key-value)
 
 ## Key Features
-- **Admin**: Dashboard stats, student management, employee management, finance/payroll, news, inbox, meetings, schedule, graduation, transport, banners, registration requests, developer panel, analytics dashboard, bulk notifications, calendar, photo gallery
-- **Teacher**: Class schedule, student notebook, grades, attendance, curriculum planner, performance analytics
+- **Admin**: Dashboard stats, student management, employee management, finance/payroll, news, inbox, meetings, schedule, graduation, transport, banners, registration requests, developer panel, analytics dashboard, bulk notifications, calendar, photo gallery, **bulk fee reminders via push notifications**
+- **Teacher**: Class schedule, student notebook, grades, attendance, curriculum planner, performance analytics, **QR code attendance scanner**, **educational resource sharing**
 - **Parent**: Child profile (ملف الطالب), daily reports, messages, notifications, fees tracker, write reviews
+
+## Push Notification System (Added)
+- **Backend**: `server/push-routes.ts` — 5 endpoints: `/send`, `/broadcast`, `/attendance-alert`, `/payment-reminder`, `/daily-report`
+- **Client Service**: `lib/push-service.ts` — token registry (AsyncStorage), per-role token lookup, server API calls
+- **Auto Triggers**:
+  - When teacher saves daily report → parent notified automatically
+  - When student attendance drops below 70% → parent alerted
+  - When admin records fee payment with remaining balance → parent notified
+  - Admin can send bulk reminders to all parents with outstanding fees
+- **Token Registration**: Happens automatically on login for all roles (admin/teacher/parent)
+
+## QR Attendance Scanner (Added)
+- File: `app/(teacher)/qr-scan.tsx`
+- Camera-based QR code reader (expo-camera barcode scanner)
+- Scans student QR codes to mark attendance (حاضر/متأخر/غائب)
+- Animated scan line, corner brackets, real-time feedback card
+- Recent scans history panel
+- Accessible via QR button in teacher's students screen
+
+## Teacher Resource Sharing (Added)
+- File: `app/(teacher)/resources.tsx`
+- New "الموارد" tab in teacher navigation
+- Supports 5 resource types: Note, Worksheet, Link, PDF, Image
+- Filter by subject, level, type, or search text
+- Like/unlike resources, delete own resources
+- Organized content with author attribution and timestamps
 - **Guest**: Landing page with school info, services, levels, reviews, registration timeline, enrollment request form (with document upload)
 
 ## Firebase Integration

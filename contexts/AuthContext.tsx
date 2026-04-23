@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 import { getApiUrl } from '@/lib/query-client';
+import { registerAndSaveToken } from '@/lib/push-service';
 
 export type UserRole = 'admin' | 'teacher' | 'parent' | 'guest';
 
@@ -109,6 +110,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await AsyncStorage.setItem('auth_user', JSON.stringify(userData));
     setUser(userData);
     await recordLogin(userData.role);
+    if (userData.role !== 'guest') {
+      registerAndSaveToken(
+        userData.id,
+        userData.role as 'admin' | 'teacher' | 'parent',
+        userData.studentId,
+      ).catch(() => {});
+    }
   };
 
   const logout = async () => {

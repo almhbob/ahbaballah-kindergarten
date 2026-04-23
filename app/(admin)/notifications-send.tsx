@@ -11,6 +11,7 @@ import * as Haptics from 'expo-haptics';
 import { Colors } from '@/constants/colors';
 import { useAppData } from '@/contexts/AppDataContext';
 import { sendLocalNotificationNow } from '@/lib/notifications';
+import { getAllTokensByRole, broadcastToAll } from '@/lib/push-service';
 
 type Audience = 'all' | 'parents' | 'teachers' | 'level_براعم' | 'level_مستوى أول' | 'level_مستوى ثاني';
 type NotifType = 'general' | 'exam' | 'event' | 'urgent' | 'financial';
@@ -65,17 +66,33 @@ export default function NotificationsSendScreen() {
     try {
       const now = new Date().toISOString();
       const typeOpt = TYPE_OPTIONS.find(t => t.key === type)!;
+      const fullTitle = `${typeOpt.label}: ${title.trim()}`;
+      const fullBody = body.trim();
+
       addNews({
         id: genId(),
-        title: `${typeOpt.label}: ${title.trim()}`,
-        body: body.trim(),
+        title: fullTitle,
+        body: fullBody,
         date: now.split('T')[0],
         type: 'news',
       });
-      await sendLocalNotificationNow(
-        `${typeOpt.label}: ${title.trim()}`,
-        body.trim(),
-      );
+
+      let tokens: string[] = [];
+      if (audience === 'all' || audience === 'parents') {
+        tokens.push(...await getAllTokensByRole('parent'));
+      }
+      if (audience === 'all' || audience === 'teachers') {
+        tokens.push(...await getAllTokensByRole('teacher'));
+      }
+      if (audience.startsWith('level_')) {
+        tokens.push(...await getAllTokensByRole('parent'));
+      }
+
+      if (tokens.length > 0) {
+        await broadcastToAll({ tokens, title: fullTitle, body: fullBody, audience, data: { type } });
+      } else {
+        await sendLocalNotificationNow(fullTitle, fullBody);
+      }
     } catch (e) {
       console.warn('[Notif] send error:', e);
     }
