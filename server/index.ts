@@ -311,14 +311,16 @@ function setupErrorHandler(app: express.Application) {
   setupCors(app);
   setupBodyParsing(app);
 
+  const isProduction = process.env.NODE_ENV === 'production';
   app.use(session({
     secret: process.env.SESSION_SECRET || 'ahbaballah-fallback-secret',
     resave: false,
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      sameSite: 'lax',
-      maxAge: 1000 * 60 * 60 * 24,
+      secure: isProduction,
+      sameSite: isProduction ? 'none' : 'lax',
+      maxAge: 1000 * 60 * 60 * 24 * 7,
     },
   }));
 
