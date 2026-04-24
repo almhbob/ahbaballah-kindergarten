@@ -12,6 +12,7 @@ import { Colors } from '@/constants/colors';
 import { useAppData, Banner, BannerType, AppSettings, DEFAULT_APP_SETTINGS } from '@/contexts/AppDataContext';
 import { useSchoolTheme, SchoolRegistration, COLOR_PRESETS } from '@/contexts/SchoolThemeContext';
 import * as Haptics from 'expo-haptics';
+import * as Clipboard from 'expo-clipboard';
 import { SUBSCRIPTION_TIERS, TIER_ORDER, getTierById, checkCapacity, capacityColor, SubscriptionTier } from '@/lib/subscription-tiers';
 import { createSchoolAdminAccount } from '@/lib/school-auth';
 import { getApiUrl } from '@/lib/query-client';
@@ -258,6 +259,304 @@ function SectionHeader({ sectionKey, open, onToggle }: { sectionKey: SectionKey;
   );
 }
 
+// ══ Interfaces ════════════════════════════════════════════════════════════════
+
+interface ProvisionedCreds {
+  schoolId: string;
+  schoolName: string;
+  adminEmail: string;
+  adminPhone: string;
+  initialPassword: string;
+  tier: string;
+  subscriptionStart: string;
+  subscriptionEnd: string;
+  authOk: boolean;
+}
+
+// ══ CredentialsModal ══════════════════════════════════════════════════════════
+
+function CredentialsModal({ visible, data, onClose }: {
+  visible: boolean;
+  data: ProvisionedCreds | null;
+  onClose: () => void;
+}) {
+  const insets   = useSafeAreaInsets();
+  const topPad   = Platform.OS === 'web' ? 67 : insets.top;
+  const botPad   = Platform.OS === 'web' ? 34 : insets.bottom;
+  const tierDef  = data ? getTierById(data.tier) : getTierById('trial');
+  if (!data) return null;
+
+  const copyField = async (label: string, value: string) => {
+    try { await Clipboard.setStringAsync(value); } catch {}
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    Alert.alert('✓ تم النسخ', label);
+  };
+
+  const fields = [
+    { label: 'معرّف الروضة (School ID)', value: data.schoolId,         icon: 'identifier',    color: '#A855F7' },
+    { label: 'البريد الإلكتروني',        value: data.adminEmail,        icon: 'email-outline', color: '#3B82F6' },
+    { label: 'رقم الجوال',              value: data.adminPhone,        icon: 'phone-outline', color: '#10B981' },
+    { label: 'كلمة المرور الأولى',       value: data.initialPassword,   icon: 'key-outline',   color: '#F59E0B' },
+    { label: 'بداية الاشتراك',           value: data.subscriptionStart, icon: 'calendar-check', color: '#6366F1' },
+    { label: 'نهاية الاشتراك',           value: data.subscriptionEnd,   icon: 'calendar-clock', color: '#EF4444' },
+  ] as { label: string; value: string; icon: string; color: string }[];
+
+  return (
+    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
+      <View style={{ flex: 1, backgroundColor: '#020817' }}>
+        {/* Header */}
+        <LinearGradient
+          colors={['#020817', '#050f3a', '#0d1a6e']}
+          start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+          style={{ paddingTop: topPad + 16, paddingHorizontal: 20, paddingBottom: 28 }}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+            <View style={{ width: 36 }} />
+            <Text style={{ fontSize: 17, fontFamily: 'Inter_700Bold', color: '#fff' }}>بيانات الروضة المفعّلة</Text>
+            <Pressable onPress={onClose} style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.08)', justifyContent: 'center', alignItems: 'center' }}>
+              <Ionicons name="close" size={20} color="rgba(255,255,255,0.7)" />
+            </Pressable>
+          </View>
+
+          <View style={{ alignItems: 'center', gap: 10 }}>
+            <View style={{ width: 72, height: 72, borderRadius: 22, backgroundColor: '#10B98118', borderWidth: 2, borderColor: '#10B98140', justifyContent: 'center', alignItems: 'center', shadowColor: '#10B981', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.4, shadowRadius: 16, elevation: 8 }}>
+              <MaterialCommunityIcons name="check-circle" size={40} color="#10B981" />
+            </View>
+            <Text style={{ fontSize: 22, fontFamily: 'Inter_700Bold', color: '#fff', textAlign: 'center' }}>{data.schoolName}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
+              <View style={{ paddingHorizontal: 12, paddingVertical: 5, borderRadius: 10, backgroundColor: tierDef.color + '25', borderWidth: 1, borderColor: tierDef.color + '60' }}>
+                <Text style={{ fontSize: 12, fontFamily: 'Inter_700Bold', color: tierDef.color }}>{tierDef.emoji} {tierDef.nameAr}</Text>
+              </View>
+              {data.authOk && (
+                <View style={{ paddingHorizontal: 10, paddingVertical: 5, borderRadius: 10, backgroundColor: '#10B98118', borderWidth: 1, borderColor: '#10B98140' }}>
+                  <Text style={{ fontSize: 11, fontFamily: 'Inter_600SemiBold', color: '#10B981' }}>🔐 Firebase Auth ✓</Text>
+                </View>
+              )}
+            </View>
+          </View>
+        </LinearGradient>
+
+        {/* Warning banner */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, margin: 14, padding: 14, borderRadius: 14, backgroundColor: '#F59E0B10', borderWidth: 1, borderColor: '#F59E0B35' }}>
+          <MaterialCommunityIcons name="alert-circle-outline" size={20} color="#F59E0B" />
+          <Text style={{ flex: 1, fontSize: 12, fontFamily: 'Inter_500Medium', color: '#F59E0B', textAlign: 'right', lineHeight: 19 }}>
+            احفظ هذه البيانات وأرسلها فوراً لمسؤول الروضة.{'\n'}كلمة المرور لن تظهر مجدداً بعد إغلاق هذه الشاشة.
+          </Text>
+        </View>
+
+        {/* Fields list */}
+        <ScrollView style={{ flex: 1, paddingHorizontal: 14 }} showsVerticalScrollIndicator={false}>
+          {fields.map(f => (
+            <Pressable key={f.label} onPress={() => copyField(f.label, f.value)}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.04)', borderWidth: 1, borderColor: f.color + '28', marginBottom: 10 }}>
+              <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: f.color + '18', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: f.color + '30' }}>
+                <MaterialCommunityIcons name={f.icon as any} size={20} color={f.color} />
+              </View>
+              <View style={{ flex: 1, alignItems: 'flex-end' }}>
+                <Text style={{ fontSize: 11, fontFamily: 'Inter_400Regular', color: 'rgba(255,255,255,0.40)', marginBottom: 3 }}>{f.label}</Text>
+                <Text style={{ fontSize: 14, fontFamily: 'Inter_600SemiBold', color: '#fff', textAlign: 'right' }} selectable>{f.value}</Text>
+              </View>
+              <View style={{ width: 30, height: 30, borderRadius: 8, backgroundColor: f.color + '12', justifyContent: 'center', alignItems: 'center' }}>
+                <Ionicons name="copy-outline" size={15} color={f.color} />
+              </View>
+            </Pressable>
+          ))}
+
+          <Pressable
+            onPress={() => {
+              const allText = fields.map(f => `${f.label}: ${f.value}`).join('\n');
+              copyField('جميع البيانات', allText);
+            }}
+            style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, padding: 14, borderRadius: 14, backgroundColor: '#A855F710', borderWidth: 1, borderColor: '#A855F740', marginBottom: 6 }}>
+            <MaterialCommunityIcons name="content-copy" size={16} color="#A855F7" />
+            <Text style={{ fontSize: 13, fontFamily: 'Inter_700Bold', color: '#A855F7' }}>نسخ جميع البيانات دفعة واحدة</Text>
+          </Pressable>
+        </ScrollView>
+
+        {/* Close button */}
+        <View style={{ padding: 14, paddingBottom: botPad + 14 }}>
+          <Pressable onPress={onClose} style={{ borderRadius: 16, overflow: 'hidden' }}>
+            <LinearGradient colors={['#10B981', '#059669']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 16 }}>
+              <Ionicons name="checkmark-done" size={20} color="#fff" />
+              <Text style={{ fontSize: 16, fontFamily: 'Inter_700Bold', color: '#fff' }}>تم — إغلاق</Text>
+            </LinearGradient>
+          </Pressable>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+// ══ RenewalModal ══════════════════════════════════════════════════════════════
+
+function RenewalModal({ visible, school, onClose, onRenew }: {
+  visible: boolean;
+  school: SchoolRegistration | null;
+  onClose: () => void;
+  onRenew: (schoolId: string, newTier: SubscriptionTier, newExpiry: string) => void;
+}) {
+  const insets = useSafeAreaInsets();
+  const topPad = Platform.OS === 'web' ? 67 : insets.top;
+  const botPad = Platform.OS === 'web' ? 34 : insets.bottom;
+  const [selectedTier, setSelectedTier] = useState<SubscriptionTier>('basic');
+  const [months, setMonths]             = useState(1);
+  const [saving, setSaving]             = useState(false);
+
+  React.useEffect(() => {
+    if (school) setSelectedTier((school.tier as SubscriptionTier) ?? 'basic');
+  }, [school]);
+
+  if (!school) return null;
+
+  const tierDef   = getTierById(selectedTier);
+  const totalSAR  = tierDef.price * months;
+  const newExpiry = new Date(Date.now() + months * 30 * 24 * 3600 * 1000)
+    .toISOString().split('T')[0];
+
+  return (
+    <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
+      <View style={{ flex: 1, backgroundColor: Colors.background }}>
+        {/* Header */}
+        <View style={[m.modalHead, { paddingTop: topPad + 16 }]}>
+          <Pressable
+            disabled={saving}
+            onPress={async () => {
+              setSaving(true);
+              await onRenew(school.id, selectedTier, newExpiry);
+              setSaving(false);
+              onClose();
+            }}
+            style={[m.saveBtn, saving && { opacity: 0.6 }]}>
+            {saving
+              ? <ActivityIndicator size="small" color="#fff" />
+              : <Text style={m.saveBtnTxt}>تجديد</Text>}
+          </Pressable>
+          <Text style={m.modalTitle}>تجديد الاشتراك</Text>
+          <Pressable onPress={onClose}><Text style={m.cancelTxt}>إلغاء</Text></Pressable>
+        </View>
+
+        <ScrollView style={{ flex: 1, padding: 20 }} keyboardShouldPersistTaps="handled">
+
+          {/* School name */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14, borderRadius: 16, backgroundColor: Colors.surfaceAlt, borderWidth: 1, borderColor: Colors.borderLight, marginBottom: 20 }}>
+            <View style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: school.primaryColor + '20', borderWidth: 1.5, borderColor: school.primaryColor + '50', justifyContent: 'center', alignItems: 'center' }}>
+              <MaterialCommunityIcons name="domain" size={22} color={school.primaryColor} />
+            </View>
+            <View style={{ flex: 1, alignItems: 'flex-end' }}>
+              <Text style={{ fontSize: 15, fontFamily: 'Inter_700Bold', color: Colors.text }}>{school.name}</Text>
+              <Text style={{ fontSize: 11, fontFamily: 'Inter_400Regular', color: Colors.textSecondary, marginTop: 2 }}>
+                ينتهي حالياً: {school.expiresAt ?? 'غير محدد'}
+              </Text>
+            </View>
+          </View>
+
+          {/* Tier selection */}
+          <Text style={m.label}>مستوى الاشتراك الجديد</Text>
+          <View style={{ gap: 8, marginBottom: 20 }}>
+            {TIER_ORDER.filter(t => t !== 'trial').map(tid => {
+              const t = SUBSCRIPTION_TIERS[tid];
+              const sel = selectedTier === tid;
+              return (
+                <Pressable key={tid}
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, borderRadius: 14, borderWidth: sel ? 2 : 1, borderColor: sel ? t.color : Colors.borderLight, backgroundColor: sel ? t.color + '12' : Colors.background }}
+                  onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setSelectedTier(tid); }}>
+                  <Text style={{ fontSize: 24 }}>{t.emoji}</Text>
+                  <View style={{ flex: 1 }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Text style={{ fontSize: 14, fontFamily: 'Inter_600SemiBold', color: t.color }}>{t.badgeAr}</Text>
+                      <Text style={{ fontSize: 15, fontFamily: 'Inter_700Bold', color: Colors.text }}>{t.nameAr}</Text>
+                    </View>
+                    <Text style={{ fontSize: 11, fontFamily: 'Inter_400Regular', color: Colors.textSecondary, textAlign: 'right', marginTop: 2 }}>{t.description}</Text>
+                  </View>
+                  {sel && <Ionicons name="checkmark-circle" size={20} color={t.color} />}
+                </Pressable>
+              );
+            })}
+          </View>
+
+          {/* Months selector */}
+          <Text style={m.label}>عدد الأشهر</Text>
+          <View style={{ flexDirection: 'row', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
+            {[1, 3, 6, 12].map(mo => (
+              <Pressable key={mo}
+                style={{ flex: 1, minWidth: 60, alignItems: 'center', paddingVertical: 12, borderRadius: 12, borderWidth: months === mo ? 2 : 1, borderColor: months === mo ? Colors.accent : Colors.borderLight, backgroundColor: months === mo ? Colors.accent + '12' : Colors.background }}
+                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setMonths(mo); }}>
+                <Text style={{ fontSize: 18, fontFamily: 'Inter_700Bold', color: months === mo ? Colors.accent : Colors.text }}>{mo}</Text>
+                <Text style={{ fontSize: 10, fontFamily: 'Inter_400Regular', color: Colors.textLight }}>
+                  {mo === 1 ? 'شهر' : mo === 12 ? 'سنة' : 'أشهر'}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+
+          {/* Summary card */}
+          <View style={{ padding: 18, borderRadius: 16, backgroundColor: Colors.primary + '10', borderWidth: 1.5, borderColor: Colors.primary + '30', gap: 10 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Text style={{ fontSize: 22, fontFamily: 'Inter_700Bold', color: Colors.accent }}>{totalSAR > 0 ? `${totalSAR} ر.س` : 'مجاني'}</Text>
+              <Text style={{ fontSize: 14, fontFamily: 'Inter_600SemiBold', color: Colors.text }}>إجمالي التجديد</Text>
+            </View>
+            <View style={{ height: 1, backgroundColor: Colors.borderLight }} />
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+              <Text style={{ fontSize: 13, fontFamily: 'Inter_500Medium', color: Colors.textSecondary }}>{newExpiry}</Text>
+              <Text style={{ fontSize: 13, fontFamily: 'Inter_500Medium', color: Colors.text }}>تاريخ الانتهاء الجديد</Text>
+            </View>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+              <Text style={{ fontSize: 13, fontFamily: 'Inter_500Medium', color: tierDef.color }}>{tierDef.emoji} {tierDef.nameAr}</Text>
+              <Text style={{ fontSize: 13, fontFamily: 'Inter_500Medium', color: Colors.text }}>الباقة المختارة</Text>
+            </View>
+          </View>
+
+        </ScrollView>
+      </View>
+    </Modal>
+  );
+}
+
+// ══ PlatformStatsCards ════════════════════════════════════════════════════════
+
+function PlatformStatsCards({ schools, pendingCount }: { schools: SchoolRegistration[]; pendingCount: number }) {
+  const monthlyRevenue = schools.reduce((sum, s) => {
+    if (s.status === 'suspended') return sum;
+    const t = getTierById(s.tier ?? 'trial');
+    return sum + t.price;
+  }, 0);
+
+  const activeCount    = schools.filter(s => s.status === 'active').length;
+  const trialCount     = schools.filter(s => s.status === 'trial').length;
+  const suspendedCount = schools.filter(s => s.status === 'suspended').length;
+
+  const cards = [
+    { label: 'الإيرادات الشهرية', value: `${monthlyRevenue} ر.س`, icon: 'cash-multiple',    color: '#10B981', sub: 'MRR' },
+    { label: 'روضات نشطة',        value: activeCount.toString(),  icon: 'domain',            color: '#3B82F6', sub: 'Active' },
+    { label: 'اشتراكات تجريبية',  value: trialCount.toString(),   icon: 'timer-sand',        color: '#F59E0B', sub: 'Trial' },
+    { label: 'طلبات معلّقة',      value: pendingCount.toString(), icon: 'inbox-multiple',    color: '#A855F7', sub: 'Pending' },
+    { label: 'إجمالي الروضات',    value: schools.length.toString(),icon: 'school-outline',  color: '#6366F1', sub: 'Total' },
+    { label: 'موقوفة',            value: suspendedCount.toString(),icon: 'cancel',            color: '#EF4444', sub: 'Suspended' },
+  ];
+
+  return (
+    <View style={{ padding: 14, borderRadius: 16, backgroundColor: Colors.surfaceAlt, borderWidth: 1, borderColor: Colors.borderLight, marginBottom: 12 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, justifyContent: 'flex-end', marginBottom: 14 }}>
+        <Text style={{ fontSize: 14, fontFamily: 'Inter_700Bold', color: Colors.text }}>إحصاءات المنصة</Text>
+        <MaterialCommunityIcons name="chart-areaspline" size={18} color="#10B981" />
+      </View>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+        {cards.map(c => (
+          <View key={c.label} style={{ flex: 1, minWidth: 100, padding: 14, borderRadius: 14, backgroundColor: c.color + '10', borderWidth: 1, borderColor: c.color + '30', alignItems: 'flex-end', gap: 4 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, justifyContent: 'flex-end' }}>
+              <Text style={{ fontSize: 22, fontFamily: 'Inter_700Bold', color: c.color }}>{c.value}</Text>
+              <MaterialCommunityIcons name={c.icon as any} size={20} color={c.color} />
+            </View>
+            <Text style={{ fontSize: 11, fontFamily: 'Inter_500Medium', color: Colors.text, textAlign: 'right' }}>{c.label}</Text>
+            <Text style={{ fontSize: 10, fontFamily: 'Inter_400Regular', color: Colors.textLight }}>{c.sub}</Text>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
 export default function DeveloperScreen() {
   const insets    = useSafeAreaInsets();
   const topPad    = Platform.OS === 'web' ? 67 : insets.top;
@@ -344,6 +643,112 @@ export default function DeveloperScreen() {
   React.useEffect(() => {
     if (open.requests) fetchSchoolRequests();
   }, [open.requests]);
+
+  // ── Provisioning state ──────────────────────────────────────────────────────
+  const [provisionedCreds,  setProvisionedCreds]  = useState<ProvisionedCreds | null>(null);
+  const [showCredsModal,    setShowCredsModal]    = useState(false);
+  const [showRenewalModal,  setShowRenewalModal]  = useState(false);
+  const [renewingSchool,    setRenewingSchool]    = useState<SchoolRegistration | null>(null);
+
+  const approveAndProvisionSchool = async (req: SchoolRequest) => {
+    Alert.alert(
+      'تفعيل الروضة',
+      `هل تريد تفعيل "${req.school_name}" وإنشاء حسابها في النظام؟`,
+      [
+        { text: 'إلغاء', style: 'cancel' },
+        { text: 'تفعيل', style: 'default', onPress: async () => {
+          try {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+
+            // 1. Generate school ID and password
+            const schoolId = `school_${req.id}_${Date.now().toString(36)}`;
+            const randomSuffix = Math.random().toString(36).substr(2, 4).toUpperCase();
+            const initialPassword = `Nuzum@${new Date().getFullYear()}${randomSuffix}`;
+
+            // 2. Calculate subscription dates
+            const tierDef = getTierById(req.requested_tier as SubscriptionTier ?? 'trial');
+            const startDate = new Date().toISOString().split('T')[0];
+            const daysToAdd = req.wants_trial ? 30 : 30;
+            const endDate   = new Date(Date.now() + daysToAdd * 24 * 3600 * 1000).toISOString().split('T')[0];
+
+            // 3. Build SchoolRegistration entry
+            const school: SchoolRegistration = {
+              id:           schoolId,
+              name:         req.school_name,
+              logoUrl:      req.logo_url  ?? undefined,
+              primaryColor: req.primary_color ?? '#0c1155',
+              accentColor:  req.accent_color  ?? '#c9952a',
+              adminPhone:   req.admin_phone,
+              adminEmail:   req.admin_email,
+              tier:         (req.requested_tier as SubscriptionTier) ?? 'trial',
+              status:       req.wants_trial ? 'trial' : 'active',
+              createdAt:    startDate,
+              expiresAt:    endDate,
+              notes:        `مفعّلة من طلب #${req.id} — ${req.city}`,
+            };
+
+            // 4. Register in system (Firebase + AsyncStorage)
+            await registerSchool(school);
+
+            // 5. Try creating Firebase Auth account (optional — may fail if Firebase not configured)
+            let authOk = false;
+            if (req.admin_email) {
+              setAuthCreating(true);
+              const authRes = await createSchoolAdminAccount(
+                schoolId, req.admin_email, initialPassword, req.school_name, school.tier
+              );
+              setAuthCreating(false);
+              authOk = authRes.ok;
+            }
+
+            // 6. Persist provisioning data in DB
+            const base = getApiUrl();
+            const url  = new URL(`/api/school-requests/${req.id}`, `https://${base}`).toString();
+            await fetch(url, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                status:             'approved',
+                notes:              `تم التفعيل. معرّف الروضة: ${schoolId}. ${req.notes ?? ''}`.trim(),
+                reviewed_by:        'developer',
+                subscription_start: startDate,
+                subscription_end:   endDate,
+                approved_school_id: schoolId,
+                initial_password:   initialPassword,
+              }),
+            });
+
+            // 7. Refresh requests list
+            await fetchSchoolRequests();
+
+            // 8. Show credentials modal
+            setProvisionedCreds({
+              schoolId,
+              schoolName:        req.school_name,
+              adminEmail:        req.admin_email,
+              adminPhone:        req.admin_phone,
+              initialPassword,
+              tier:              req.requested_tier,
+              subscriptionStart: startDate,
+              subscriptionEnd:   endDate,
+              authOk,
+            });
+            setShowCredsModal(true);
+
+          } catch (e) {
+            setAuthCreating(false);
+            Alert.alert('خطأ', 'فشل تفعيل الروضة. تحقق من الاتصال وحاول مجدداً.');
+          }
+        }},
+      ]
+    );
+  };
+
+  const handleRenewSchool = async (schoolId: string, newTier: SubscriptionTier, newExpiry: string) => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    await editSchoolEntry(schoolId, { tier: newTier, expiresAt: newExpiry, status: 'active' });
+    Alert.alert('تم التجديد ✓', `تم تجديد الاشتراك حتى ${newExpiry}`);
+  };
 
   // School registration form
   const [showSchoolForm, setShowSchoolForm] = useState(false);
@@ -483,6 +888,10 @@ export default function DeveloperScreen() {
         <SectionHeader sectionKey="stats" open={open.stats} onToggle={() => toggle('stats')} />
         {open.stats && (
           <View style={sty.secBody}>
+            <PlatformStatsCards
+              schools={schools}
+              pendingCount={schoolRequests.filter(r => r.status === 'pending').length}
+            />
             <View style={sty.statsGrid}>
               {stats.map(s => (
                 <View key={s.label} style={[sty.statCard, { borderLeftColor: s.color, borderRightColor: s.color }]}>
@@ -630,6 +1039,22 @@ export default function DeveloperScreen() {
                     </Text>
                   )}
 
+                  {/* Expiry warning */}
+                  {sch.expiresAt && (() => {
+                    const days = Math.ceil((new Date(sch.expiresAt).getTime() - Date.now()) / 86400000);
+                    const isExpired = days < 0;
+                    const isWarning = days >= 0 && days <= 14;
+                    if (isExpired || isWarning) return (
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, padding: 8, borderRadius: 10, backgroundColor: (isExpired ? Colors.danger : '#F59E0B') + '12', borderWidth: 1, borderColor: (isExpired ? Colors.danger : '#F59E0B') + '35', marginBottom: 8 }}>
+                        <MaterialCommunityIcons name={isExpired ? 'alert-circle' : 'clock-alert'} size={14} color={isExpired ? Colors.danger : '#F59E0B'} />
+                        <Text style={{ flex: 1, fontSize: 11, fontFamily: 'Inter_500Medium', color: isExpired ? Colors.danger : '#F59E0B', textAlign: 'right' }}>
+                          {isExpired ? `انتهى الاشتراك منذ ${Math.abs(days)} يوم` : `ينتهي الاشتراك خلال ${days} يوم`}
+                        </Text>
+                      </View>
+                    );
+                    return null;
+                  })()}
+
                   <View style={s2.schoolCardActions}>
                     {!isActive && (
                       <Pressable
@@ -656,6 +1081,13 @@ export default function DeveloperScreen() {
                         <Text style={[s2.actionTxt, { color: Colors.success }]}>نشطة الآن</Text>
                       </View>
                     )}
+                    <Pressable
+                      style={[s2.actionBtn, { backgroundColor: '#10B98115', borderColor: '#10B98140' }]}
+                      onPress={() => { setRenewingSchool(sch); setShowRenewalModal(true); }}
+                    >
+                      <MaterialCommunityIcons name="autorenew" size={14} color="#10B981" />
+                      <Text style={[s2.actionTxt, { color: '#10B981' }]}>تجديد</Text>
+                    </Pressable>
                     <Pressable
                       style={[s2.actionBtn, { backgroundColor: Colors.info + '15', borderColor: Colors.info + '40' }]}
                       onPress={() => {
@@ -812,10 +1244,10 @@ export default function DeveloperScreen() {
                           <Text style={{ fontSize: 11, fontFamily: 'Inter_600SemiBold', color: '#3B82F6' }}>تواصل</Text>
                         </Pressable>
                       )}
-                      <Pressable onPress={() => updateRequestStatus(req.id, 'approved')}
-                        style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 7, borderRadius: 8, borderWidth: 1, borderColor: '#10B98140', backgroundColor: '#10B98115' }}>
-                        <Ionicons name="checkmark-circle-outline" size={14} color="#10B981" />
-                        <Text style={{ fontSize: 11, fontFamily: 'Inter_700Bold', color: '#10B981' }}>موافقة وتفعيل</Text>
+                      <Pressable onPress={() => approveAndProvisionSchool(req)}
+                        style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 7, borderRadius: 8, borderWidth: 1.5, borderColor: '#10B98160', backgroundColor: '#10B98118' }}>
+                        <MaterialCommunityIcons name="check-decagram-outline" size={15} color="#10B981" />
+                        <Text style={{ fontSize: 11, fontFamily: 'Inter_700Bold', color: '#10B981' }}>موافقة وتفعيل ✦</Text>
                       </Pressable>
                       <Pressable
                         onPress={() => { setSelectedRequest(req); setRequestNotesDraft(req.notes ?? ''); setShowRequestDetail(true); }}
@@ -1250,6 +1682,19 @@ export default function DeveloperScreen() {
         editing={editingBanner}
         onClose={() => setShowBannerForm(false)}
         onSave={handleSaveBanner}
+      />
+
+      <CredentialsModal
+        visible={showCredsModal}
+        data={provisionedCreds}
+        onClose={() => setShowCredsModal(false)}
+      />
+
+      <RenewalModal
+        visible={showRenewalModal}
+        school={renewingSchool}
+        onClose={() => { setShowRenewalModal(false); setRenewingSchool(null); }}
+        onRenew={handleRenewSchool}
       />
 
       {/* ═══ School Registration Modal ═══ */}

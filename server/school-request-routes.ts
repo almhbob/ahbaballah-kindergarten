@@ -67,11 +67,15 @@ router.get('/', async (_req, res) => {
   }
 });
 
-// PATCH /api/school-requests/:id — Update status/notes
+// PATCH /api/school-requests/:id — Update status/notes/provision data
 router.patch('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { status, notes, reviewed_by } = req.body;
+    const {
+      status, notes, reviewed_by,
+      subscription_start, subscription_end,
+      approved_school_id, initial_password,
+    } = req.body;
     const allowed = ['pending', 'contacted', 'approved', 'rejected'];
     if (status && !allowed.includes(status)) {
       return res.status(400).json({ ok: false, error: 'حالة غير صالحة' });
@@ -79,12 +83,21 @@ router.patch('/:id', async (req, res) => {
 
     await pool.query(
       `UPDATE school_requests
-         SET status = COALESCE($1, status),
-             notes  = COALESCE($2, notes),
-             reviewed_by = COALESCE($3, reviewed_by),
-             reviewed_at = NOW()
-       WHERE id = $4`,
-      [status ?? null, notes ?? null, reviewed_by ?? null, id]
+         SET status             = COALESCE($1, status),
+             notes              = COALESCE($2, notes),
+             reviewed_by        = COALESCE($3, reviewed_by),
+             reviewed_at        = NOW(),
+             subscription_start = COALESCE($4, subscription_start),
+             subscription_end   = COALESCE($5, subscription_end),
+             approved_school_id = COALESCE($6, approved_school_id),
+             initial_password   = COALESCE($7, initial_password)
+       WHERE id = $8`,
+      [
+        status ?? null, notes ?? null, reviewed_by ?? null,
+        subscription_start ?? null, subscription_end ?? null,
+        approved_school_id ?? null, initial_password ?? null,
+        id,
+      ]
     );
     return res.json({ ok: true });
   } catch (err: any) {

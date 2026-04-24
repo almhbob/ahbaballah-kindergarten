@@ -28,11 +28,25 @@ Admin password can be changed from Settings → Developer panel → Admin passwo
 - `GET/PATCH/DELETE /api/reviews/:id` — review management
 - `POST /api/files/upload` — file uploads
 - `GET /api/health` — health check
+- `GET/POST /api/school-requests` — school join requests
+- `PATCH/DELETE /api/school-requests/:id` — manage requests (status, provisioning, subscription dates)
 
 ## Database Tables
 - `users` — auth accounts (admin, teacher, parent)
 - `reviews` — parent reviews (approved auto)
 - `app_state` — cloud-synced app state (JSON key-value)
+- `school_requests` — school registration requests (full provisioning: status, subscription_start/end, approved_school_id, initial_password)
+
+## School Registration & Provisioning Flow
+1. School fills `app/school-request.tsx` → 5-step form → saved to `school_requests` DB table
+2. Developer opens panel → "طلبات الانضمام" section → reviews request
+3. Developer presses "موافقة وتفعيل" → `approveAndProvisionSchool()` runs:
+   - Generates unique `schoolId` and `initialPassword`
+   - Creates `SchoolRegistration` entry (Firebase + AsyncStorage via `registerSchool()`)
+   - Tries Firebase Auth account creation (optional, graceful fail)
+   - PATCHes DB: sets status='approved', subscription_start/end, approved_school_id, initial_password
+4. `CredentialsModal` shows: schoolId, email, phone, password, subscription dates — all copyable
+5. School card in "إدارة الروضات" gets a "تجديد" button → `RenewalModal` → tier + months selection
 
 ## Key Features
 - **Admin**: Dashboard stats, student management, employee management, finance/payroll, news, inbox, meetings, schedule, graduation, transport, banners, registration requests, developer panel, analytics dashboard, bulk notifications, calendar, photo gallery, **bulk fee reminders via push notifications**

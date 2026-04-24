@@ -69,8 +69,16 @@ async function ensureSchema() {
         notes TEXT,
         reviewed_by TEXT,
         reviewed_at TIMESTAMP,
+        subscription_start TEXT,
+        subscription_end TEXT,
+        approved_school_id TEXT,
+        initial_password TEXT,
         created_at TIMESTAMP NOT NULL DEFAULT NOW()
       );
+      ALTER TABLE school_requests ADD COLUMN IF NOT EXISTS subscription_start TEXT;
+      ALTER TABLE school_requests ADD COLUMN IF NOT EXISTS subscription_end TEXT;
+      ALTER TABLE school_requests ADD COLUMN IF NOT EXISTS approved_school_id TEXT;
+      ALTER TABLE school_requests ADD COLUMN IF NOT EXISTS initial_password TEXT;
     `);
     console.log("[db] schema ensured ✓");
   } catch (err: any) {
