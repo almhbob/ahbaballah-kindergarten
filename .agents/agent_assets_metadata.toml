@@ -24,3 +24,9 @@ id = "PEoRQeOKR3LvofLkfnvUs"
 uri = "file://docs/marketing/poster.png"
 type = "image"
 title = "بوستر إعلاني للواتس آب — نظم إدارة رياض الأطفال"
+
+[[outputs]]
+id = "3r_TQkwiPl9YSfp7Iq04T"
+uri = "file://docs/marketing/brochure.pdf"
+type = "pdf"
+title = "الملف الترويجي (PDF) — نظم إدارة رياض الأطفال"
