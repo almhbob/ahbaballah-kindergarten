@@ -1,31 +1,39 @@
-import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const TOKEN_KEY = 'push_expo_token';
 
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowBanner: true,
-    shouldShowList:   true,
-    shouldPlaySound:  true,
-    shouldSetBadge:   false,
-  }),
-});
+type NotificationsModule = typeof import('expo-notifications');
+let N: NotificationsModule | null = null;
+
+try {
+  N = require('expo-notifications') as NotificationsModule;
+  N.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowBanner: true,
+      shouldShowList:   true,
+      shouldPlaySound:  true,
+      shouldSetBadge:   false,
+    }),
+  });
+} catch (_) {
+  console.warn('[Notifications] expo-notifications not available in Expo Go (SDK 53+). Push notifications disabled.');
+}
 
 export async function registerForPushNotifications(): Promise<string | null> {
+  if (!N) return null;
   if (Platform.OS === 'web') return null;
   if (!Device.isDevice) {
     console.warn('[Notifications] Push only works on real devices');
     return null;
   }
 
-  const { status: existing } = await Notifications.getPermissionsAsync();
+  const { status: existing } = await N.getPermissionsAsync();
   let finalStatus = existing;
 
   if (existing !== 'granted') {
-    const { status } = await Notifications.requestPermissionsAsync();
+    const { status } = await N.requestPermissionsAsync();
     finalStatus = status;
   }
 
@@ -35,14 +43,14 @@ export async function registerForPushNotifications(): Promise<string | null> {
   }
 
   try {
-    const tokenData = await Notifications.getExpoPushTokenAsync();
+    const tokenData = await N.getExpoPushTokenAsync();
     const token = tokenData.data;
     await AsyncStorage.setItem(TOKEN_KEY, token);
 
     if (Platform.OS === 'android') {
-      await Notifications.setNotificationChannelAsync('default', {
+      await N.setNotificationChannelAsync('default', {
         name: 'إشعارات نظم إدارة رياض الأطفال',
-        importance: Notifications.AndroidImportance.MAX,
+        importance: N.AndroidImportance.MAX,
         vibrationPattern: [0, 250, 250, 250],
         lightColor: '#0c1155',
         sound: 'default',
@@ -64,34 +72,40 @@ export async function scheduleLocalNotification(
   body: string,
   delaySeconds = 1,
 ): Promise<void> {
+  if (!N) return;
   if (Platform.OS === 'web') return;
   const trigger = delaySeconds > 0
-    ? ({ seconds: delaySeconds } as Notifications.NotificationTriggerInput)
-    : (null as unknown as Notifications.NotificationTriggerInput);
-  await Notifications.scheduleNotificationAsync({
+    ? ({ seconds: delaySeconds } as import('expo-notifications').NotificationTriggerInput)
+    : null;
+  await N.scheduleNotificationAsync({
     content: { title, body, sound: 'default' },
-    trigger,
+    trigger: trigger as import('expo-notifications').NotificationTriggerInput,
   });
 }
 
 export async function cancelAllNotifications(): Promise<void> {
-  await Notifications.cancelAllScheduledNotificationsAsync();
+  if (!N) return;
+  await N.cancelAllScheduledNotificationsAsync();
 }
 
 export function usePushNotificationListener(
-  onReceive?: (n: Notifications.Notification) => void,
-  onResponse?: (r: Notifications.NotificationResponse) => void,
+  _onReceive?: (n: unknown) => void,
+  _onResponse?: (r: unknown) => void,
 ) {
-  const receiveRef = Notifications.useLastNotificationResponse();
+  const receiveRef = N ? N.useLastNotificationResponse() : null;
   return { receiveRef };
 }
 
 export async function sendLocalNotificationNow(title: string, body: string): Promise<void> {
+  if (!N) {
+    console.log(`[Notification] ${title}: ${body}`);
+    return;
+  }
   if (Platform.OS === 'web') {
     console.log(`[Notification] ${title}: ${body}`);
     return;
   }
-  await Notifications.scheduleNotificationAsync({
+  await N.scheduleNotificationAsync({
     content: { title, body, sound: 'default' },
     trigger: null,
   });
