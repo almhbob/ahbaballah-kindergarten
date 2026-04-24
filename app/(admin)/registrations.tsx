@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import {
   View, Text, StyleSheet, FlatList, Pressable, Platform,
-  Modal, ScrollView, TextInput, Alert,
+  Modal, ScrollView, TextInput, Alert, Image, Linking,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -160,6 +160,34 @@ function DetailModal({
             <View style={detail.section}>
               <Text style={detail.sectionTitle}>ملاحظات</Text>
               <Text style={detail.noteText}>{req.notes}</Text>
+            </View>
+          ) : null}
+
+          {req.documents && Object.values(req.documents).some(Boolean) ? (
+            <View style={detail.section}>
+              <Text style={detail.sectionTitle}>المستندات المرفوعة</Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 6 }}>
+                {([
+                  ['birth',    'شهادة الميلاد'],
+                  ['id',       'هوية ولي الأمر'],
+                  ['passport', 'جواز الطفل'],
+                  ['health',   'دفتر التطعيمات'],
+                  ['photo',    'صورة الطفل'],
+                ] as const).map(([k, label]) => {
+                  const url = req.documents?.[k];
+                  if (!url) return null;
+                  return (
+                    <Pressable
+                      key={k}
+                      onPress={() => Linking.openURL(url)}
+                      style={{ width: 100, alignItems: 'center', gap: 4 }}
+                    >
+                      <Image source={{ uri: url }} style={{ width: 100, height: 100, borderRadius: 10, backgroundColor: Colors.background, borderWidth: 1, borderColor: Colors.border }} resizeMode="cover" />
+                      <Text style={{ fontSize: 11, fontFamily: 'Inter_500Medium', color: Colors.textLight, textAlign: 'center' }}>{label}</Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
             </View>
           ) : null}
 

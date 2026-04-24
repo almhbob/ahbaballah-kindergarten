@@ -109,8 +109,12 @@ export default function CalendarScreen() {
   const selectedEvents = selectedDate ? (eventsByDate[selectedDate] ?? []) : [];
 
   function handleAddEvent() {
-    if (!form.title.trim() || !form.date.trim()) {
-      Alert.alert('تنبيه', 'الرجاء إدخال العنوان والتاريخ');
+    if (!form.title.trim()) {
+      Alert.alert('تنبيه', 'الرجاء إدخال عنوان الفعالية');
+      return;
+    }
+    if (!form.date.trim()) {
+      Alert.alert('تنبيه', 'اختر التاريخ من التقويم');
       return;
     }
     if (!/^\d{4}-\d{2}-\d{2}$/.test(form.date)) {
@@ -270,11 +274,39 @@ export default function CalendarScreen() {
             <View style={s.modalHandle} />
             <Text style={s.modalTitle}>إضافة فعالية جديدة</Text>
 
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 8 }} keyboardShouldPersistTaps="handled">
+
             <Text style={s.label}>العنوان *</Text>
             <TextInput style={s.input} placeholder="مثال: اختبار الرياضيات" placeholderTextColor="#666" value={form.title} onChangeText={v => setForm(f => ({ ...f, title: v }))} textAlign="right" />
 
-            <Text style={s.label}>التاريخ * (YYYY-MM-DD)</Text>
-            <TextInput style={s.input} placeholder="2026-04-20" placeholderTextColor="#666" value={form.date} onChangeText={v => setForm(f => ({ ...f, date: v }))} keyboardType="numeric" textAlign="right" />
+            <Text style={s.label}>التاريخ *</Text>
+            <View style={s.miniMonthRow}>
+              <Pressable style={s.miniNavBtn} onPress={() => { if (month === 0) { setMonth(11); setYear(y => y - 1); } else setMonth(m => m - 1); }}>
+                <Ionicons name="chevron-forward" size={16} color={Colors.textLight} />
+              </Pressable>
+              <Text style={s.miniMonthTitle}>{AR_MONTHS[month]} {year}</Text>
+              <Pressable style={s.miniNavBtn} onPress={() => { if (month === 11) { setMonth(0); setYear(y => y + 1); } else setMonth(m => m + 1); }}>
+                <Ionicons name="chevron-back" size={16} color={Colors.textLight} />
+              </Pressable>
+            </View>
+            <View style={s.miniGrid}>
+              {cells.map((day, i) => {
+                if (day === null) return <View key={`mE${i}`} style={s.miniCell} />;
+                const dateStr = fmtDate(year, month, day);
+                const isPicked = form.date === dateStr;
+                const isToday = dateStr === todayStr;
+                return (
+                  <Pressable
+                    key={`m${i}`}
+                    style={[s.miniCell, isPicked && s.miniCellPicked, !isPicked && isToday && s.miniCellToday]}
+                    onPress={() => { setForm(f => ({ ...f, date: dateStr })); Haptics.selectionAsync(); }}
+                  >
+                    <Text style={[s.miniCellText, isPicked && { color: '#fff', fontFamily: 'Inter_700Bold' }]}>{day}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+            <Text style={s.miniDateLabel}>{form.date ? `التاريخ المختار: ${form.date}` : 'لم يُحدد تاريخ بعد'}</Text>
 
             <Text style={s.label}>الوقت (اختياري)</Text>
             <TextInput style={s.input} placeholder="09:00" placeholderTextColor="#666" value={form.time} onChangeText={v => setForm(f => ({ ...f, time: v }))} textAlign="right" />
@@ -292,8 +324,10 @@ export default function CalendarScreen() {
             <Text style={s.label}>الوصف (اختياري)</Text>
             <TextInput style={[s.input, { height: 70, textAlignVertical: 'top' }]} placeholder="تفاصيل إضافية..." placeholderTextColor="#666" value={form.description} onChangeText={v => setForm(f => ({ ...f, description: v }))} multiline textAlign="right" />
 
+            </ScrollView>
+
             <View style={s.modalBtns}>
-              <Pressable style={s.cancelBtn} onPress={() => setShowForm(false)}>
+              <Pressable style={s.cancelBtn} onPress={() => { setShowForm(false); setForm(EMPTY_FORM); }}>
                 <Text style={s.cancelBtnText}>إلغاء</Text>
               </Pressable>
               <Pressable style={s.saveBtn} onPress={handleAddEvent}>
@@ -355,7 +389,16 @@ const s = StyleSheet.create({
   legendText: { fontSize: 11, fontFamily: 'Inter_400Regular', color: Colors.textLight },
 
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'flex-end' },
-  modalSheet: { backgroundColor: Colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 36, gap: 8 },
+  modalSheet: { backgroundColor: Colors.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 36, gap: 8, maxHeight: '92%' },
+  miniMonthRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: Colors.background, borderRadius: 10, paddingHorizontal: 8, paddingVertical: 6, borderWidth: 1, borderColor: Colors.border },
+  miniNavBtn: { width: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
+  miniMonthTitle: { fontSize: 13, fontFamily: 'Inter_600SemiBold', color: Colors.text },
+  miniGrid: { flexDirection: 'row', flexWrap: 'wrap', backgroundColor: Colors.background, borderRadius: 10, padding: 4, borderWidth: 1, borderColor: Colors.border },
+  miniCell: { width: `${100/7}%`, aspectRatio: 1, alignItems: 'center', justifyContent: 'center', padding: 2 },
+  miniCellPicked: { backgroundColor: Colors.accent, borderRadius: 6 },
+  miniCellToday: { borderWidth: 1, borderColor: Colors.accent, borderRadius: 6 },
+  miniCellText: { fontSize: 12, fontFamily: 'Inter_500Medium', color: Colors.text },
+  miniDateLabel: { fontSize: 11, fontFamily: 'Inter_500Medium', color: Colors.accent, textAlign: 'right', marginTop: -2 },
   modalHandle: { width: 40, height: 4, backgroundColor: Colors.border, borderRadius: 2, alignSelf: 'center', marginBottom: 8 },
   modalTitle: { fontSize: 17, fontFamily: 'Inter_700Bold', color: Colors.text, textAlign: 'center', marginBottom: 4 },
   label: { fontSize: 12, fontFamily: 'Inter_500Medium', color: Colors.textLight, textAlign: 'right' },

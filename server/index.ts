@@ -2,8 +2,55 @@ import express from "express";
 import type { Request, Response, NextFunction } from "express";
 import session from "express-session";
 import { registerRoutes } from "./routes";
+import pool from "./db";
 import * as fs from "fs";
 import * as path from "path";
+
+async function ensureSchema() {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        full_name TEXT NOT NULL,
+        email TEXT UNIQUE,
+        phone TEXT UNIQUE,
+        role TEXT NOT NULL,
+        password_hash TEXT NOT NULL,
+        linked_id TEXT,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      );
+      CREATE TABLE IF NOT EXISTS reviews (
+        id SERIAL PRIMARY KEY,
+        parent_name TEXT NOT NULL,
+        child_name TEXT NOT NULL,
+        content TEXT NOT NULL,
+        rating INTEGER NOT NULL DEFAULT 5,
+        approved BOOLEAN NOT NULL DEFAULT TRUE,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      );
+      CREATE TABLE IF NOT EXISTS app_state (
+        key TEXT PRIMARY KEY,
+        value JSONB NOT NULL,
+        updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+      );
+      CREATE TABLE IF NOT EXISTS files (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL,
+        role TEXT NOT NULL,
+        file_name TEXT NOT NULL,
+        file_path TEXT NOT NULL,
+        mime_type TEXT,
+        size_bytes BIGINT,
+        public_url TEXT NOT NULL,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      );
+      CREATE INDEX IF NOT EXISTS files_user_id_idx ON files(user_id);
+    `);
+    console.log("[db] schema ensured ✓");
+  } catch (err: any) {
+    console.error("[db] ensureSchema failed:", err?.message);
+  }
+}
 
 const app = express();
 const log = console.log;
@@ -244,6 +291,8 @@ function setupErrorHandler(app: express.Application) {
   setupRequestLogging(app);
 
   configureExpoAndLanding(app);
+
+  await ensureSchema();
 
   const server = await registerRoutes(app);
 

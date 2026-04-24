@@ -4,6 +4,7 @@ import {
   TextInput, Modal, ScrollView, Alert, Platform, Linking, Image,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { uploadFile } from '@/lib/uploads';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -589,19 +590,44 @@ function AddStudentModal({ visible, editing, onClose, onSave }: {
     }
   }, [editing, visible]);
 
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [uploadingBirth, setUploadingBirth] = useState(false);
+
   const pickPhoto = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') { Alert.alert('الأذونات', 'نحتاج إذن الوصول للمعرض'); return; }
-    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, allowsEditing: true, aspect: [1, 1], quality: 0.8 });
-    if (!result.canceled && result.assets[0]) setPhoto(result.assets[0].uri);
+    if (Platform.OS !== 'web') {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') { Alert.alert('الأذونات', 'نحتاج إذن الوصول للمعرض'); return; }
+    }
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 0.8 });
+      if (result.canceled || !result.assets[0]) return;
+      setUploadingPhoto(true);
+      const url = await uploadFile(result.assets[0].uri, { name: `student_photo_${Date.now()}.jpg`, mime: 'image/jpeg' });
+      setPhoto(url);
+    } catch (e: any) {
+      Alert.alert('فشل الرفع', e?.message || 'تعذّر رفع الصورة');
+    } finally {
+      setUploadingPhoto(false);
+    }
   };
 
   const pickBirthCert = async () => {
     if (birthCertImages.length >= 3) { Alert.alert('الحد الأقصى', 'يمكن إضافة 3 صور كحد أقصى'); return; }
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') { Alert.alert('الأذونات', 'نحتاج إذن الوصول للمعرض'); return; }
-    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, allowsEditing: false, quality: 0.9 });
-    if (!result.canceled && result.assets[0]) setBirthCertImages(prev => [...prev, result.assets[0].uri]);
+    if (Platform.OS !== 'web') {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') { Alert.alert('الأذونات', 'نحتاج إذن الوصول للمعرض'); return; }
+    }
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: false, quality: 0.9 });
+      if (result.canceled || !result.assets[0]) return;
+      setUploadingBirth(true);
+      const url = await uploadFile(result.assets[0].uri, { name: `birth_cert_${Date.now()}.jpg`, mime: 'image/jpeg' });
+      setBirthCertImages(prev => [...prev, url]);
+    } catch (e: any) {
+      Alert.alert('فشل الرفع', e?.message || 'تعذّر رفع الصورة');
+    } finally {
+      setUploadingBirth(false);
+    }
   };
 
   const handleSave = () => {

@@ -8,6 +8,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
+import { uploadFile } from '@/lib/uploads';
 import * as Haptics from 'expo-haptics';
 import { Colors } from '@/constants/colors';
 import { useAppData, GalleryPhoto } from '@/contexts/AppDataContext';
@@ -41,45 +42,46 @@ export default function GalleryScreen() {
     : galleryPhotos.filter(p => p.category === activeCategory);
 
   async function pickImage() {
-    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!perm.granted) {
-      Alert.alert('إذن مطلوب', 'يرجى السماح بالوصول إلى الصور');
-      return;
+    if (Platform.OS !== 'web') {
+      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!perm.granted) { Alert.alert('إذن مطلوب', 'يرجى السماح بالوصول إلى الصور'); return; }
     }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      quality: 0.5,
-      base64: true,
-      allowsEditing: true,
-      aspect: [4, 3],
-    });
-    if (!result.canceled && result.assets[0]) {
-      const asset = result.assets[0];
-      const uri = asset.base64
-        ? `data:image/jpeg;base64,${asset.base64}`
-        : asset.uri;
-      setPickedUri(uri);
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        quality: 0.7,
+        allowsEditing: true,
+        aspect: [4, 3],
+      });
+      if (result.canceled || !result.assets[0]) return;
+      setLoading(true);
+      const url = await uploadFile(result.assets[0].uri, { name: `gallery_${Date.now()}.jpg`, mime: 'image/jpeg' });
+      setPickedUri(url);
+    } catch (e: any) {
+      Alert.alert('فشل الرفع', e?.message || 'تعذّر رفع الصورة');
+    } finally {
+      setLoading(false);
     }
   }
 
   async function takePhoto() {
+    if (Platform.OS === 'web') { return pickImage(); }
     const perm = await ImagePicker.requestCameraPermissionsAsync();
-    if (!perm.granted) {
-      Alert.alert('إذن مطلوب', 'يرجى السماح بالوصول إلى الكاميرا');
-      return;
-    }
-    const result = await ImagePicker.launchCameraAsync({
-      quality: 0.5,
-      base64: true,
-      allowsEditing: true,
-      aspect: [4, 3],
-    });
-    if (!result.canceled && result.assets[0]) {
-      const asset = result.assets[0];
-      const uri = asset.base64
-        ? `data:image/jpeg;base64,${asset.base64}`
-        : asset.uri;
-      setPickedUri(uri);
+    if (!perm.granted) { Alert.alert('إذن مطلوب', 'يرجى السماح بالوصول إلى الكاميرا'); return; }
+    try {
+      const result = await ImagePicker.launchCameraAsync({
+        quality: 0.7,
+        allowsEditing: true,
+        aspect: [4, 3],
+      });
+      if (result.canceled || !result.assets[0]) return;
+      setLoading(true);
+      const url = await uploadFile(result.assets[0].uri, { name: `gallery_${Date.now()}.jpg`, mime: 'image/jpeg' });
+      setPickedUri(url);
+    } catch (e: any) {
+      Alert.alert('فشل الرفع', e?.message || 'تعذّر رفع الصورة');
+    } finally {
+      setLoading(false);
     }
   }
 

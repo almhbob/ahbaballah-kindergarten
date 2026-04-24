@@ -254,6 +254,14 @@ export interface RegistrationRequest {
   parentRelation: string;
   parentEmail?: string;
   notes?: string;
+  nationality?: string;
+  documents?: {
+    birth?: string;
+    id?: string;
+    passport?: string;
+    health?: string;
+    photo?: string;
+  };
 }
 
 export type BannerType = 'offer' | 'alert' | 'event' | 'ad';

@@ -11,6 +11,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
 import { Colors } from '@/constants/colors';
 import { useAppData } from '@/contexts/AppDataContext';
+import { uploadFile } from '@/lib/uploads';
 
 type Level = 'براعم' | 'مستوى أول' | 'مستوى ثاني';
 type Gender = 'ذكر' | 'أنثى';
@@ -55,6 +56,7 @@ export default function EnrollmentRequestScreen() {
   const [nationality, setNationality] = useState('');
   const [notes, setNotes] = useState('');
   const [docs, setDocs] = useState<Record<string, string>>({});
+  const [uploadingDoc, setUploadingDoc] = useState<string | null>(null);
   const [step, setStep] = useState<'form' | 'docs' | 'done'>('form');
   const [loading, setLoading] = useState(false);
 
@@ -62,26 +64,30 @@ export default function EnrollmentRequestScreen() {
   const bottomPadding = Platform.OS === 'web' ? 34 : insets.bottom + 24;
 
   async function pickDoc(key: string) {
-    if (Platform.OS === 'web') {
-      setDocs(prev => ({ ...prev, [key]: 'web-placeholder' }));
-      return;
-    }
     try {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('تنبيه', 'نحتاج إذن الوصول إلى المعرض');
-        return;
+      if (Platform.OS !== 'web') {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') {
+          Alert.alert('تنبيه', 'نحتاج إذن الوصول إلى المعرض');
+          return;
+        }
       }
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
-        quality: 0.6,
+        quality: 0.7,
       });
-      if (!result.canceled && result.assets.length > 0) {
-        setDocs(prev => ({ ...prev, [key]: result.assets[0].uri }));
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      }
-    } catch {
-      Alert.alert('خطأ', 'تعذّر فتح المعرض');
+      if (result.canceled || result.assets.length === 0) return;
+      setUploadingDoc(key);
+      const url = await uploadFile(result.assets[0].uri, {
+        name: `reg_${key}_${Date.now()}.jpg`,
+        mime: 'image/jpeg',
+      });
+      setDocs(prev => ({ ...prev, [key]: url }));
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    } catch (e: any) {
+      Alert.alert('فشل الرفع', e?.message || 'تعذّر رفع المستند، حاول مجدداً');
+    } finally {
+      setUploadingDoc(null);
     }
   }
 
@@ -95,6 +101,8 @@ export default function EnrollmentRequestScreen() {
   function submitRequest() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setLoading(true);
+    const docPayload: Record<string, string> = {};
+    Object.entries(docs).forEach(([k, v]) => { if (v) docPayload[k] = v; });
     setTimeout(() => {
       addRegistrationRequest({
         id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
@@ -105,13 +113,15 @@ export default function EnrollmentRequestScreen() {
         requestedLevel: level,
         gender,
         birthDate: birthDate.trim(),
+        nationality: nationality.trim() || undefined,
         notes: notes.trim() || undefined,
+        documents: Object.keys(docPayload).length ? docPayload : undefined,
         status: 'pending',
         createdAt: new Date().toISOString(),
       });
       setLoading(false);
       setStep('done');
-    }, 800);
+    }, 400);
   }
 
   if (step === 'done') {
@@ -252,16 +262,17 @@ export default function EnrollmentRequestScreen() {
               <Text style={s.docsHint}>الوثائق المطلوبة (مطلوبة <Text style={{ color: Colors.danger }}>*</Text> )</Text>
               {DOCS.map(doc => {
                 const uri = docs[doc.key];
+                const isUploading = uploadingDoc === doc.key;
                 return (
-                  <Pressable key={doc.key} style={s.docItem} onPress={() => pickDoc(doc.key)}>
-                    {uri && uri !== 'web-placeholder' ? (
+                  <Pressable key={doc.key} style={[s.docItem, isUploading && { opacity: 0.7 }]} onPress={() => !isUploading && pickDoc(doc.key)} disabled={isUploading}>
+                    {uri ? (
                       <Image source={{ uri }} style={s.docThumb} resizeMode="cover" />
                     ) : (
-                      <View style={[s.docIcon, uri && { backgroundColor: Colors.success + '20' }]}>
+                      <View style={s.docIcon}>
                         <MaterialCommunityIcons
-                          name={uri ? 'check-circle' : 'file-upload-outline'}
+                          name={isUploading ? 'cloud-upload-outline' : 'file-upload-outline'}
                           size={24}
-                          color={uri ? Colors.success : 'rgba(255,255,255,0.3)'}
+                          color={'rgba(255,255,255,0.3)'}
                         />
                       </View>
                     )}
@@ -270,7 +281,9 @@ export default function EnrollmentRequestScreen() {
                         {doc.label}
                         {doc.required && <Text style={{ color: Colors.danger }}> *</Text>}
                       </Text>
-                      <Text style={s.docSub}>{uri ? 'تم الرفع ✓' : 'اضغط لاختيار الصورة'}</Text>
+                      <Text style={s.docSub}>
+                        {isUploading ? 'جاري الرفع...' : uri ? 'تم الرفع ✓' : 'اضغط لاختيار الصورة'}
+                      </Text>
                     </View>
                     <Ionicons name={uri ? 'checkmark-circle' : 'cloud-upload-outline'} size={20} color={uri ? Colors.success : 'rgba(255,255,255,0.3)'} />
                   </Pressable>

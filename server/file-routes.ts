@@ -12,7 +12,7 @@ if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 const storage = multer.diskStorage({
   destination: (req, _file, cb) => {
     const user = (req as any).session?.user;
-    const dir = path.join(UPLOADS_DIR, user?.role || 'misc', String(user?.id || '0'));
+    const dir = path.join(UPLOADS_DIR, user?.role || 'public', String(user?.id || 'guest'));
     fs.mkdirSync(dir, { recursive: true });
     cb(null, dir);
   },
@@ -22,7 +22,7 @@ const storage = multer.diskStorage({
   },
 });
 
-const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } });
+const upload = multer({ storage, limits: { fileSize: 25 * 1024 * 1024 } });
 
 function requireAuth(req: Request, res: Response, next: Function) {
   if (!req.session.user) return res.status(401).json({ ok: false, error: 'يجب تسجيل الدخول أولاً' });
@@ -43,23 +43,23 @@ router.get('/', requireAuth, async (req: Request, res: Response) => {
   }
 });
 
-router.post('/upload', requireAuth, upload.single('file'), async (req: Request, res: Response) => {
+router.post('/upload', upload.single('file'), async (req: Request, res: Response) => {
   try {
     if (!req.file) return res.status(400).json({ ok: false, error: 'لم يُرسَل أي ملف' });
 
-    const user = req.session.user!;
+    const user = req.session.user;
     const relativePath = path.relative(process.cwd(), req.file.path).replace(/\\/g, '/');
     const parts = relativePath.split('/');
-    const role = parts[1] || user.role;
-    const userId = parts[2] || String(user.id);
+    const role = parts[1] || user?.role || 'public';
+    const userIdSeg = parts[2] || String(user?.id ?? 'guest');
     const filename = parts[3] || path.basename(req.file.path);
-    const publicUrl = `/api/files/serve/${role}/${userId}/${filename}`;
+    const publicUrl = `/api/files/serve/${role}/${userIdSeg}/${filename}`;
 
     const { rows } = await pool.query(
       `INSERT INTO files (user_id, role, file_name, file_path, mime_type, size_bytes, public_url)
        VALUES ($1, $2, $3, $4, $5, $6, $7)
        RETURNING id, file_name, file_path, mime_type, size_bytes, public_url, created_at`,
-      [user.id, user.role, req.file.originalname, relativePath, req.file.mimetype, req.file.size, publicUrl]
+      [user?.id ?? 0, role, req.file.originalname, relativePath, req.file.mimetype, req.file.size, publicUrl]
     );
 
     return res.json({ ok: true, file: rows[0] });
