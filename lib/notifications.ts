@@ -1,66 +1,15 @@
-import * as Device from 'expo-device';
-import { Platform } from 'react-native';
+/**
+ * Notifications stub — expo-notifications remote push was removed from Expo Go
+ * in SDK 53. This stub keeps the same API surface so all callers compile and
+ * run without crashing. Real push notifications require a development build.
+ */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const TOKEN_KEY = 'push_expo_token';
 
-type NotificationsModule = typeof import('expo-notifications');
-let N: NotificationsModule | null = null;
-
-try {
-  N = require('expo-notifications') as NotificationsModule;
-  N.setNotificationHandler({
-    handleNotification: async () => ({
-      shouldShowBanner: true,
-      shouldShowList:   true,
-      shouldPlaySound:  true,
-      shouldSetBadge:   false,
-    }),
-  });
-} catch (_) {
-  console.warn('[Notifications] expo-notifications not available in Expo Go (SDK 53+). Push notifications disabled.');
-}
-
 export async function registerForPushNotifications(): Promise<string | null> {
-  if (!N) return null;
-  if (Platform.OS === 'web') return null;
-  if (!Device.isDevice) {
-    console.warn('[Notifications] Push only works on real devices');
-    return null;
-  }
-
-  const { status: existing } = await N.getPermissionsAsync();
-  let finalStatus = existing;
-
-  if (existing !== 'granted') {
-    const { status } = await N.requestPermissionsAsync();
-    finalStatus = status;
-  }
-
-  if (finalStatus !== 'granted') {
-    console.warn('[Notifications] Permission denied');
-    return null;
-  }
-
-  try {
-    const tokenData = await N.getExpoPushTokenAsync();
-    const token = tokenData.data;
-    await AsyncStorage.setItem(TOKEN_KEY, token);
-
-    if (Platform.OS === 'android') {
-      await N.setNotificationChannelAsync('default', {
-        name: 'إشعارات نظم إدارة رياض الأطفال',
-        importance: N.AndroidImportance.MAX,
-        vibrationPattern: [0, 250, 250, 250],
-        lightColor: '#0c1155',
-        sound: 'default',
-      });
-    }
-    return token;
-  } catch (err) {
-    console.warn('[Notifications] Token error:', err);
-    return null;
-  }
+  console.log('[Notifications] Push notifications require a development build (not Expo Go).');
+  return null;
 }
 
 export async function getSavedPushToken(): Promise<string | null> {
@@ -70,43 +19,22 @@ export async function getSavedPushToken(): Promise<string | null> {
 export async function scheduleLocalNotification(
   title: string,
   body: string,
-  delaySeconds = 1,
+  _delaySeconds = 1,
 ): Promise<void> {
-  if (!N) return;
-  if (Platform.OS === 'web') return;
-  const trigger = delaySeconds > 0
-    ? ({ seconds: delaySeconds } as import('expo-notifications').NotificationTriggerInput)
-    : null;
-  await N.scheduleNotificationAsync({
-    content: { title, body, sound: 'default' },
-    trigger: trigger as import('expo-notifications').NotificationTriggerInput,
-  });
+  console.log(`[Notification scheduled] ${title}: ${body}`);
 }
 
 export async function cancelAllNotifications(): Promise<void> {
-  if (!N) return;
-  await N.cancelAllScheduledNotificationsAsync();
+  console.log('[Notifications] cancelAllNotifications — stub');
 }
 
 export function usePushNotificationListener(
   _onReceive?: (n: unknown) => void,
   _onResponse?: (r: unknown) => void,
 ) {
-  const receiveRef = N ? N.useLastNotificationResponse() : null;
-  return { receiveRef };
+  return { receiveRef: null };
 }
 
 export async function sendLocalNotificationNow(title: string, body: string): Promise<void> {
-  if (!N) {
-    console.log(`[Notification] ${title}: ${body}`);
-    return;
-  }
-  if (Platform.OS === 'web') {
-    console.log(`[Notification] ${title}: ${body}`);
-    return;
-  }
-  await N.scheduleNotificationAsync({
-    content: { title, body, sound: 'default' },
-    trigger: null,
-  });
+  console.log(`[Notification now] ${title}: ${body}`);
 }
