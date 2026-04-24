@@ -258,7 +258,7 @@ function buildHTMLReport(students: Student[], filterLevel: string, schoolName: s
       </div>
       <div style="text-align:center;color:#94a3b8">
         <div>تم إنشاء هذه القائمة بتاريخ ${date}</div>
-        <div style="margin-top:4px">روضة أحباب الله — الخاصة</div>
+        <div style="margin-top:4px">نظم إدارة رياض الأطفال — الخاصة</div>
       </div>
       <div style="text-align:left">
         <div class="footer-signature">ختم الروضة</div>

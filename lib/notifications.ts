@@ -41,7 +41,7 @@ export async function registerForPushNotifications(): Promise<string | null> {
 
     if (Platform.OS === 'android') {
       await Notifications.setNotificationChannelAsync('default', {
-        name: 'إشعارات روضة أحباب الله',
+        name: 'إشعارات نظم إدارة رياض الأطفال',
         importance: Notifications.AndroidImportance.MAX,
         vibrationPattern: [0, 250, 250, 250],
         lightColor: '#0c1155',

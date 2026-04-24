@@ -77,7 +77,7 @@ interface Props {
 const CertificateLuxury = forwardRef<View, Props>(function CertificateLuxury(
   {
     cert,
-    schoolName = 'روضة أحباب الله — الخاصة',
+    schoolName = 'نظم إدارة رياض الأطفال — الخاصة',
     principalName = 'أ. سلوى أحمد داموس',
     targetWidth = Dimensions.get('window').width - 32,
   },
@@ -240,7 +240,7 @@ const CertificateLuxury = forwardRef<View, Props>(function CertificateLuxury(
 
               {/* Tagline */}
               <Text style={[lx.tagline, { color: t.gold + '80', fontSize: fs(7.5) }]}>
-                ✦ هذه الشهادة معتمدة من إدارة روضة أحباب الله ✦
+                ✦ هذه الشهادة معتمدة من إدارة نظم إدارة رياض الأطفال ✦
               </Text>
             </View>
           </View>

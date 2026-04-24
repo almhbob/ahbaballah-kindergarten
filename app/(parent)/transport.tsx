@@ -103,7 +103,7 @@ export default function ParentTransportScreen() {
           <View style={s.headerContent}>
             <MaterialCommunityIcons name="bus-school" size={36} color="#68D89A" />
             <Text style={s.headerTitle}>خدمة الترحيل</Text>
-            <Text style={s.headerSub}>روضة أحباب الله — الخاصة</Text>
+            <Text style={s.headerSub}>نظم إدارة رياض الأطفال — الخاصة</Text>
           </View>
 
           {/* Current status badge */}

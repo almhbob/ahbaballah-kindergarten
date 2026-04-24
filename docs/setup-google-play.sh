@@ -1,6 +1,6 @@
 #!/bin/bash
 # ═══════════════════════════════════════════════════════════════════════════════
-# أداة إعداد Google Play Service Account التلقائية — روضة أحباب الله
+# أداة إعداد Google Play Service Account التلقائية — نظم إدارة رياض الأطفال
 # شغّلها من: https://shell.cloud.google.com
 # الأمر: bash <(curl -fsSL https://raw.githubusercontent.com/almhbob/ahbaballah-kindergarten/main/docs/setup-google-play.sh)
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -16,7 +16,7 @@ SERVER_URL="https://2be55d0a-6bcf-41e3-b926-62f595b1feef-00-37br86ji98cvi.sisko.
 echo ""
 echo "╔══════════════════════════════════════════════════════╗"
 echo "║     إعداد Google Play Service Account تلقائياً      ║"
-echo "║         روضة أحباب الله — ahbabullah-e85a6          ║"
+echo "║         نظم إدارة رياض الأطفال — ahbabullah-e85a6          ║"
 echo "╚══════════════════════════════════════════════════════╝"
 echo ""
 
@@ -40,7 +40,7 @@ if gcloud iam service-accounts describe "$SA_EMAIL" --project="$PROJECT_ID" &>/d
   echo "     ✅ الحساب موجود: $SA_EMAIL"
 else
   gcloud iam service-accounts create "$SA_NAME" \
-    --display-name="Google Play Publisher — روضة أحباب الله" \
+    --display-name="Google Play Publisher — نظم إدارة رياض الأطفال" \
     --project="$PROJECT_ID" --quiet
   echo "     ✅ تم إنشاء: $SA_EMAIL"
 fi

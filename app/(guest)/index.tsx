@@ -20,7 +20,7 @@ const { width: W } = Dimensions.get('window');
 // ─── CONSTANTS (قابلة للتعديل بسهولة) ────────────────────────────────────────
 
 const HERO = {
-  title:   'روضة أحباب الله',
+  title:   'نظم إدارة رياض الأطفال',
   city:    'صفيتة الغنوماب',
   slogan:  'نبني جيلاً واثقاً ومبدعاً',
   desc:    'بيئة تعليمية حاضنة تجمع بين الأصالة والحداثة — نُعلّم أطفالنا القيم والعلم والإبداع منذ سنواتهم الأولى',
@@ -63,7 +63,7 @@ const STEPS = [
   { num: '١', title: 'التواصل',  icon: 'phone',           color: '#3B82F6', desc: 'اتصل أو راسلنا عبر واتساب لمعرفة التفاصيل' },
   { num: '٢', title: 'الزيارة',  icon: 'map-marker',      color: '#8B5CF6', desc: 'جولة في الروضة للتعرّف على البيئة والمعلمات' },
   { num: '٣', title: 'التسجيل',  icon: 'file-document',   color: '#F59E0B', desc: 'أكمل نموذج التسجيل وأحضر الوثائق المطلوبة' },
-  { num: '٤', title: 'الانضمام', icon: 'account-check',   color: '#10B981', desc: 'مرحباً بطفلك في عائلة روضة أحباب الله 🎉' },
+  { num: '٤', title: 'الانضمام', icon: 'account-check',   color: '#10B981', desc: 'مرحباً بطفلك في عائلة نظم إدارة رياض الأطفال 🎉' },
 ];
 
 const FALLBACK_REVIEWS = [
@@ -225,7 +225,7 @@ function RegistrationModal({ visible, onClose, onSubmit }: {
                 </View>
                 <Text style={fm.successTitle}>تم الإرسال بنجاح!</Text>
                 <Text style={fm.successText}>
-                  شكراً لاهتمامك بروضة أحباب الله.{'\n'}سيتواصل معك فريق الإدارة قريباً.
+                  شكراً لاهتمامك بنظم إدارة رياض الأطفال.{'\n'}سيتواصل معك فريق الإدارة قريباً.
                 </Text>
                 <View style={fm.successInfo}>
                   <Text style={fm.successRow}>📋  {form.childName}</Text>
@@ -666,7 +666,7 @@ export default function GuestHomeScreen() {
             <SectionHeader title="معلومات التواصل" />
             <View style={s.infoCard}>
               {[
-                { icon: 'school-outline',  color: Colors.primary,  val: schoolInfo?.name ?? 'روضة أحباب الله', action: undefined },
+                { icon: 'school-outline',  color: Colors.primary,  val: schoolInfo?.name ?? 'نظم إدارة رياض الأطفال', action: undefined },
                 { icon: 'location-outline',color: Colors.success,  val: schoolInfo?.location ?? 'صفيتة الغنوماب', action: undefined },
                 { icon: 'call-outline',    color: '#3B82F6',       val: phone || 'غير محدد', action: phone ? () => openLink(`tel:${phone}`) : undefined },
                 { icon: 'mail-outline',    color: Colors.accent,   val: schoolInfo?.email ?? 'غير محدد', action: schoolInfo?.email ? () => openLink(`mailto:${schoolInfo.email}`) : undefined },

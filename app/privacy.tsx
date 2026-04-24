@@ -12,7 +12,7 @@ const SECTIONS = [
   {
     icon: 'information-outline',
     title: 'مقدمة',
-    body: `نظام إدارة روضة أحباب الله ("التطبيق") هو منصة تعليمية إدارية تُقدَّم كخدمة SaaS للروضات الخاصة.\n\nباستخدامك هذا التطبيق فأنت توافق على سياسة الخصوصية هذه وشروط الاستخدام. إذا كنت لا توافق على أي بند، يُرجى التوقف عن استخدام التطبيق فوراً.`,
+    body: `نظام إدارة نظم إدارة رياض الأطفال ("التطبيق") هو منصة تعليمية إدارية تُقدَّم كخدمة SaaS للروضات الخاصة.\n\nباستخدامك هذا التطبيق فأنت توافق على سياسة الخصوصية هذه وشروط الاستخدام. إذا كنت لا توافق على أي بند، يُرجى التوقف عن استخدام التطبيق فوراً.`,
   },
   {
     icon: 'database-outline',
@@ -126,7 +126,7 @@ export default function PrivacyScreen() {
 
         <View style={s.footer}>
           <MaterialCommunityIcons name="domain" size={28} color={Colors.textLight} />
-          <Text style={s.footerName}>نظام إدارة روضة أحباب الله</Text>
+          <Text style={s.footerName}>نظام إدارة نظم إدارة رياض الأطفال</Text>
           <Text style={s.footerSub}>تطوير: م / عاصم عبدالرحمن محمد</Text>
           <Text style={s.footerVersion}>الإصدار 1.0.0 — 2026</Text>
         </View>

@@ -69,7 +69,7 @@ export default function TeacherScheduleScreen() {
               <Ionicons name="log-out-outline" size={22} color="rgba(255,255,255,0.7)" />
             </Pressable>
             <View style={styles.headerText}>
-              <Text style={styles.schoolName}>روضة أحباب الله</Text>
+              <Text style={styles.schoolName}>نظم إدارة رياض الأطفال</Text>
               <Text style={styles.schoolLocation}>صفيتة الغنوماب</Text>
               <Text style={styles.greeting}>مرحباً، {user?.name}</Text>
             </View>

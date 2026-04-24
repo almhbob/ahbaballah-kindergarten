@@ -25,7 +25,7 @@ interface Props {
   compact?: boolean;
 }
 
-export default function CertificateCard({ cert, schoolName = 'روضة أحباب الله — الخاصة', principalName = 'أ. سلوى أحمد داموس', compact = false }: Props) {
+export default function CertificateCard({ cert, schoolName = 'نظم إدارة رياض الأطفال — الخاصة', principalName = 'أ. سلوى أحمد داموس', compact = false }: Props) {
   const tmpl = CERT_TEMPLATES[cert.template];
 
   if (compact) {

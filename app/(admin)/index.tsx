@@ -194,7 +194,7 @@ export default function AdminDashboard() {
               <Ionicons name="log-out-outline" size={22} color="rgba(255,255,255,0.7)" />
             </Pressable>
             <View style={styles.headerText}>
-              <Text style={styles.schoolName}>روضة أحباب الله</Text>
+              <Text style={styles.schoolName}>نظم إدارة رياض الأطفال</Text>
               <Text style={styles.schoolLocation}>صفيتة الغنوماب</Text>
               <Text style={styles.adminTitle}>أ. سلوى أحمد داموس — المديرة</Text>
               <Text style={styles.greeting}>مرحباً، {user?.name}</Text>
@@ -292,7 +292,7 @@ export default function AdminDashboard() {
                 <Image source={require('@/assets/images/logo_main.png')} style={styles.designerLogo} resizeMode="contain" />
               </HexFrame>
               <View style={styles.designerBadge}>
-                <Text style={styles.designerBadgeText}>روضة أحباب الله — الخاصة</Text>
+                <Text style={styles.designerBadgeText}>نظم إدارة رياض الأطفال — الخاصة</Text>
               </View>
               <Text style={styles.designerBy}>تصميم وتطوير</Text>
               <Text style={styles.designerName}>م / عاصم عبدالرحمن محمد</Text>

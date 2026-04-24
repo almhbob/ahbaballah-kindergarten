@@ -51,7 +51,7 @@ function initials(name: string) {
 }
 
 const DEFAULT_YEAR = '2025 – 2026';
-const SCHOOL = 'روضة أحباب الله — الخاصة';
+const SCHOOL = 'نظم إدارة رياض الأطفال — الخاصة';
 const DEFAULT_ACCESS_EMPLOYEE = ['الروضة', 'الاجتماعات', 'الاحتفالات'];
 const DEFAULT_ACCESS_PARENT = ['الاجتماعات', 'الاحتفالات'];
 

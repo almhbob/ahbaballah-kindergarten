@@ -1,7 +1,7 @@
-# روضة أحباب الله - الخاصة
+# نظم إدارة رياض الأطفال - الخاصة
 
 ## Overview
-تطبيق إدارة روضة أحباب الله الخاصة في صفيتة الغنوماب — بني بـ Expo React Native + Express.js + PostgreSQL.
+تطبيق إدارة نظم إدارة رياض الأطفال الخاصة في صفيتة الغنوماب — بني بـ Expo React Native + Express.js + PostgreSQL.
 
 ## Architecture
 - **Frontend**: Expo Router (file-based routing), React Native + Web

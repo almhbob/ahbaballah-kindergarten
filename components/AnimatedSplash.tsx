@@ -176,7 +176,7 @@ export default function AnimatedSplash({ onDone }: Props) {
 
       {/* School name */}
       <Animated.Text style={[sty.schoolName, { transform: [{ translateY: titleY }], opacity: titleOpacity }]}>
-        روضة أحباب الله
+        نظم إدارة رياض الأطفال
       </Animated.Text>
       <Animated.Text style={[sty.schoolSub, { opacity: titleOpacity }]}>
         صفيتة الغنوماب

@@ -96,7 +96,7 @@ export default function ManagementScreen() {
           </View>
           <View style={styles.headerTitle}>
             <Text style={styles.titleText}>لوحة الإدارة</Text>
-            <Text style={styles.titleSub}>روضة أحباب الله — الخاصة</Text>
+            <Text style={styles.titleSub}>نظم إدارة رياض الأطفال — الخاصة</Text>
             <View style={{ flexDirection: 'row', gap: 8 }}>
               <Pressable
                 style={styles.certBtn}

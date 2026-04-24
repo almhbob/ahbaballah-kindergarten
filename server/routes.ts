@@ -17,7 +17,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api/setup', setupRouter);
 
   app.get('/api/health', (_req, res) => {
-    res.json({ ok: true, service: 'روضة أحباب الله API', version: '2.0' });
+    res.json({ ok: true, service: 'نظم إدارة رياض الأطفال API', version: '2.0' });
   });
 
   app.get('/guide', (_req, res) => {

@@ -207,7 +207,7 @@ export default function BrandingScreen() {
           <TextInput
             style={s.input} value={draft.name} textAlign="right"
             onChangeText={v => patch('name', v)}
-            placeholder="روضة أحباب الله"
+            placeholder="نظم إدارة رياض الأطفال"
             placeholderTextColor={Colors.textLight}
           />
 

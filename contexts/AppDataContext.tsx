@@ -392,7 +392,7 @@ const DEFAULT_GRADUATION_TASKS: GraduationTask[] = [
 ];
 
 export const DEFAULT_SCHOOL_INFO: SchoolInfo = {
-  name: 'روضة أحباب الله — الخاصة',
+  name: 'نظم إدارة رياض الأطفال — الخاصة',
   principalName: 'أ. سلوى أحمد داموس',
   phone: '+249917545129',
   email: 'Ahbaballah2026@hotmail.com',
@@ -575,14 +575,14 @@ const DEMO_YEARLY_SNAPSHOTS: YearlySnapshot[] = [
 ];
 
 const DEFAULT_WELCOME_MSG =
-`مرحباً بك في روضة أحباب الله الخاصة 🌟
+`مرحباً بك في نظم إدارة رياض الأطفال الخاصة 🌟
 
 يسعدنا تواصلك معنا. سيقوم فريق الإدارة بالرد على رسالتك في أقرب وقت ممكن.
 
 للتواصل الفوري يمكنك مراسلتنا على واتساب:
 +249917545129
 
-— إدارة روضة أحباب الله`;
+— إدارة نظم إدارة رياض الأطفال`;
 
 const AppDataContext = createContext<AppDataContextValue | null>(null);
 

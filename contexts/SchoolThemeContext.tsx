@@ -87,7 +87,7 @@ export const COLOR_PRESETS: { label: string; primary: string; accent: string; da
 
 export const DEFAULT_BRANDING: SchoolBranding = {
   schoolId:     'ahbabullah',
-  name:         'روضة أحباب الله',
+  name:         'نظم إدارة رياض الأطفال',
   slogan:       'جودة • التزام • تميز',
   primaryColor: '#0c1155',
   accentColor:  '#c9952a',
@@ -158,7 +158,7 @@ export const DEMO_SCHOOL_REGISTRATION: SchoolRegistration = {
 
 export const AHBABULLAH_REGISTRATION: SchoolRegistration = {
   id:           'ahbabullah',
-  name:         'روضة أحباب الله الخاصة',
+  name:         'نظم إدارة رياض الأطفال الخاصة',
   primaryColor: '#0c1155',
   accentColor:  '#c9952a',
   adminPhone:   '+249917545129',

@@ -164,7 +164,7 @@ export default function RegisterScreen() {
               <MaterialCommunityIcons name="account-plus" size={30} color="rgba(201,149,42,0.9)" />
             </HexFrame>
             <View style={{ alignItems: 'center' }}>
-              <Text style={s.subTitle}>روضة أحباب الله</Text>
+              <Text style={s.subTitle}>نظم إدارة رياض الأطفال</Text>
               <Text style={s.subText}>أنشئ حسابك للوصول للنظام</Text>
             </View>
           </View>

@@ -627,7 +627,7 @@ export default function DeveloperScreen() {
         {open.school && (
           <View style={sty.secBody}>
             {[
-              { field: 'name',          label: 'اسم الروضة',         placeholder: 'روضة أحباب الله' },
+              { field: 'name',          label: 'اسم الروضة',         placeholder: 'نظم إدارة رياض الأطفال' },
               { field: 'principalName', label: 'اسم المديرة',        placeholder: 'أ. سلوى داموس' },
               { field: 'phone',         label: 'رقم الهاتف',         placeholder: '+249 900 000 000' },
               { field: 'email',         label: 'البريد الإلكتروني',  placeholder: 'info@school.edu' },
@@ -1032,7 +1032,7 @@ export default function DeveloperScreen() {
 
             {/* Basic info */}
             {[
-              { key: 'name',       label: 'اسم الروضة *',            placeholder: 'روضة أحباب الله' },
+              { key: 'name',       label: 'اسم الروضة *',            placeholder: 'نظم إدارة رياض الأطفال' },
               { key: 'id',         label: 'المعرّف (ID) *',           placeholder: 'ahbabullah_2',  disabled: !!editingSchool },
               { key: 'adminPhone', label: 'هاتف المدير',             placeholder: '+249912345678' },
               { key: 'logoUrl',    label: 'رابط الشعار',              placeholder: 'https://...' },

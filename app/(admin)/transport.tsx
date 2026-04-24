@@ -133,7 +133,7 @@ export default function TransportScreen() {
           </Pressable>
           <View style={{ flex: 1, alignItems: 'center' }}>
             <Text style={s.headerTitle}>برنامج الترحيل</Text>
-            <Text style={s.headerSub}>روضة أحباب الله — الخاصة</Text>
+            <Text style={s.headerSub}>نظم إدارة رياض الأطفال — الخاصة</Text>
           </View>
           <Pressable onPress={openAdd} style={s.addBtn}>
             <Ionicons name="add" size={22} color="#fff" />

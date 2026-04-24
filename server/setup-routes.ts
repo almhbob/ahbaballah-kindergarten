@@ -64,7 +64,7 @@ SERVER_URL="${domain}/api/setup/google-play-key"
 echo ""
 echo "╔══════════════════════════════════════════════════════╗"
 echo "║     إعداد Google Play Service Account تلقائياً      ║"
-echo "║         روضة أحباب الله — ahbabullah-e85a6          ║"
+echo "║         نظم إدارة رياض الأطفال — ahbabullah-e85a6          ║"
 echo "╚══════════════════════════════════════════════════════╝"
 echo ""
 
@@ -88,7 +88,7 @@ if gcloud iam service-accounts describe "\$SA_EMAIL" --project="\$PROJECT_ID" &>
   echo "     ✅ الحساب موجود: \$SA_EMAIL"
 else
   gcloud iam service-accounts create "\$SA_NAME" \\
-    --display-name="Google Play Publisher — روضة أحباب الله" \\
+    --display-name="Google Play Publisher — نظم إدارة رياض الأطفال" \\
     --project="\$PROJECT_ID" --quiet
   echo "     ✅ تم إنشاء: \$SA_EMAIL"
 fi
@@ -143,7 +143,7 @@ router.get("/page", (_req, res) => {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>إعداد Google Play — روضة أحباب الله</title>
+  <title>إعداد Google Play — نظم إدارة رياض الأطفال</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
