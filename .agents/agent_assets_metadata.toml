@@ -18,3 +18,9 @@ id = "T925M1zC6UfPKwdu7UIqX"
 uri = "file://docs/secrets-setup-guide.md"
 type = "text"
 title = "دليل إعداد النشر التلقائي — 7 خطوات كاملة"
+
+[[outputs]]
+id = "PEoRQeOKR3LvofLkfnvUs"
+uri = "file://docs/marketing/poster.png"
+type = "image"
+title = "بوستر إعلاني للواتس آب — نظم إدارة رياض الأطفال"
