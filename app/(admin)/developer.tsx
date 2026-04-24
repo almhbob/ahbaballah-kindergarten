@@ -14,6 +14,7 @@ import { useSchoolTheme, SchoolRegistration, COLOR_PRESETS } from '@/contexts/Sc
 import * as Haptics from 'expo-haptics';
 import { SUBSCRIPTION_TIERS, TIER_ORDER, getTierById, checkCapacity, capacityColor, SubscriptionTier } from '@/lib/subscription-tiers';
 import { createSchoolAdminAccount } from '@/lib/school-auth';
+import { getApiUrl } from '@/lib/query-client';
 
 function genId() {
   return Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
@@ -217,11 +218,12 @@ function PasswordGate({ correctPassword, onUnlock }: { correctPassword: string; 
   );
 }
 
-type SectionKey = 'stats' | 'schools' | 'school' | 'features' | 'security' | 'banners' | 'dev' | 'data' | 'sysinfo' | 'danger';
+type SectionKey = 'stats' | 'schools' | 'requests' | 'school' | 'features' | 'security' | 'banners' | 'dev' | 'data' | 'sysinfo' | 'danger';
 
 const SECTIONS: { key: SectionKey; icon: string; iconLib: 'ion' | 'mci'; label: string; color: string }[] = [
   { key: 'stats',    icon: 'bar-chart',          iconLib: 'ion', label: 'إحصاءات التطبيق',   color: '#3B82F6' },
   { key: 'schools',  icon: 'domain',             iconLib: 'mci', label: 'إدارة الروضات (SaaS)', color: '#A855F7' },
+  { key: 'requests', icon: 'inbox-multiple',     iconLib: 'mci', label: 'طلبات الانضمام',     color: '#F59E0B' },
   { key: 'school',   icon: 'school',             iconLib: 'mci', label: 'إعدادات الروضة النشطة', color: '#10B981' },
   { key: 'features', icon: 'toggle-switch',      iconLib: 'mci', label: 'مفاتيح الميزات',    color: '#8B5CF6' },
   { key: 'security', icon: 'shield-lock',        iconLib: 'mci', label: 'الأمان وكلمات المرور', color: '#F59E0B' },
@@ -275,9 +277,73 @@ export default function DeveloperScreen() {
 
   const [unlocked,       setUnlocked]       = useState(false);
   const [open,           setOpen]           = useState<Record<SectionKey, boolean>>({
-    stats: true, schools: false, school: false, features: false, security: false,
+    stats: true, schools: false, requests: false, school: false, features: false, security: false,
     banners: false, dev: false, data: false, sysinfo: false, danger: false,
   });
+
+  // ── School Requests state ──
+  interface SchoolRequest {
+    id: number; school_name: string; school_type: string; city: string;
+    address: string; license_number: string; admin_name: string;
+    admin_phone: string; admin_email: string; logo_url: string;
+    primary_color: string; accent_color: string; slogan: string;
+    principal_name: string; school_motto: string; letterhead_address: string;
+    stamp_info: string; requested_tier: string; wants_trial: boolean;
+    status: 'pending' | 'contacted' | 'approved' | 'rejected';
+    notes: string; created_at: string;
+  }
+  const [schoolRequests,        setSchoolRequests]        = useState<SchoolRequest[]>([]);
+  const [requestsLoading,       setRequestsLoading]       = useState(false);
+  const [selectedRequest,       setSelectedRequest]       = useState<SchoolRequest | null>(null);
+  const [showRequestDetail,     setShowRequestDetail]     = useState(false);
+  const [requestNotesDraft,     setRequestNotesDraft]     = useState('');
+
+  const fetchSchoolRequests = async () => {
+    setRequestsLoading(true);
+    try {
+      const base = getApiUrl();
+      const url  = new URL('/api/school-requests', `https://${base}`).toString();
+      const res  = await fetch(url);
+      const json = await res.json();
+      if (json.ok) setSchoolRequests(json.data ?? []);
+    } catch (e) {
+      console.warn('[developer] fetchSchoolRequests error', e);
+    } finally {
+      setRequestsLoading(false);
+    }
+  };
+
+  const updateRequestStatus = async (id: number, status: string, notes?: string) => {
+    try {
+      const base = getApiUrl();
+      const url  = new URL(`/api/school-requests/${id}`, `https://${base}`).toString();
+      await fetch(url, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status, notes, reviewed_by: 'developer' }),
+      });
+      await fetchSchoolRequests();
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (e) {
+      Alert.alert('خطأ', 'فشل تحديث الحالة');
+    }
+  };
+
+  const deleteRequest = async (id: number) => {
+    Alert.alert('تأكيد', 'حذف الطلب نهائياً؟', [
+      { text: 'إلغاء', style: 'cancel' },
+      { text: 'حذف', style: 'destructive', onPress: async () => {
+        const base = getApiUrl();
+        const url  = new URL(`/api/school-requests/${id}`, `https://${base}`).toString();
+        await fetch(url, { method: 'DELETE' });
+        await fetchSchoolRequests();
+      }},
+    ]);
+  };
+
+  React.useEffect(() => {
+    if (open.requests) fetchSchoolRequests();
+  }, [open.requests]);
 
   // School registration form
   const [showSchoolForm, setShowSchoolForm] = useState(false);
@@ -619,6 +685,245 @@ export default function DeveloperScreen() {
                 </View>
               );
             })}
+          </View>
+        )}
+
+        {/* ══ JOIN REQUESTS ══ */}
+        <SectionHeader sectionKey="requests" open={open.requests} onToggle={() => toggle('requests')} />
+        {open.requests && (
+          <View style={sty.secBody}>
+            {/* Header row */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+              <Pressable onPress={fetchSchoolRequests} style={{ flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 6, backgroundColor: '#F59E0B15', borderRadius: 10, borderWidth: 1, borderColor: '#F59E0B30' }}>
+                {requestsLoading
+                  ? <ActivityIndicator size="small" color="#F59E0B" />
+                  : <MaterialCommunityIcons name="refresh" size={16} color="#F59E0B" />}
+                <Text style={{ fontSize: 12, fontFamily: 'Inter_600SemiBold', color: '#F59E0B' }}>تحديث</Text>
+              </Pressable>
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                {(['pending', 'contacted', 'approved', 'rejected'] as const).map(st => {
+                  const count = schoolRequests.filter(r => r.status === st).length;
+                  if (count === 0) return null;
+                  const colors = { pending: '#F59E0B', contacted: '#3B82F6', approved: '#10B981', rejected: '#EF4444' };
+                  const labels = { pending: 'معلّق', contacted: 'تواصل', approved: 'مفعّل', rejected: 'مرفوض' };
+                  return (
+                    <View key={st} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, backgroundColor: colors[st] + '18', borderWidth: 1, borderColor: colors[st] + '40' }}>
+                      <Text style={{ fontSize: 11, fontFamily: 'Inter_700Bold', color: colors[st] }}>{count}</Text>
+                      <Text style={{ fontSize: 10, fontFamily: 'Inter_400Regular', color: colors[st] }}>{labels[st]}</Text>
+                    </View>
+                  );
+                })}
+              </View>
+            </View>
+
+            {requestsLoading && schoolRequests.length === 0 ? (
+              <View style={{ alignItems: 'center', padding: 32 }}>
+                <ActivityIndicator color="#F59E0B" />
+                <Text style={{ fontSize: 12, color: Colors.textLight, fontFamily: 'Inter_400Regular', marginTop: 10 }}>جاري تحميل الطلبات...</Text>
+              </View>
+            ) : schoolRequests.length === 0 ? (
+              <View style={sty.emptyBox}>
+                <MaterialCommunityIcons name="inbox-outline" size={36} color={Colors.textLight} />
+                <Text style={sty.emptyTxt}>لا توجد طلبات انضمام حتى الآن</Text>
+              </View>
+            ) : (
+              schoolRequests.map(req => {
+                const statusColors = { pending: '#F59E0B', contacted: '#3B82F6', approved: '#10B981', rejected: '#EF4444' };
+                const statusLabels = { pending: '⏳ معلّق', contacted: '📞 تم التواصل', approved: '✅ مفعّل', rejected: '❌ مرفوض' };
+                const tierColors   = { trial: '#6B7280', basic: '#3B82F6', professional: '#8B5CF6', enterprise: '#F59E0B' };
+                const sc = statusColors[req.status] ?? '#6B7280';
+                const tc = (tierColors as any)[req.requested_tier] ?? '#6B7280';
+                const createdDate = new Date(req.created_at).toLocaleDateString('ar-SA', { year: 'numeric', month: 'short', day: 'numeric' });
+                return (
+                  <View key={req.id} style={{ backgroundColor: Colors.background, borderRadius: 16, padding: 14, marginBottom: 10, borderWidth: 1.5, borderColor: sc + '35', borderRightWidth: 4, borderRightColor: sc }}>
+                    {/* Top Row */}
+                    <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10, marginBottom: 10 }}>
+                      <View style={{ alignItems: 'flex-start', gap: 4 }}>
+                        <View style={{ paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, backgroundColor: sc + '18', borderWidth: 1, borderColor: sc + '40' }}>
+                          <Text style={{ fontSize: 10, fontFamily: 'Inter_600SemiBold', color: sc }}>{statusLabels[req.status] ?? req.status}</Text>
+                        </View>
+                        <View style={{ paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, backgroundColor: tc + '18', borderWidth: 1, borderColor: tc + '40' }}>
+                          <Text style={{ fontSize: 10, fontFamily: 'Inter_600SemiBold', color: tc }}>
+                            {req.wants_trial ? '🆓 تجريبي' : `${req.requested_tier}`}
+                          </Text>
+                        </View>
+                      </View>
+                      <View style={{ flex: 1, alignItems: 'flex-end', gap: 2 }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                          {req.logo_url ? (
+                            <View style={{ width: 36, height: 36, borderRadius: 10, overflow: 'hidden', backgroundColor: req.primary_color }}>
+                              <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                                <MaterialCommunityIcons name="school" size={18} color={req.accent_color} />
+                              </View>
+                            </View>
+                          ) : (
+                            <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: req.primary_color, justifyContent: 'center', alignItems: 'center' }}>
+                              <MaterialCommunityIcons name="school" size={18} color={req.accent_color} />
+                            </View>
+                          )}
+                          <View style={{ alignItems: 'flex-end' }}>
+                            <Text style={{ fontSize: 15, fontFamily: 'Inter_700Bold', color: Colors.text }}>{req.school_name}</Text>
+                            <Text style={{ fontSize: 11, fontFamily: 'Inter_400Regular', color: Colors.textSecondary }}>{req.school_type} · {req.city}</Text>
+                          </View>
+                        </View>
+                      </View>
+                    </View>
+
+                    {/* Contact Info */}
+                    <View style={{ backgroundColor: Colors.surfaceAlt, borderRadius: 10, padding: 10, gap: 6, marginBottom: 10 }}>
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Text style={{ fontSize: 11, fontFamily: 'Inter_400Regular', color: Colors.textSecondary }}>{req.admin_email}</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                          <Text style={{ fontSize: 12, fontFamily: 'Inter_600SemiBold', color: Colors.text }}>{req.admin_name}</Text>
+                          <MaterialCommunityIcons name="account-outline" size={14} color={Colors.textLight} />
+                        </View>
+                      </View>
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Text style={{ fontSize: 11, fontFamily: 'Inter_400Regular', color: Colors.textSecondary }}>{createdDate}</Text>
+                        <Text style={{ fontSize: 12, fontFamily: 'Inter_500Medium', color: Colors.text, direction: 'ltr' }}>{req.admin_phone}</Text>
+                      </View>
+                    </View>
+
+                    {/* Color preview */}
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10, justifyContent: 'flex-end' }}>
+                      <Text style={{ fontSize: 10, fontFamily: 'Inter_400Regular', color: Colors.textLight }}>الألوان المختارة:</Text>
+                      <View style={{ width: 20, height: 20, borderRadius: 6, backgroundColor: req.accent_color, borderWidth: 1, borderColor: 'rgba(0,0,0,0.1)' }} />
+                      <View style={{ width: 20, height: 20, borderRadius: 6, backgroundColor: req.primary_color, borderWidth: 1, borderColor: 'rgba(0,0,0,0.1)' }} />
+                    </View>
+
+                    {/* Action Buttons */}
+                    <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap' }}>
+                      <Pressable onPress={() => deleteRequest(req.id)}
+                        style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, borderWidth: 1, borderColor: '#EF444430', backgroundColor: '#EF444408' }}>
+                        <MaterialCommunityIcons name="trash-can-outline" size={14} color="#EF4444" />
+                        <Text style={{ fontSize: 11, fontFamily: 'Inter_600SemiBold', color: '#EF4444' }}>حذف</Text>
+                      </Pressable>
+                      {req.status !== 'rejected' && (
+                        <Pressable onPress={() => updateRequestStatus(req.id, 'rejected')}
+                          style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, borderWidth: 1, borderColor: '#EF444430', backgroundColor: '#EF444408' }}>
+                          <Ionicons name="close-circle-outline" size={14} color="#EF4444" />
+                          <Text style={{ fontSize: 11, fontFamily: 'Inter_600SemiBold', color: '#EF4444' }}>رفض</Text>
+                        </Pressable>
+                      )}
+                      {req.status === 'pending' && (
+                        <Pressable onPress={() => updateRequestStatus(req.id, 'contacted')}
+                          style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, borderWidth: 1, borderColor: '#3B82F630', backgroundColor: '#3B82F608' }}>
+                          <Ionicons name="call-outline" size={14} color="#3B82F6" />
+                          <Text style={{ fontSize: 11, fontFamily: 'Inter_600SemiBold', color: '#3B82F6' }}>تواصل</Text>
+                        </Pressable>
+                      )}
+                      <Pressable onPress={() => updateRequestStatus(req.id, 'approved')}
+                        style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 7, borderRadius: 8, borderWidth: 1, borderColor: '#10B98140', backgroundColor: '#10B98115' }}>
+                        <Ionicons name="checkmark-circle-outline" size={14} color="#10B981" />
+                        <Text style={{ fontSize: 11, fontFamily: 'Inter_700Bold', color: '#10B981' }}>موافقة وتفعيل</Text>
+                      </Pressable>
+                      <Pressable
+                        onPress={() => { setSelectedRequest(req); setRequestNotesDraft(req.notes ?? ''); setShowRequestDetail(true); }}
+                        style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, borderWidth: 1, borderColor: Colors.borderLight }}>
+                        <MaterialCommunityIcons name="eye-outline" size={14} color={Colors.textSecondary} />
+                        <Text style={{ fontSize: 11, fontFamily: 'Inter_600SemiBold', color: Colors.textSecondary }}>تفاصيل</Text>
+                      </Pressable>
+                    </View>
+                  </View>
+                );
+              })
+            )}
+
+            {/* Request Detail Modal */}
+            {selectedRequest && (
+              <Modal visible={showRequestDetail} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowRequestDetail(false)}>
+                <ScrollView style={{ flex: 1, backgroundColor: Colors.background }} contentContainerStyle={{ padding: 20, paddingTop: 32 }} keyboardShouldPersistTaps="handled">
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+                    <Pressable onPress={() => setShowRequestDetail(false)} style={{ paddingHorizontal: 16, paddingVertical: 8, backgroundColor: Colors.surfaceAlt, borderRadius: 10 }}>
+                      <Text style={{ fontSize: 13, fontFamily: 'Inter_600SemiBold', color: Colors.text }}>إغلاق</Text>
+                    </Pressable>
+                    <Text style={{ fontSize: 16, fontFamily: 'Inter_700Bold', color: Colors.text }}>تفاصيل الطلب</Text>
+                  </View>
+
+                  {/* School Header */}
+                  <View style={{ backgroundColor: selectedRequest.primary_color, borderRadius: 16, padding: 18, flexDirection: 'row', alignItems: 'center', gap: 14, marginBottom: 18 }}>
+                    <View style={{ width: 56, height: 56, borderRadius: 16, backgroundColor: 'rgba(255,255,255,0.15)', justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: selectedRequest.accent_color }}>
+                      <MaterialCommunityIcons name="school" size={28} color={selectedRequest.accent_color} />
+                    </View>
+                    <View style={{ flex: 1, alignItems: 'flex-end' }}>
+                      <Text style={{ fontSize: 17, fontFamily: 'Inter_700Bold', color: '#fff' }}>{selectedRequest.school_name}</Text>
+                      <Text style={{ fontSize: 12, fontFamily: 'Inter_400Regular', color: 'rgba(255,255,255,0.70)', marginTop: 3 }}>
+                        {selectedRequest.school_type} · {selectedRequest.city}
+                      </Text>
+                      {selectedRequest.slogan ? (
+                        <Text style={{ fontSize: 11, fontFamily: 'Inter_400Regular', color: selectedRequest.accent_color, marginTop: 4 }}>{selectedRequest.slogan}</Text>
+                      ) : null}
+                    </View>
+                  </View>
+
+                  {([ 
+                    { label: 'معلومات الاتصال', items: [
+                      { key: 'المسؤول',  val: selectedRequest.admin_name },
+                      { key: 'الجوال',   val: selectedRequest.admin_phone },
+                      { key: 'البريد',   val: selectedRequest.admin_email },
+                    ]},
+                    { label: 'معلومات المؤسسة', items: [
+                      { key: 'نوع الروضة',   val: selectedRequest.school_type },
+                      { key: 'المدينة',      val: selectedRequest.city },
+                      { key: 'العنوان',      val: selectedRequest.address },
+                      { key: 'رقم الترخيص', val: selectedRequest.license_number },
+                    ]},
+                    { label: 'بيانات الوثائق', items: [
+                      { key: 'اسم المدير للوثائق', val: selectedRequest.principal_name },
+                      { key: 'رسالة المؤسسة',      val: selectedRequest.school_motto },
+                      { key: 'عنوان المراسلات',    val: selectedRequest.letterhead_address },
+                      { key: 'معلومات الختم',      val: selectedRequest.stamp_info },
+                    ]},
+                    { label: 'الباقة والاشتراك', items: [
+                      { key: 'الباقة المطلوبة', val: selectedRequest.wants_trial ? 'تجريبية مجانية' : selectedRequest.requested_tier },
+                    ]},
+                  ] as any[]).map((section: any) => (
+                    <View key={section.label} style={{ marginBottom: 16 }}>
+                      <Text style={{ fontSize: 13, fontFamily: 'Inter_700Bold', color: Colors.textSecondary, textAlign: 'right', marginBottom: 8 }}>{section.label}</Text>
+                      <View style={{ backgroundColor: Colors.surfaceAlt, borderRadius: 12, overflow: 'hidden' }}>
+                        {section.items.filter((i: any) => i.val).map((item: any, idx: number) => (
+                          <View key={item.key} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 12, borderBottomWidth: idx < section.items.length - 1 ? 1 : 0, borderBottomColor: Colors.borderLight }}>
+                            <Text style={{ fontSize: 13, fontFamily: 'Inter_400Regular', color: Colors.text, flex: 1, textAlign: 'left' }}>{item.val}</Text>
+                            <Text style={{ fontSize: 12, fontFamily: 'Inter_600SemiBold', color: Colors.textSecondary, marginLeft: 12 }}>{item.key}</Text>
+                          </View>
+                        ))}
+                      </View>
+                    </View>
+                  ))}
+
+                  {/* Notes */}
+                  <Text style={{ fontSize: 13, fontFamily: 'Inter_700Bold', color: Colors.textSecondary, textAlign: 'right', marginBottom: 8 }}>ملاحظات المطوّر</Text>
+                  <TextInput
+                    style={[m.input, { height: 90, textAlignVertical: 'top', paddingTop: 10, marginBottom: 12 }]}
+                    value={requestNotesDraft}
+                    onChangeText={setRequestNotesDraft}
+                    placeholder="أضف ملاحظاتك هنا..."
+                    placeholderTextColor={Colors.textLight}
+                    multiline
+                    numberOfLines={4}
+                    textAlign="right"
+                  />
+
+                  <View style={{ flexDirection: 'row', gap: 10, marginBottom: 16 }}>
+                    <Pressable onPress={async () => { await updateRequestStatus(selectedRequest.id, 'rejected', requestNotesDraft); setShowRequestDetail(false); }}
+                      style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, padding: 13, borderRadius: 12, backgroundColor: '#EF444410', borderWidth: 1, borderColor: '#EF444430' }}>
+                      <Ionicons name="close-circle-outline" size={16} color="#EF4444" />
+                      <Text style={{ fontSize: 13, fontFamily: 'Inter_700Bold', color: '#EF4444' }}>رفض</Text>
+                    </Pressable>
+                    <Pressable onPress={async () => { await updateRequestStatus(selectedRequest.id, 'contacted', requestNotesDraft); setShowRequestDetail(false); }}
+                      style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, padding: 13, borderRadius: 12, backgroundColor: '#3B82F610', borderWidth: 1, borderColor: '#3B82F630' }}>
+                      <Ionicons name="call-outline" size={16} color="#3B82F6" />
+                      <Text style={{ fontSize: 13, fontFamily: 'Inter_700Bold', color: '#3B82F6' }}>تواصل</Text>
+                    </Pressable>
+                    <Pressable onPress={async () => { await updateRequestStatus(selectedRequest.id, 'approved', requestNotesDraft); setShowRequestDetail(false); }}
+                      style={{ flex: 2, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, padding: 13, borderRadius: 12, backgroundColor: '#10B98115', borderWidth: 1, borderColor: '#10B98140' }}>
+                      <Ionicons name="checkmark-circle-outline" size={16} color="#10B981" />
+                      <Text style={{ fontSize: 14, fontFamily: 'Inter_700Bold', color: '#10B981' }}>موافقة وتفعيل</Text>
+                    </Pressable>
+                  </View>
+                </ScrollView>
+              </Modal>
+            )}
           </View>
         )}
 

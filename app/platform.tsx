@@ -60,6 +60,11 @@ export default function PlatformScreen() {
     router.push('/login');
   };
 
+  const goSchoolRequest = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    router.push('/school-request');
+  };
+
   return (
     <View style={{ flex: 1, backgroundColor: '#030612' }}>
       <LinearGradient
@@ -178,6 +183,18 @@ export default function PlatformScreen() {
               </View>
             </View>
           </Pressable>
+
+          {/* Join Request */}
+          <Pressable onPress={goSchoolRequest} style={({ pressed }) => [s.joinBtn, { opacity: pressed ? 0.85 : 1 }]}>
+            <View style={s.joinBtnInner}>
+              <MaterialCommunityIcons name="plus-circle-outline" size={18} color="#c9952a" />
+              <View style={{ flex: 1, alignItems: 'flex-end' }}>
+                <Text style={s.joinBtnTitle}>اطلب انضمام روضتك</Text>
+                <Text style={s.joinBtnSub}>سجّل روضتك في المنصة وابدأ مجاناً</Text>
+              </View>
+              <Ionicons name="chevron-back" size={16} color="rgba(201,149,42,0.50)" />
+            </View>
+          </Pressable>
         </View>
 
         {/* Features Grid */}
@@ -266,6 +283,14 @@ const s = StyleSheet.create({
     borderWidth: 1, borderColor: 'rgba(52,211,153,0.40)',
   },
   demoBadgeTxt: { fontSize: 9, fontFamily: 'Inter_700Bold', color: '#34D399', letterSpacing: 1 },
+
+  joinBtn: {
+    width: '100%', borderRadius: 16,
+    backgroundColor: 'rgba(201,149,42,0.07)', borderWidth: 1.5, borderColor: 'rgba(201,149,42,0.25)',
+  },
+  joinBtnInner: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 15, gap: 12 },
+  joinBtnTitle: { fontSize: 14, fontFamily: 'Inter_700Bold', color: '#c9952a' },
+  joinBtnSub:   { fontSize: 10, fontFamily: 'Inter_400Regular', color: 'rgba(201,149,42,0.55)', marginTop: 2 },
 
   featuresBlock: { width: '100%', marginBottom: 24 },
   featuresTitle: {

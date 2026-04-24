@@ -7,6 +7,7 @@ import reviewRouter from "./review-routes";
 import stateRouter from "./state-routes";
 import pushRouter from "./push-routes";
 import setupRouter from "./setup-routes";
+import schoolRequestRouter from "./school-request-routes";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api/auth', authRouter);
@@ -15,6 +16,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api/state', stateRouter);
   app.use('/api/push', pushRouter);
   app.use('/api/setup', setupRouter);
+  app.use('/api/school-requests', schoolRequestRouter);
 
   app.get('/api/health', (_req, res) => {
     res.json({ ok: true, service: 'نظم إدارة رياض الأطفال API', version: '2.0' });

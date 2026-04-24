@@ -45,6 +45,32 @@ async function ensureSchema() {
         created_at TIMESTAMP NOT NULL DEFAULT NOW()
       );
       CREATE INDEX IF NOT EXISTS files_user_id_idx ON files(user_id);
+      CREATE TABLE IF NOT EXISTS school_requests (
+        id SERIAL PRIMARY KEY,
+        school_name TEXT NOT NULL,
+        school_type TEXT DEFAULT 'أهلية',
+        city TEXT,
+        address TEXT,
+        license_number TEXT,
+        admin_name TEXT NOT NULL,
+        admin_phone TEXT NOT NULL,
+        admin_email TEXT NOT NULL,
+        logo_url TEXT,
+        primary_color TEXT DEFAULT '#0c1155',
+        accent_color TEXT DEFAULT '#c9952a',
+        slogan TEXT,
+        principal_name TEXT,
+        school_motto TEXT,
+        letterhead_address TEXT,
+        stamp_info TEXT,
+        requested_tier TEXT DEFAULT 'trial',
+        wants_trial BOOLEAN DEFAULT TRUE,
+        status TEXT DEFAULT 'pending',
+        notes TEXT,
+        reviewed_by TEXT,
+        reviewed_at TIMESTAMP,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      );
     `);
     console.log("[db] schema ensured ✓");
   } catch (err: any) {
