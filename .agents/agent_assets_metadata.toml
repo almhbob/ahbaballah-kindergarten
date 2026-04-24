@@ -1,5 +1,28 @@
 uploads = []
-generated = []
+
+[[generated]]
+id = "Qqk8n9F0eyXl1wl4SKOih"
+uri = "file://docs/marketing/logo-main.png"
+type = "image"
+title = "kindergarten system logo"
+
+[[generated]]
+id = "HO7xx9_uWIA3VL9ZtqvJq"
+uri = "file://docs/marketing/logo-alt.png"
+type = "image"
+title = "kindergarten system logo alt"
+
+[[generated]]
+id = "1yumeN0f2kll0WJa4wBMX"
+uri = "file://docs/marketing/logo-icon.png"
+type = "image"
+title = "system logo icon circle"
+
+[[generated]]
+id = "0F1XxWRfFmEHsPVeZgxmg"
+uri = "file://docs/marketing/logo-refined.png"
+type = "image"
+title = "refined star book logo"
 
 [[outputs]]
 id = "F4m6i41miE4T82MhQlO8a"
@@ -30,3 +53,15 @@ id = "3r_TQkwiPl9YSfp7Iq04T"
 uri = "file://docs/marketing/brochure.pdf"
 type = "pdf"
 title = "الملف الترويجي (PDF) — نظم إدارة رياض الأطفال"
+
+[[outputs]]
+id = "WJ9-ykkyAaxsb3D3tP7MG"
+uri = "file://assets/images/system-logo.png"
+type = "image"
+title = "شعار النظام — ملف PNG عالي الجودة"
+
+[[outputs]]
+id = "pekCWdC9Rt_4DhFh3BVhz"
+uri = "file://docs/marketing/logo-guide.png"
+type = "image"
+title = "دليل الهوية البصرية الكامل"

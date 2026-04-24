@@ -14,6 +14,8 @@ import HexFrame from '@/components/HexFrame';
 import * as Haptics from 'expo-haptics';
 import FirebaseSyncStatus from '@/components/FirebaseSyncStatus';
 import SubscriptionExpiryBanner from '@/components/SubscriptionExpiryBanner';
+import SchoolBrandHeader from '@/components/SchoolBrandHeader';
+import { useSchoolTheme } from '@/contexts/SchoolThemeContext';
 
 const ROLE_COLORS: Record<string, string> = {
   admin: Colors.primary, teacher: '#1A6B5C', parent: '#7B3FA0', guest: Colors.accent,
@@ -148,6 +150,7 @@ export default function AdminDashboard() {
   const insets = useSafeAreaInsets();
   const { user, logout, apiLogout, loginHistory } = useAuth();
   const { students, employees, news, inbox, registrationRequests, banners } = useAppData();
+  const { branding } = useSchoolTheme();
 
   const unreadInbox = inbox.filter(m => !m.read).length;
   const totalStudents = students.length;
@@ -194,17 +197,18 @@ export default function AdminDashboard() {
               <Ionicons name="log-out-outline" size={22} color="rgba(255,255,255,0.7)" />
             </Pressable>
             <View style={styles.headerText}>
-              <Text style={styles.schoolName}>نظم إدارة رياض الأطفال</Text>
-              <Text style={styles.schoolLocation}>صفيتة الغنوماب</Text>
-              <Text style={styles.adminTitle}>أ. سلوى أحمد داموس — المديرة</Text>
+              <Text style={styles.schoolName}>{branding.name || 'نظم إدارة رياض الأطفال'}</Text>
+              {branding.slogan ? (
+                <Text style={styles.schoolLocation}>{branding.slogan}</Text>
+              ) : null}
               <Text style={styles.greeting}>مرحباً، {user?.name}</Text>
             </View>
             <HexFrame size={56} fill="#FFFFFF" stroke={Colors.accent} strokeWidth={2} style={{ marginRight: 12 }}>
-              <Image
-                source={require('@/assets/images/logo_main.png')}
-                style={styles.logoSmall}
-                resizeMode="contain"
-              />
+              {branding.logoUrl ? (
+                <Image source={{ uri: branding.logoUrl }} style={styles.logoSmall} resizeMode="contain" />
+              ) : (
+                <Image source={require('@/assets/images/system-logo.png')} style={styles.logoSmall} resizeMode="contain" />
+              )}
             </HexFrame>
           </View>
 

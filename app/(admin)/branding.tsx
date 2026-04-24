@@ -11,6 +11,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { Colors } from '@/constants/colors';
 import { useSchoolTheme, COLOR_PRESETS, SchoolBranding } from '@/contexts/SchoolThemeContext';
 import { uploadSchoolLogo } from '@/lib/firebase-storage';
+import SchoolBrandHeader from '@/components/SchoolBrandHeader';
 import * as Haptics from 'expo-haptics';
 
 function hexValid(h: string) {
@@ -198,6 +199,15 @@ export default function BrandingScreen() {
       >
         {/* Live Preview */}
         <PreviewCard draft={draft} />
+
+        {/* School Brand Header Preview */}
+        <View style={s.card}>
+          <Text style={s.cardTitle}>مساحة شعار الروضة المشتركة</Text>
+          <Text style={s.cardSub}>
+            هذا هو الإطار الذي يظهر في جميع شاشات النظام. اضغط على مساحة الشعار لرفع شعار روضتك.
+          </Text>
+          <SchoolBrandHeader editable />
+        </View>
 
         {/* School Identity */}
         <View style={s.card}>
