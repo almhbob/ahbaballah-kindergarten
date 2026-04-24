@@ -48,6 +48,24 @@ uri = "file://docs/marketing/logo-v2-d.png"
 type = "image"
 title = "modern noon letterform logo D"
 
+[[generated]]
+id = "orryQbIy38KpuWNqSP_3S"
+uri = "file://docs/marketing/logo-d-v1.png"
+type = "image"
+title = "minimal noon arc dot logo D v1"
+
+[[generated]]
+id = "0FniQVefbD6j5Pajzj8ce"
+uri = "file://docs/marketing/logo-d-v2.png"
+type = "image"
+title = "modern N circle noon logo D v2"
+
+[[generated]]
+id = "O8oPeAPReOPbZwoO-h23U"
+uri = "file://docs/marketing/logo-d-v3.png"
+type = "image"
+title = "braun minimal noon stroke logo D v3"
+
 [[outputs]]
 id = "F4m6i41miE4T82MhQlO8a"
 uri = "file://docs/vital-data.md"
@@ -82,13 +100,13 @@ title = "الملف الترويجي (PDF) — نظم إدارة رياض الأ
 id = "WJ9-ykkyAaxsb3D3tP7MG"
 uri = "file://assets/images/system-logo.png"
 type = "image"
-title = "شعار النظام — ملف PNG عالي الجودة"
+title = "الشعار الرسمي النهائي — PNG عالي الجودة"
 
 [[outputs]]
 id = "pekCWdC9Rt_4DhFh3BVhz"
 uri = "file://docs/marketing/logo-guide.png"
 type = "image"
-title = "دليل الهوية البصرية الكامل"
+title = "دليل الهوية البصرية المحدّث"
 
 [[outputs]]
 id = "wG_b6iHjhB4UFd_unbVgm"
