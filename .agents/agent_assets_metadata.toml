@@ -24,6 +24,30 @@ uri = "file://docs/marketing/logo-refined.png"
 type = "image"
 title = "refined star book logo"
 
+[[generated]]
+id = "55S_YXz5CbvG7UEBx_8kO"
+uri = "file://docs/marketing/logo-v2-a.png"
+type = "image"
+title = "modern N logo concept A"
+
+[[generated]]
+id = "mhCDn92bMaADaAc9fobsb"
+uri = "file://docs/marketing/logo-v2-b.png"
+type = "image"
+title = "modern growth bars logo concept B"
+
+[[generated]]
+id = "X_4sfiQx-JmokGGg-W1Sd"
+uri = "file://docs/marketing/logo-v2-c.png"
+type = "image"
+title = "modern circles logo concept C"
+
+[[generated]]
+id = "xn1JmS3DTmSz_NbodeBKb"
+uri = "file://docs/marketing/logo-v2-d.png"
+type = "image"
+title = "modern noon letterform logo D"
+
 [[outputs]]
 id = "F4m6i41miE4T82MhQlO8a"
 uri = "file://docs/vital-data.md"
@@ -65,3 +89,9 @@ id = "pekCWdC9Rt_4DhFh3BVhz"
 uri = "file://docs/marketing/logo-guide.png"
 type = "image"
 title = "دليل الهوية البصرية الكامل"
+
+[[outputs]]
+id = "wG_b6iHjhB4UFd_unbVgm"
+uri = "file://docs/marketing/logo-compare.png"
+type = "image"
+title = "مقارنة المفاهيم الأربعة للشعار"
