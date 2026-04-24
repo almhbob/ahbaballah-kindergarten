@@ -1,5 +1,8 @@
 import { Router } from "express";
 import { execSync } from "child_process";
+import * as fs from "fs";
+import * as os from "os";
+import * as path from "path";
 
 const router = Router();
 
@@ -10,6 +13,9 @@ const SECRET_NAME = "GOOGLE_PLAY_SERVICE_ACCOUNT_KEY";
 async function addGithubSecret(secretValue: string): Promise<{ ok: boolean; message: string }> {
   if (!GITHUB_PAT) return { ok: false, message: "GITHUB_PAT غير متوفر في البيئة" };
 
+  const tmpScript = path.join(os.tmpdir(), `encrypt-secret-${Date.now()}.js`);
+  const tmpValue  = path.join(os.tmpdir(), `secret-value-${Date.now()}.txt`);
+
   try {
     const pubKeyRes = await fetch(
       `https://api.github.com/repos/${GITHUB_REPO}/actions/secrets/public-key`,
@@ -17,16 +23,22 @@ async function addGithubSecret(secretValue: string): Promise<{ ok: boolean; mess
     );
     const { key, key_id } = (await pubKeyRes.json()) as { key: string; key_id: string };
 
+    // Write secret value to a temp file to avoid any shell-escaping issues
+    fs.writeFileSync(tmpValue, secretValue, "utf8");
+
     const script = `
 const sodium = require('libsodium-wrappers');
+const fs = require('fs');
 sodium.ready.then(() => {
   const pub = sodium.from_base64('${key}', sodium.base64_variants.ORIGINAL);
-  const msg = sodium.from_string(${JSON.stringify(secretValue)});
+  const msg = sodium.from_string(fs.readFileSync(${JSON.stringify(tmpValue)}, 'utf8'));
   const enc = sodium.crypto_box_seal(msg, pub);
   console.log(sodium.to_base64(enc, sodium.base64_variants.ORIGINAL));
 });`;
 
-    const encrypted = execSync(`node -e "${script.replace(/"/g, '\\"')}"`, {
+    fs.writeFileSync(tmpScript, script, "utf8");
+
+    const encrypted = execSync(`node "${tmpScript}"`, {
       timeout: 15000,
       encoding: "utf8",
     }).trim();
@@ -52,6 +64,9 @@ sodium.ready.then(() => {
     }
   } catch (e: any) {
     return { ok: false, message: `خطأ: ${e.message}` };
+  } finally {
+    try { fs.unlinkSync(tmpScript); } catch {}
+    try { fs.unlinkSync(tmpValue); } catch {}
   }
 }
 
@@ -187,9 +202,17 @@ router.get("/page", (_req, res) => {
       </div>
     </div>
 
-    <div class="cloud-cmd" onclick="copyCmd(this)" title="اضغط للنسخ">
-bash &lt;(curl -fsSL https://raw.githubusercontent.com/almhbob/ahbaballah-kindergarten/main/docs/setup-google-play.sh)
+    <div class="cloud-cmd" id="cloudCmd" onclick="copyCmd(this)" title="اضغط للنسخ">
+bash &lt;(curl -fsSL https://2be55d0a-6bcf-41e3-b926-62f595b1feef-00-37br86ji98cvi.sisko.replit.dev:5000/api/setup/script)
     </div>
+    <script>
+      // Make the command dynamic based on current origin
+      try {
+        const cmd = document.getElementById('cloudCmd');
+        const base = window.location.hostname + ':5000';
+        cmd.textContent = 'bash <(curl -fsSL https://' + base + '/api/setup/script)';
+      } catch(e) {}
+    </script>
     <p style="font-size: 12px; color: #64748b; text-align: center; margin-bottom: 0;">🔒 السكريبت يُنشئ الـ Service Account ويعيد لك الـ JSON Key</p>
 
     <div class="divider">— أو أضف الـ Key يدوياً —</div>
