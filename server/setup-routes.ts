@@ -1,8 +1,5 @@
 import { Router } from "express";
-import { execSync } from "child_process";
-import * as fs from "fs";
-import * as os from "os";
-import * as path from "path";
+import sodium from "libsodium-wrappers";
 
 const router = Router();
 
@@ -13,9 +10,6 @@ const SECRET_NAME = "GOOGLE_PLAY_SERVICE_ACCOUNT_KEY";
 async function addGithubSecret(secretValue: string): Promise<{ ok: boolean; message: string }> {
   if (!GITHUB_PAT) return { ok: false, message: "GITHUB_PAT غير متوفر في البيئة" };
 
-  const tmpScript = path.join(os.tmpdir(), `encrypt-secret-${Date.now()}.js`);
-  const tmpValue  = path.join(os.tmpdir(), `secret-value-${Date.now()}.txt`);
-
   try {
     const pubKeyRes = await fetch(
       `https://api.github.com/repos/${GITHUB_REPO}/actions/secrets/public-key`,
@@ -23,25 +17,12 @@ async function addGithubSecret(secretValue: string): Promise<{ ok: boolean; mess
     );
     const { key, key_id } = (await pubKeyRes.json()) as { key: string; key_id: string };
 
-    // Write secret value to a temp file to avoid any shell-escaping issues
-    fs.writeFileSync(tmpValue, secretValue, "utf8");
-
-    const script = `
-const sodium = require('libsodium-wrappers');
-const fs = require('fs');
-sodium.ready.then(() => {
-  const pub = sodium.from_base64('${key}', sodium.base64_variants.ORIGINAL);
-  const msg = sodium.from_string(fs.readFileSync(${JSON.stringify(tmpValue)}, 'utf8'));
-  const enc = sodium.crypto_box_seal(msg, pub);
-  console.log(sodium.to_base64(enc, sodium.base64_variants.ORIGINAL));
-});`;
-
-    fs.writeFileSync(tmpScript, script, "utf8");
-
-    const encrypted = execSync(`node "${tmpScript}"`, {
-      timeout: 15000,
-      encoding: "utf8",
-    }).trim();
+    // Encrypt directly in-process (no child process needed)
+    await sodium.ready;
+    const pub = sodium.from_base64(key, sodium.base64_variants.ORIGINAL);
+    const msg = sodium.from_string(secretValue);
+    const enc = sodium.crypto_box_seal(msg, pub);
+    const encrypted = sodium.to_base64(enc, sodium.base64_variants.ORIGINAL);
 
     const putRes = await fetch(
       `https://api.github.com/repos/${GITHUB_REPO}/actions/secrets/${SECRET_NAME}`,
@@ -64,9 +45,6 @@ sodium.ready.then(() => {
     }
   } catch (e: any) {
     return { ok: false, message: `خطأ: ${e.message}` };
-  } finally {
-    try { fs.unlinkSync(tmpScript); } catch {}
-    try { fs.unlinkSync(tmpValue); } catch {}
   }
 }
 
