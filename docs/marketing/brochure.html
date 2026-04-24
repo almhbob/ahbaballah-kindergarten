@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<title>نظم إدارة رياض الأطفال — العرض التعريفي</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#0c1155;
+    --navy-2:#1a2278;
+    --gold:#c9952a;
+    --gold-soft:#e8c66a;
+    --ink:#0e1330;
+    --muted:#5b6080;
+    --bg:#f6f7fb;
+    --card:#ffffff;
+    --line:#e5e7f0;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:'Tajawal',system-ui,sans-serif;line-height:1.7}
+  .page{max-width:980px;margin:0 auto;background:var(--card);box-shadow:0 10px 40px rgba(12,17,85,.06);}
+  /* HERO */
+  .hero{
+    position:relative;color:#fff;padding:64px 56px 56px;
+    background:
+      radial-gradient(1200px 400px at 90% -10%, rgba(201,149,42,.35), transparent 60%),
+      radial-gradient(800px 500px at -10% 110%, rgba(255,255,255,.08), transparent 60%),
+      linear-gradient(135deg,var(--navy) 0%,var(--navy-2) 100%);
+    overflow:hidden;
+  }
+  .hero::after{content:"";position:absolute;inset:auto -80px -80px auto;width:300px;height:300px;border-radius:50%;background:radial-gradient(circle,rgba(201,149,42,.25),transparent 70%);}
+  .brand{display:flex;align-items:center;gap:14px;margin-bottom:28px}
+  .brand-mark{width:54px;height:54px;border-radius:14px;background:linear-gradient(135deg,var(--gold),var(--gold-soft));display:grid;place-items:center;font-weight:900;color:var(--navy);font-size:22px;box-shadow:0 6px 18px rgba(201,149,42,.4)}
+  .brand-name{font-weight:700;letter-spacing:.5px;opacity:.95}
+  .hero h1{font-size:42px;line-height:1.25;margin:0 0 14px;font-weight:900}
+  .hero .accent{color:var(--gold-soft)}
+  .hero p.lead{font-size:19px;max-width:720px;opacity:.92;margin:0 0 26px}
+  .badges{display:flex;flex-wrap:wrap;gap:10px}
+  .badge{background:rgba(255,255,255,.12);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.18);padding:8px 14px;border-radius:999px;font-size:13px;font-weight:500}
+
+  /* SECTIONS */
+  section{padding:48px 56px;border-bottom:1px solid var(--line)}
+  section:last-child{border-bottom:none}
+  h2{font-size:28px;color:var(--navy);margin:0 0 6px;font-weight:900;display:flex;align-items:center;gap:12px}
+  h2::before{content:"";width:6px;height:28px;background:linear-gradient(180deg,var(--gold),var(--gold-soft));border-radius:3px;display:inline-block}
+  .sub{color:var(--muted);margin:0 0 28px;font-size:15px}
+
+  /* PROBLEM/SOLUTION */
+  .pain{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  .pain .col{background:#fff7ec;border:1px solid #f3deb1;border-radius:14px;padding:18px}
+  .pain .col.ok{background:#eef9f0;border-color:#cfe9d2}
+  .pain h3{margin:0 0 10px;color:var(--navy);font-size:16px}
+  .pain ul{margin:0;padding-inline-start:20px}
+  .pain li{margin:6px 0;font-size:14.5px}
+
+  /* FEATURE GRID */
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  .card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px 18px 16px;transition:transform .15s ease, box-shadow .15s ease}
+  .card:hover{transform:translateY(-2px);box-shadow:0 14px 30px rgba(12,17,85,.08)}
+  .ico{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;font-size:20px;background:linear-gradient(135deg,#eef0ff,#fff);border:1px solid var(--line);margin-bottom:12px;color:var(--navy)}
+  .card h4{margin:0 0 6px;font-size:16px;color:var(--navy);font-weight:700}
+  .card p{margin:0;color:var(--muted);font-size:14px}
+
+  /* ROLES */
+  .roles{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  .role{border-radius:18px;padding:20px;color:#fff;position:relative;overflow:hidden;min-height:200px}
+  .role.admin{background:linear-gradient(135deg,#0c1155,#252d8f)}
+  .role.teacher{background:linear-gradient(135deg,#1A6B5C,#2a967f)}
+  .role.parent{background:linear-gradient(135deg,#7B3FA0,#a55cc8)}
+  .role h4{margin:0 0 6px;font-size:18px;font-weight:800}
+  .role .tag{display:inline-block;padding:3px 10px;border-radius:999px;background:rgba(255,255,255,.18);font-size:12px;margin-bottom:12px}
+  .role ul{margin:0;padding-inline-start:18px;font-size:13.5px;opacity:.95}
+  .role li{margin:5px 0}
+
+  /* TABLE */
+  table{width:100%;border-collapse:collapse;font-size:14.5px;background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  thead th{background:var(--navy);color:#fff;text-align:right;padding:12px 14px;font-weight:700}
+  tbody td{padding:11px 14px;border-top:1px solid var(--line)}
+  tbody tr:nth-child(even) td{background:#fafbff}
+  .yes{color:#1a8c4a;font-weight:700}
+  .no{color:#b34c4c;font-weight:700}
+
+  /* PRICING — world-class */
+  .pricing-wrap{position:relative}
+  .billing-toggle{display:inline-flex;background:#eef0fa;border-radius:999px;padding:5px;margin:0 0 28px;font-size:13.5px}
+  .billing-toggle span{padding:8px 18px;border-radius:999px;color:var(--muted);font-weight:600;cursor:default}
+  .billing-toggle span.active{background:#fff;color:var(--navy);box-shadow:0 2px 8px rgba(12,17,85,.08)}
+  .billing-toggle .save{background:linear-gradient(135deg,#1a8c4a,#2bb56a);color:#fff;font-size:11px;padding:3px 8px;border-radius:999px;margin-inline-start:6px;font-weight:700}
+
+  .plans{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;align-items:stretch}
+  .plan{
+    background:#fff;border:1px solid var(--line);border-radius:20px;padding:26px 22px 22px;
+    position:relative;display:flex;flex-direction:column;
+    transition:transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+  }
+  .plan:hover{transform:translateY(-3px);box-shadow:0 18px 40px rgba(12,17,85,.10)}
+  .plan .tier{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px}
+  .plan .tier::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--muted)}
+  .plan h4{margin:0 0 4px;color:var(--navy);font-size:20px;font-weight:800}
+  .plan .tagline{margin:0 0 18px;color:var(--muted);font-size:13.5px;min-height:36px}
+  .plan .price-row{display:flex;align-items:baseline;gap:6px;margin-bottom:4px}
+  .plan .currency{font-size:18px;color:var(--navy);font-weight:700}
+  .plan .price{font-size:40px;font-weight:900;color:var(--navy);line-height:1;letter-spacing:-1px}
+  .plan .per{color:var(--muted);font-size:13px}
+  .plan .price-note{color:var(--muted);font-size:12.5px;margin:0 0 18px}
+  .plan .cta-btn{
+    display:block;text-align:center;padding:12px 16px;border-radius:12px;font-weight:700;font-size:14px;
+    background:#eef0fa;color:var(--navy);text-decoration:none;margin-bottom:18px;
+    border:1.5px solid transparent;transition:all .15s ease;
+  }
+  .plan .cta-btn:hover{background:#e3e6f7}
+  .plan ul.feats{list-style:none;margin:0;padding:0;font-size:14px;flex:1}
+  .plan ul.feats li{display:flex;gap:8px;margin:9px 0;color:var(--ink);align-items:flex-start}
+  .plan ul.feats li::before{content:"✓";color:#1a8c4a;font-weight:900;flex:0 0 auto;margin-top:1px}
+  .plan ul.feats li.muted{color:var(--muted)}
+  .plan ul.feats li.muted::before{content:"−";color:#b8bcd0}
+  .plan .divider{height:1px;background:var(--line);margin:14px 0}
+  .plan .mini-h{font-size:11.5px;font-weight:800;color:var(--muted);letter-spacing:1.2px;text-transform:uppercase;margin:6px 0 4px}
+
+  .plan.starter .tier::before{background:#7a8294}
+  .plan.pro{
+    border-color:transparent;
+    background:linear-gradient(180deg,#0c1155 0%,#1a2278 100%);color:#fff;
+    box-shadow:0 22px 50px rgba(12,17,85,.28);transform:translateY(-4px);
+  }
+  .plan.pro:hover{transform:translateY(-7px)}
+  .plan.pro .tier{color:var(--gold-soft)}
+  .plan.pro .tier::before{background:var(--gold)}
+  .plan.pro h4{color:#fff}
+  .plan.pro .tagline{color:rgba(255,255,255,.78)}
+  .plan.pro .currency,.plan.pro .price{color:#fff}
+  .plan.pro .per,.plan.pro .price-note{color:rgba(255,255,255,.7)}
+  .plan.pro .cta-btn{background:linear-gradient(135deg,var(--gold),var(--gold-soft));color:var(--navy)}
+  .plan.pro .cta-btn:hover{filter:brightness(1.05)}
+  .plan.pro ul.feats li{color:rgba(255,255,255,.95)}
+  .plan.pro ul.feats li::before{color:var(--gold-soft)}
+  .plan.pro .divider{background:rgba(255,255,255,.15)}
+  .plan.pro .mini-h{color:rgba(255,255,255,.6)}
+  .plan.pro .ribbon{
+    position:absolute;top:-14px;left:50%;transform:translateX(-50%);
+    background:linear-gradient(135deg,var(--gold),var(--gold-soft));color:var(--navy);
+    font-size:11.5px;font-weight:900;padding:6px 14px;border-radius:999px;letter-spacing:1px;
+    box-shadow:0 6px 16px rgba(201,149,42,.4);
+  }
+  .plan.enterprise{background:linear-gradient(180deg,#fbfbfd 0%,#fff 100%);border-color:#dfe2f0}
+  .plan.enterprise .tier::before{background:var(--gold)}
+
+  .pricing-foot{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:24px}
+  .pf{background:#fafbff;border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;gap:12px;align-items:flex-start}
+  .pf .pf-ico{width:34px;height:34px;border-radius:10px;background:#fff;border:1px solid var(--line);display:grid;place-items:center;flex:0 0 auto;color:var(--navy);font-size:17px}
+  .pf h6{margin:0 0 2px;font-size:13.5px;color:var(--navy);font-weight:800}
+  .pf p{margin:0;font-size:12.5px;color:var(--muted);line-height:1.55}
+
+  @media (max-width:980px){
+    .plans{grid-template-columns:repeat(2,1fr)}
+    .plan.pro{transform:none}
+    .pricing-foot{grid-template-columns:repeat(2,1fr)}
+  }
+
+  /* TIMELINE */
+  .timeline{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  .step{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px;position:relative}
+  .step .num{width:30px;height:30px;border-radius:50%;background:var(--navy);color:#fff;display:grid;place-items:center;font-weight:800;margin-bottom:10px}
+  .step h5{margin:0 0 4px;color:var(--navy);font-size:15px}
+  .step p{margin:0;color:var(--muted);font-size:13.5px}
+
+  /* CTA */
+  .cta{background:linear-gradient(135deg,var(--navy),var(--navy-2));color:#fff;padding:42px 56px;text-align:center}
+  .cta h2{color:#fff;justify-content:center}
+  .cta h2::before{display:none}
+  .cta p{opacity:.92;margin:6px 0 22px;font-size:16px}
+  .btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+  .btn{padding:13px 24px;border-radius:12px;font-weight:700;text-decoration:none;display:inline-block;font-size:15px}
+  .btn-gold{background:linear-gradient(135deg,var(--gold),var(--gold-soft));color:var(--navy)}
+  .btn-ghost{background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,.4)}
+
+  /* FOOTER */
+  footer{padding:22px 56px;background:#0a0e2a;color:#aab0d6;font-size:13px;text-align:center}
+
+  @media print{
+    body{background:#fff}
+    .page{box-shadow:none}
+    section{page-break-inside:avoid}
+    .card:hover{transform:none;box-shadow:none}
+  }
+  @media (max-width:760px){
+    section,.hero,.cta,footer{padding-left:24px;padding-right:24px}
+    .grid,.roles,.plans,.timeline,.pain{grid-template-columns:1fr}
+    .hero h1{font-size:30px}
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- HERO -->
+  <header class="hero">
+    <div class="brand">
+      <div class="brand-mark">ن</div>
+      <div class="brand-name">نظم إدارة رياض الأطفال</div>
+    </div>
+    <h1>منظومة متكاملة لإدارة <span class="accent">رياض الأطفال والمدارس</span> باحترافية وذكاء</h1>
+    <p class="lead">حلٌّ عربيٌّ شامل يربط الإدارة والمعلمات وأولياء الأمور في تطبيقٍ واحد سهل الاستخدام، يعمل على الجوال والويب، ويُلبّي متطلبات التشغيل اليومي للروضة من التسجيل إلى التخرّج.</p>
+    <div class="badges">
+      <span class="badge">واجهة عربية كاملة (RTL)</span>
+      <span class="badge">يعمل على iOS و Android والمتصفّح</span>
+      <span class="badge">إشعارات فورية</span>
+      <span class="badge">حماية وصلاحيات متعددة المستويات</span>
+      <span class="badge">قاعدة بيانات سحابية</span>
+    </div>
+  </header>
+
+  <!-- WHY -->
+  <section>
+    <h2>لماذا تحتاج روضتك إلى نظام إداري؟</h2>
+    <p class="sub">التشغيل اليدوي عبر الأوراق ومجموعات واتساب يُكلّف الإدارة وقتاً وجهداً، ويُربك التواصل مع أولياء الأمور.</p>
+    <div class="pain">
+      <div class="col">
+        <h3>المشكلات الشائعة اليوم</h3>
+        <ul>
+          <li>تسجيل الطلاب بالأوراق وتكرار البيانات وفقدها.</li>
+          <li>صعوبة متابعة الحضور والغياب اليومي.</li>
+          <li>تأخير إبلاغ ولي الأمر عن سلوك أو أداء طفله.</li>
+          <li>فوضى تحصيل الرسوم وعدم وضوح المتأخرات.</li>
+          <li>صعوبة أرشفة صور الأنشطة والاحتفالات والشهادات.</li>
+          <li>عدم وجود قناة رسمية للملاحظات والشكاوى.</li>
+        </ul>
+      </div>
+      <div class="col ok">
+        <h3>الحل الذي نقدّمه</h3>
+        <ul>
+          <li>تسجيل إلكتروني للطلاب مع رفع كامل المستندات.</li>
+          <li>سجل حضور رقمي بنقرة واحدة من المعلمة.</li>
+          <li>تواصل لحظي مع ولي الأمر عبر الإشعارات.</li>
+          <li>إدارة مالية واضحة للرسوم والمدفوعات.</li>
+          <li>معرض صور وأرشيف للخريجين والشهادات.</li>
+          <li>صندوق وارد رسمي للملاحظات وتقييم الخدمة.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ROLES -->
+  <section>
+    <h2>ثلاث واجهات مصمَّمة لكل دور</h2>
+    <p class="sub">كل مستخدم يرى ما يخصّه فقط، بصلاحيات محكمة وتجربة بسيطة.</p>
+    <div class="roles">
+      <div class="role admin">
+        <span class="tag">للإدارة</span>
+        <h4>لوحة الإدارة الذكيّة</h4>
+        <ul>
+          <li>إدارة كاملة للطلاب والفصول والمعلمات.</li>
+          <li>قبول طلبات التسجيل ومراجعة المستندات.</li>
+          <li>تقارير مالية، حضور، أداء وإحصائيات.</li>
+          <li>إدارة المواصلات والرسوم والإشعارات.</li>
+          <li>تخصيص الهوية البصرية للروضة.</li>
+        </ul>
+      </div>
+      <div class="role teacher">
+        <span class="tag">للمعلمات</span>
+        <h4>تطبيق المعلمة</h4>
+        <ul>
+          <li>سجل حضور وغياب يومي بسهولة.</li>
+          <li>إدخال درجات وملاحظات سلوكية وتربوية.</li>
+          <li>إرسال إشعارات لأولياء الأمور بالفصل.</li>
+          <li>رفع صور الأنشطة الصفية مباشرة.</li>
+          <li>عرض جدول الحصص والفعاليات.</li>
+        </ul>
+      </div>
+      <div class="role parent">
+        <span class="tag">لأولياء الأمور</span>
+        <h4>تطبيق ولي الأمر</h4>
+        <ul>
+          <li>متابعة الحضور والدرجات والملاحظات لحظياً.</li>
+          <li>استلام الإشعارات والبيانات الرسمية.</li>
+          <li>عرض جدول النقل المدرسي والمسارات.</li>
+          <li>الاطلاع على الرسوم والمدفوعات.</li>
+          <li>تواصل مباشر مع المعلمة والإدارة.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section>
+    <h2>مميزات النظام التفصيلية</h2>
+    <p class="sub">أكثر من 25 وحدة وظيفية جاهزة للعمل من اليوم الأول.</p>
+    <div class="grid">
+      <div class="card"><div class="ico">📝</div><h4>التسجيل الإلكتروني</h4><p>نموذج تسجيل عربي كامل برفع شهادة الميلاد، الهوية، التطعيمات وصورة الطفل.</p></div>
+      <div class="card"><div class="ico">👶</div><h4>إدارة الطلاب</h4><p>ملف شامل لكل طالب يحوي بياناته الشخصية، الطبية، الأكاديمية وذويه.</p></div>
+      <div class="card"><div class="ico">🏫</div><h4>الفصول والمراحل</h4><p>تنظيم الطلاب في فصول ومستويات وربطهم بالمعلمات بنقرة واحدة.</p></div>
+      <div class="card"><div class="ico">✅</div><h4>الحضور والغياب</h4><p>سجل حضور يومي رقمي مع تنبيه فوري لولي الأمر عند غياب الطفل.</p></div>
+      <div class="card"><div class="ico">📊</div><h4>الدرجات والتقييم</h4><p>تسجيل التقييمات والملاحظات السلوكية وعرضها في تقارير دورية.</p></div>
+      <div class="card"><div class="ico">📅</div><h4>التقويم والفعاليات</h4><p>تقويم تفاعلي للفعاليات والإجازات والأنشطة مع إشعارات تلقائية.</p></div>
+      <div class="card"><div class="ico">🚌</div><h4>إدارة النقل</h4><p>تنظيم خطوط الباصات، السائقين، والطلاب على كل مسار مع متابعة ولي الأمر.</p></div>
+      <div class="card"><div class="ico">💰</div><h4>الرسوم والمالية</h4><p>إصدار فواتير الرسوم، تتبع المدفوعات والمتأخرات وإصدار إيصالات إلكترونية.</p></div>
+      <div class="card"><div class="ico">📸</div><h4>معرض الأنشطة</h4><p>أرشفة لحظية لصور الرحلات والاحتفالات منظمة حسب التاريخ والفصل.</p></div>
+      <div class="card"><div class="ico">🎓</div><h4>الشهادات الفاخرة</h4><p>إصدار وطباعة شهادات تخرّج وتفوّق بتصاميم احترافية جاهزة للحفظ.</p></div>
+      <div class="card"><div class="ico">🆔</div><h4>بطاقات هوية الطلاب</h4><p>توليد بطاقة هوية تعريفية لكل طفل قابلة للطباعة فور إكمال التسجيل.</p></div>
+      <div class="card"><div class="ico">🔔</div><h4>الإشعارات الفورية</h4><p>إرسال إعلانات وتعميمات للجميع أو لفصل محدد أو لولي أمر بعينه.</p></div>
+      <div class="card"><div class="ico">📥</div><h4>صندوق الوارد</h4><p>قناة رسمية لاستقبال ملاحظات أولياء الأمور وتقييماتهم لخدمات الروضة.</p></div>
+      <div class="card"><div class="ico">📤</div><h4>التصدير والطباعة</h4><p>تصدير القوائم والتقارير إلى Excel/PDF بضغطة واحدة.</p></div>
+      <div class="card"><div class="ico">🎨</div><h4>هوية الروضة</h4><p>تخصيص الشعار، الألوان، اسم الروضة وطابع الشهادات بسهولة.</p></div>
+      <div class="card"><div class="ico">🔐</div><h4>صلاحيات وأمان</h4><p>تشفير كلمات المرور، جلسات آمنة، صلاحيات لكل دور وحفظ سجل العمليات.</p></div>
+      <div class="card"><div class="ico">☁️</div><h4>قاعدة بيانات سحابية</h4><p>كل البيانات محفوظة في قاعدة بيانات سحابية مع نسخ احتياطية تلقائية.</p></div>
+      <div class="card"><div class="ico">📱</div><h4>متعدد المنصات</h4><p>يعمل على هواتف iPhone و Android وعلى المتصفح من أي جهاز كمبيوتر.</p></div>
+    </div>
+  </section>
+
+  <!-- COMPARISON -->
+  <section>
+    <h2>قارن بنفسك: قبل وبعد النظام</h2>
+    <table>
+      <thead>
+        <tr><th>المهمة</th><th>الطريقة التقليدية</th><th>مع نظامنا</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>تسجيل طالب جديد</td><td>20–40 دقيقة، أوراق ومستندات</td><td><span class="yes">5 دقائق إلكترونياً مع المرفقات</span></td></tr>
+        <tr><td>تسجيل الحضور اليومي</td><td>كشف ورقي ثم نقل يدوي</td><td><span class="yes">ضغطة واحدة من جوال المعلمة</span></td></tr>
+        <tr><td>إبلاغ ولي الأمر بالغياب</td><td>اتصال هاتفي تأخّر ساعات</td><td><span class="yes">إشعار فوري خلال ثوانٍ</span></td></tr>
+        <tr><td>متابعة الرسوم</td><td>دفاتر يدوية وأخطاء مالية</td><td><span class="yes">لوحة مالية واضحة لحظياً</span></td></tr>
+        <tr><td>أرشفة صور الأنشطة</td><td>مبعثرة بين هواتف المعلمات</td><td><span class="yes">معرض موحّد منظّم بالتاريخ</span></td></tr>
+        <tr><td>إصدار شهادات التخرّج</td><td>تصميم خارجي وطباعة فردية</td><td><span class="yes">تصميم فاخر جاهز فوري</span></td></tr>
+        <tr><td>التقارير الإدارية</td><td>تجميع يدوي يستغرق أياماً</td><td><span class="yes">تقارير لحظية بضغطة زر</span></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- SECURITY -->
+  <section>
+    <h2>الأمان والخصوصية أولاً</h2>
+    <p class="sub">نتعامل مع بيانات أطفال، ولذا فالأمان غير قابل للتفاوض.</p>
+    <div class="grid">
+      <div class="card"><div class="ico">🛡️</div><h4>تشفير الكلمات السرية</h4><p>كل كلمات المرور مشفّرة بخوارزميات حديثة (bcrypt) لا يمكن استرجاعها.</p></div>
+      <div class="card"><div class="ico">🧱</div><h4>عزل الصلاحيات</h4><p>كل مستخدم يصل فقط للبيانات التي تخصّ دوره — لا تسرّب ولا تعدٍّ.</p></div>
+      <div class="card"><div class="ico">💾</div><h4>نسخ احتياطية</h4><p>قاعدة بيانات سحابية بنسخ احتياطية يومية وحماية ضد فقدان البيانات.</p></div>
+      <div class="card"><div class="ico">🔒</div><h4>اتصال مشفّر</h4><p>كل الاتصالات بين التطبيق والخادم محمية بشهادات HTTPS.</p></div>
+      <div class="card"><div class="ico">🧾</div><h4>سجلّ العمليات</h4><p>تتبّع من فعل ماذا ومتى — للمسؤولية والشفافية الكاملة.</p></div>
+      <div class="card"><div class="ico">👁️‍🗨️</div><h4>سياسة خصوصية واضحة</h4><p>صفحة خصوصية رسمية تُعرَض داخل التطبيق وتلتزم بحماية بيانات الأطفال.</p></div>
+    </div>
+  </section>
+
+  <!-- ROADMAP -->
+  <section>
+    <h2>خطة التشغيل خلال أسبوع واحد</h2>
+    <p class="sub">نتولّى التركيب والتدريب — وأنتم تباشرون العمل بسلاسة.</p>
+    <div class="timeline">
+      <div class="step"><div class="num">1</div><h5>اليوم 1–2: التهيئة</h5><p>تخصيص هوية الروضة، رفع الشعار، إنشاء الفصول والمراحل.</p></div>
+      <div class="step"><div class="num">2</div><h5>اليوم 3–4: البيانات</h5><p>إدخال المعلمات والطلاب، إمّا يدوياً أو باستيراد كشف Excel.</p></div>
+      <div class="step"><div class="num">3</div><h5>اليوم 5: التدريب</h5><p>جلسة تدريب للإدارة والمعلمات على استخدام التطبيق.</p></div>
+      <div class="step"><div class="num">4</div><h5>اليوم 6–7: الانطلاق</h5><p>دعوة أولياء الأمور وبدء التشغيل الفعلي مع دعم متواصل.</p></div>
+    </div>
+  </section>
+
+  <!-- PRICING -->
+  <section class="pricing-wrap">
+    <h2>باقات اشتراك بمعايير عالمية</h2>
+    <p class="sub">أربع باقات مدروسة تنمو مع مؤسستك — من الروضة الناشئة إلى الشبكة التعليمية متعددة الفروع. كل الباقات تشمل التركيب والتدريب والدعم الفني.</p>
+
+    <div class="billing-toggle" role="tablist" aria-label="نمط الفوترة">
+      <span>شهرياً</span>
+      <span class="active">سنوياً <span class="save">وفّر 20%</span></span>
+    </div>
+
+    <div class="plans">
+
+      <!-- STARTER -->
+      <div class="plan starter">
+        <span class="tier">Starter · المبتدئة</span>
+        <h4>الانطلاقة</h4>
+        <p class="tagline">للرياض الناشئة التي تبدأ تحوّلها الرقمي.</p>
+        <div class="price-row">
+          <span class="currency">$</span>
+          <span class="price">29</span>
+          <span class="per">/ شهرياً</span>
+        </div>
+        <p class="price-note">يُحتسب سنوياً · ما يعادل ≈ 109 ر.س / 109 ج.م</p>
+        <a class="cta-btn" href="#">ابدأ الآن</a>
+        <div class="mini-h">يشمل</div>
+        <ul class="feats">
+          <li>حتى <strong>60 طالباً</strong></li>
+          <li>حتى <strong>4 معلمات</strong> + حساب إدارة</li>
+          <li>تسجيل، حضور، فصول، تقويم</li>
+          <li>تطبيق ولي الأمر مع الإشعارات</li>
+          <li>5 جيجابايت لتخزين الصور والمستندات</li>
+          <li class="muted">إدارة النقل والمالية</li>
+          <li class="muted">تخصيص الهوية البصرية</li>
+        </ul>
+        <div class="divider"></div>
+        <div class="mini-h">الدعم</div>
+        <ul class="feats"><li>دعم عبر البريد خلال 48 ساعة</li></ul>
+      </div>
+
+      <!-- PROFESSIONAL (highlight) -->
+      <div class="plan pro">
+        <span class="ribbon">الأكثر طلباً</span>
+        <span class="tier">Professional · الاحترافية</span>
+        <h4>الاحترافية</h4>
+        <p class="tagline">الأنسب لمعظم رياض الأطفال متوسطة الحجم.</p>
+        <div class="price-row">
+          <span class="currency">$</span>
+          <span class="price">79</span>
+          <span class="per">/ شهرياً</span>
+        </div>
+        <p class="price-note">يُحتسب سنوياً · يشمل التركيب والتدريب الكامل</p>
+        <a class="cta-btn" href="#">جرّب 14 يوماً مجاناً</a>
+        <div class="mini-h">كل ما في الانطلاقة، إضافةً إلى</div>
+        <ul class="feats">
+          <li>حتى <strong>250 طالباً</strong></li>
+          <li>عدد <strong>غير محدود</strong> من المعلمات</li>
+          <li>إدارة <strong>الرسوم والمالية</strong> بالكامل</li>
+          <li>إدارة <strong>النقل المدرسي</strong> والمسارات</li>
+          <li>الدرجات، التقييم، تقارير الأداء</li>
+          <li>إصدار شهادات وبطاقات هوية فاخرة</li>
+          <li>تخصيص هوية الروضة (شعار وألوان)</li>
+          <li>50 جيجابايت تخزين سحابي</li>
+          <li>تصدير Excel / PDF</li>
+        </ul>
+        <div class="divider"></div>
+        <div class="mini-h">الدعم</div>
+        <ul class="feats"><li>دعم سريع متعدد القنوات خلال 4 ساعات</li></ul>
+      </div>
+
+      <!-- BUSINESS -->
+      <div class="plan">
+        <span class="tier">Business · للمدارس</span>
+        <h4>المدارس والمجمّعات</h4>
+        <p class="tagline">للمدارس الكاملة ومجمّعات التعليم متعدّدة المراحل.</p>
+        <div class="price-row">
+          <span class="currency">$</span>
+          <span class="price">169</span>
+          <span class="per">/ شهرياً</span>
+        </div>
+        <p class="price-note">يُحتسب سنوياً · يشمل تكاملات إضافية</p>
+        <a class="cta-btn" href="#">احجز عرضاً تجريبياً</a>
+        <div class="mini-h">كل ما في الاحترافية، إضافةً إلى</div>
+        <ul class="feats">
+          <li>طلاب <strong>غير محدودين</strong></li>
+          <li>دعم <strong>عدة فروع</strong> ضمن حساب واحد</li>
+          <li>تقارير تحليلية متقدّمة ولوحات KPIs</li>
+          <li>إدارة الموارد البشرية والرواتب الأساسية</li>
+          <li>تكامل مع بوابات الدفع الإلكتروني</li>
+          <li>API مفتوح للتكامل مع أنظمة خارجية</li>
+          <li>200 جيجابايت تخزين سحابي</li>
+          <li>تدريب موسّع للطاقم (جلستان)</li>
+        </ul>
+        <div class="divider"></div>
+        <div class="mini-h">الدعم</div>
+        <ul class="feats"><li>دعم ذو أولوية على مدار اليوم</li></ul>
+      </div>
+
+      <!-- ENTERPRISE -->
+      <div class="plan enterprise">
+        <span class="tier">Enterprise · للشبكات</span>
+        <h4>الشبكات التعليمية</h4>
+        <p class="tagline">حلول مفصّلة على مقاس الشبكات الكبرى والوزارات.</p>
+        <div class="price-row">
+          <span class="price" style="font-size:30px">تواصل معنا</span>
+        </div>
+        <p class="price-note">عرض سعر مخصّص حسب الحجم والمتطلبات</p>
+        <a class="cta-btn" href="#">تحدّث مع المبيعات</a>
+        <div class="mini-h">كل ما في باقة المدارس، إضافةً إلى</div>
+        <ul class="feats">
+          <li>استضافة مخصّصة (سحابة خاصة أو On-Premise)</li>
+          <li>اتفاقية مستوى خدمة <strong>SLA 99.9%</strong></li>
+          <li>تسجيل دخول موحّد <strong>SSO</strong> و <strong>SAML</strong></li>
+          <li>تخصيص الواجهات والتقارير حسب الطلب</li>
+          <li>إدارة عدة مدارس وكيانات إدارية</li>
+          <li>ترحيل بيانات احترافي من نظامكم الحالي</li>
+          <li>تخزين غير محدود ونسخ احتياطية جغرافية</li>
+        </ul>
+        <div class="divider"></div>
+        <div class="mini-h">الدعم</div>
+        <ul class="feats"><li>مدير حساب مخصّص + فريق دعم تقني خاص</li></ul>
+      </div>
+
+    </div>
+
+    <!-- FOOT BENEFITS -->
+    <div class="pricing-foot">
+      <div class="pf"><div class="pf-ico">🛡️</div><div><h6>ضمان استرداد 14 يوماً</h6><p>جرّب الباقة الاحترافية بدون مخاطرة، استرداد كامل خلال أسبوعين.</p></div></div>
+      <div class="pf"><div class="pf-ico">🎓</div><div><h6>تدريب وتركيب مجّاني</h6><p>فريقنا يهيّئ النظام ويدرّب طاقم العمل قبل انطلاق التشغيل.</p></div></div>
+      <div class="pf"><div class="pf-ico">🔄</div><div><h6>ترقية وتنزيل مرن</h6><p>غيّر باقتك في أي وقت، الفروقات تُحتسب تلقائياً دون التزام.</p></div></div>
+      <div class="pf"><div class="pf-ico">🌍</div><div><h6>دعم متعدد العملات</h6><p>الدفع متاح بالدولار، الريال، الجنيه، الدرهم وعملات أخرى.</p></div></div>
+    </div>
+  </section>
+
+  <!-- VALUE -->
+  <section>
+    <h2>ماذا تكسب الروضة؟</h2>
+    <div class="grid">
+      <div class="card"><div class="ico">⏱️</div><h4>توفير 60% من الوقت الإداري</h4><p>أتمتة المهام المتكرّرة تحرّر طاقم الإدارة لمتابعة جودة التعليم.</p></div>
+      <div class="card"><div class="ico">😊</div><h4>رضا أولياء الأمور</h4><p>الشفافية والإشعارات الفورية ترفع ثقة الأسرة بالروضة بشكل ملموس.</p></div>
+      <div class="card"><div class="ico">📈</div><h4>زيادة معدّل التسجيل</h4><p>صورة احترافية ونظام تسجيل سهل يجذبان أسراً جديدة كل موسم.</p></div>
+      <div class="card"><div class="ico">💼</div><h4>قرارات مبنيّة على بيانات</h4><p>تقارير دقيقة تساعد الإدارة في التخطيط الاستراتيجي والمالي.</p></div>
+      <div class="card"><div class="ico">🌱</div><h4>صورة عصرية للروضة</h4><p>تطبيق رسمي باسم روضتك يعكس مهنية واحترافية المؤسسة التعليمية.</p></div>
+      <div class="card"><div class="ico">📚</div><h4>أرشيف دائم</h4><p>كل ما يتعلّق بكل طفل محفوظ ومنظّم لسنوات قادمة دون فقد.</p></div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="cta">
+    <h2>ابدأ التحوّل الرقمي لروضتك اليوم</h2>
+    <p>احجز عرضاً تفصيلياً مجانياً يستعرض فيه فريقنا النظام مباشرة على بيانات روضتك.</p>
+    <div class="btns">
+      <a class="btn btn-gold" href="#">📞 احجز عرضاً تجريبياً</a>
+      <a class="btn btn-ghost" href="#">📧 تواصل معنا</a>
+    </div>
+  </section>
+
+  <footer>
+    © 2026 — نظم إدارة رياض الأطفال • جميع الحقوق محفوظة
+  </footer>
+
+</div>
+</body>
+</html>
