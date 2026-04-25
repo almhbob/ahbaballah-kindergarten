@@ -1,13 +1,7 @@
 name: Publish — نشر على المتاجر
 
 on:
-  # يعمل تلقائياً بعد اكتمال بناء الإصدار
-  workflow_run:
-    workflows: ["Build Android — بناء تطبيق أندرويد"]
-    types: [completed]
-    branches: ['main']
-
-  # أو يدوياً
+  # يدوياً فقط — يُشغَّل بعد اكتمال EAS build على expo.dev
   workflow_dispatch:
     inputs:
       track:
