@@ -13,21 +13,51 @@
     "preview": {
       "distribution": "internal",
       "android": { "buildType": "apk" },
-      "channel": "preview"
+      "channel": "preview",
+      "env": {
+        "EXPO_PUBLIC_DOMAIN": "2da91909-13d4-406a-9a2d-d1b8d967dac8-00-3nkqebbufimgh.pike.replit.dev",
+        "EXPO_PUBLIC_FIREBASE_API_KEY": "AIzaSyDtkSHPV0MzTQZcvjjaLRJaz7JWrrPRbUw",
+        "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN": "ahbabullah-e85a6.firebaseapp.com",
+        "EXPO_PUBLIC_FIREBASE_PROJECT_ID": "ahbabullah-e85a6",
+        "EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET": "ahbabullah-e85a6.firebasestorage.app",
+        "EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID": "393241352344",
+        "EXPO_PUBLIC_FIREBASE_APP_ID": "1:393241352344:web:7d5620076e34440ddb58ed",
+        "EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID": "G-W7XV8K6TG2"
+      }
     },
     "apk": {
       "distribution": "internal",
       "android": {
         "buildType": "apk"
       },
-      "channel": "production"
+      "channel": "production",
+      "env": {
+        "EXPO_PUBLIC_DOMAIN": "2da91909-13d4-406a-9a2d-d1b8d967dac8-00-3nkqebbufimgh.pike.replit.dev",
+        "EXPO_PUBLIC_FIREBASE_API_KEY": "AIzaSyDtkSHPV0MzTQZcvjjaLRJaz7JWrrPRbUw",
+        "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN": "ahbabullah-e85a6.firebaseapp.com",
+        "EXPO_PUBLIC_FIREBASE_PROJECT_ID": "ahbabullah-e85a6",
+        "EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET": "ahbabullah-e85a6.firebasestorage.app",
+        "EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID": "393241352344",
+        "EXPO_PUBLIC_FIREBASE_APP_ID": "1:393241352344:web:7d5620076e34440ddb58ed",
+        "EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID": "G-W7XV8K6TG2"
+      }
     },
     "play-store": {
       "distribution": "internal",
       "android": {
         "buildType": "app-bundle"
       },
-      "channel": "production"
+      "channel": "production",
+      "env": {
+        "EXPO_PUBLIC_DOMAIN": "2da91909-13d4-406a-9a2d-d1b8d967dac8-00-3nkqebbufimgh.pike.replit.dev",
+        "EXPO_PUBLIC_FIREBASE_API_KEY": "AIzaSyDtkSHPV0MzTQZcvjjaLRJaz7JWrrPRbUw",
+        "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN": "ahbabullah-e85a6.firebaseapp.com",
+        "EXPO_PUBLIC_FIREBASE_PROJECT_ID": "ahbabullah-e85a6",
+        "EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET": "ahbabullah-e85a6.firebasestorage.app",
+        "EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID": "393241352344",
+        "EXPO_PUBLIC_FIREBASE_APP_ID": "1:393241352344:web:7d5620076e34440ddb58ed",
+        "EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID": "G-W7XV8K6TG2"
+      }
     },
     "app-store": {
       "distribution": "store",
@@ -35,7 +65,17 @@
         "autoIncrement": true,
         "credentialsSource": "remote"
       },
-      "channel": "production"
+      "channel": "production",
+      "env": {
+        "EXPO_PUBLIC_DOMAIN": "2da91909-13d4-406a-9a2d-d1b8d967dac8-00-3nkqebbufimgh.pike.replit.dev",
+        "EXPO_PUBLIC_FIREBASE_API_KEY": "AIzaSyDtkSHPV0MzTQZcvjjaLRJaz7JWrrPRbUw",
+        "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN": "ahbabullah-e85a6.firebaseapp.com",
+        "EXPO_PUBLIC_FIREBASE_PROJECT_ID": "ahbabullah-e85a6",
+        "EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET": "ahbabullah-e85a6.firebasestorage.app",
+        "EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID": "393241352344",
+        "EXPO_PUBLIC_FIREBASE_APP_ID": "1:393241352344:web:7d5620076e34440ddb58ed",
+        "EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID": "G-W7XV8K6TG2"
+      }
     }
   },
   "submit": {
