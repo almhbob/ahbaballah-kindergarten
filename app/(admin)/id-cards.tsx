@@ -9,7 +9,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { captureRef } from 'react-native-view-shot';
-import { shareAsync } from 'expo-sharing/build/src/Sharing';
+import { shareAsync } from 'expo-sharing';
 import * as Haptics from 'expo-haptics';
 import { Colors } from '@/constants/colors';
 import { useAppData, Employee, Student } from '@/contexts/AppDataContext';
