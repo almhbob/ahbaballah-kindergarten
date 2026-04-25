@@ -70,37 +70,37 @@ title = "braun minimal noon stroke logo D v3"
 id = "EFv9zHVqFgw62kNFcEkqV"
 uri = "file://attached_assets/store/app_icon_512.png"
 type = "image"
-title = "kindergarten app icon"
+title = "kindergarten icon v2"
 
 [[generated]]
 id = "9FjWszIFNwhXiuQEZDSQe"
 uri = "file://attached_assets/store/feature_graphic_1024x500.png"
 type = "image"
-title = "kindergarten feature graphic banner"
+title = "feature graphic banner v2"
 
 [[generated]]
 id = "mZxqUkZsatPsoOxGRMbmk"
 uri = "file://attached_assets/store/screenshot_dashboard.png"
 type = "image"
-title = "app dashboard screenshot"
+title = "dashboard screenshot v2"
 
 [[generated]]
 id = "QUUOzJ8zH9ZxRUqqvU4pS"
 uri = "file://attached_assets/store/screenshot_students.png"
 type = "image"
-title = "students list screenshot"
+title = "students list screenshot v2"
 
 [[generated]]
 id = "ykeENUt2Y6RCgllfc_7xe"
 uri = "file://attached_assets/store/screenshot_attendance.png"
 type = "image"
-title = "attendance screenshot"
+title = "attendance screenshot v2"
 
 [[generated]]
 id = "hVXaF92PawoD18cK9i-FL"
 uri = "file://attached_assets/store/screenshot_reports.png"
 type = "image"
-title = "reports screenshot"
+title = "reports screenshot v2"
 
 [[outputs]]
 id = "F4m6i41miE4T82MhQlO8a"
@@ -154,34 +154,34 @@ title = "مقارنة المفاهيم الأربعة للشعار"
 id = "GVqRV6unn4Welap0W7Uu6"
 uri = "file://attached_assets/store/app_icon_512.png"
 type = "image"
-title = "🎨 أيقونة التطبيق — 512×512"
+title = "✅ أيقونة التطبيق — 512×512 (نهائية)"
 
 [[outputs]]
 id = "_wuxIly83RmZQVDhmXufu"
 uri = "file://attached_assets/store/feature_graphic_1024x500.png"
 type = "image"
-title = "🖼️ Feature Graphic — 1024×500"
+title = "✅ Feature Graphic — 1024×500 (نهائية)"
 
 [[outputs]]
 id = "kkEDFVPcd_LctSyb4m4tr"
 uri = "file://attached_assets/store/screenshot_dashboard.png"
 type = "image"
-title = "📱 لقطة 1 — الداشبورد"
+title = "✅ لقطة 1 — الداشبورد (نهائية)"
 
 [[outputs]]
 id = "AfsWZhyfceZbIMp-FoT7s"
 uri = "file://attached_assets/store/screenshot_students.png"
 type = "image"
-title = "📱 لقطة 2 — قائمة الطلاب"
+title = "✅ لقطة 2 — قائمة الطلاب (نهائية)"
 
 [[outputs]]
 id = "GltsRLEab_Ty0unWNXv6m"
 uri = "file://attached_assets/store/screenshot_attendance.png"
 type = "image"
-title = "📱 لقطة 3 — الحضور والغياب"
+title = "✅ لقطة 3 — الحضور والغياب (نهائية)"
 
 [[outputs]]
 id = "n80E2fuUTg_Owph7t8BoX"
 uri = "file://attached_assets/store/screenshot_reports.png"
 type = "image"
-title = "📱 لقطة 4 — التقارير والإحصائيات"
+title = "✅ لقطة 4 — التقارير (نهائية)"
