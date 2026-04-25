@@ -102,7 +102,7 @@ jobs:
       - name: Build AAB for Google Play
         id: build
         run: |
-          BUILD_ID=$(eas build --platform android --profile play-store --non-interactive --json --no-wait | jq -r '.id')
+          BUILD_ID=$(eas build --platform android --profile play-store --non-interactive --json --no-wait | jq -r 'if type=="array" then .[0].id else .id end')
           echo "build_id=$BUILD_ID" >> $GITHUB_OUTPUT
           echo "✓ EAS Build started: $BUILD_ID"
         env:
