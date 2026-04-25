@@ -13,7 +13,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import CertificateCard, { CERT_TEMPLATES } from '@/components/CertificateCard';
 import CertificateLuxury from '@/components/CertificateLuxury';
 import { captureRef } from 'react-native-view-shot';
-import { shareAsync } from 'expo-sharing/build/src/Sharing';
+import { shareAsync } from 'expo-sharing';
 import * as Haptics from 'expo-haptics';
 
 const SCREEN_W = Dimensions.get('window').width;
