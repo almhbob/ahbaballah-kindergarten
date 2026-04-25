@@ -66,6 +66,42 @@ uri = "file://docs/marketing/logo-d-v3.png"
 type = "image"
 title = "braun minimal noon stroke logo D v3"
 
+[[generated]]
+id = "EFv9zHVqFgw62kNFcEkqV"
+uri = "file://attached_assets/store/app_icon_512.png"
+type = "image"
+title = "kindergarten app icon"
+
+[[generated]]
+id = "9FjWszIFNwhXiuQEZDSQe"
+uri = "file://attached_assets/store/feature_graphic_1024x500.png"
+type = "image"
+title = "kindergarten feature graphic banner"
+
+[[generated]]
+id = "mZxqUkZsatPsoOxGRMbmk"
+uri = "file://attached_assets/store/screenshot_dashboard.png"
+type = "image"
+title = "app dashboard screenshot"
+
+[[generated]]
+id = "QUUOzJ8zH9ZxRUqqvU4pS"
+uri = "file://attached_assets/store/screenshot_students.png"
+type = "image"
+title = "students list screenshot"
+
+[[generated]]
+id = "ykeENUt2Y6RCgllfc_7xe"
+uri = "file://attached_assets/store/screenshot_attendance.png"
+type = "image"
+title = "attendance screenshot"
+
+[[generated]]
+id = "hVXaF92PawoD18cK9i-FL"
+uri = "file://attached_assets/store/screenshot_reports.png"
+type = "image"
+title = "reports screenshot"
+
 [[outputs]]
 id = "F4m6i41miE4T82MhQlO8a"
 uri = "file://docs/vital-data.md"
@@ -113,3 +149,39 @@ id = "wG_b6iHjhB4UFd_unbVgm"
 uri = "file://docs/marketing/logo-compare.png"
 type = "image"
 title = "مقارنة المفاهيم الأربعة للشعار"
+
+[[outputs]]
+id = "GVqRV6unn4Welap0W7Uu6"
+uri = "file://attached_assets/store/app_icon_512.png"
+type = "image"
+title = "🎨 أيقونة التطبيق — 512×512"
+
+[[outputs]]
+id = "_wuxIly83RmZQVDhmXufu"
+uri = "file://attached_assets/store/feature_graphic_1024x500.png"
+type = "image"
+title = "🖼️ Feature Graphic — 1024×500"
+
+[[outputs]]
+id = "kkEDFVPcd_LctSyb4m4tr"
+uri = "file://attached_assets/store/screenshot_dashboard.png"
+type = "image"
+title = "📱 لقطة 1 — الداشبورد"
+
+[[outputs]]
+id = "AfsWZhyfceZbIMp-FoT7s"
+uri = "file://attached_assets/store/screenshot_students.png"
+type = "image"
+title = "📱 لقطة 2 — قائمة الطلاب"
+
+[[outputs]]
+id = "GltsRLEab_Ty0unWNXv6m"
+uri = "file://attached_assets/store/screenshot_attendance.png"
+type = "image"
+title = "📱 لقطة 3 — الحضور والغياب"
+
+[[outputs]]
+id = "n80E2fuUTg_Owph7t8BoX"
+uri = "file://attached_assets/store/screenshot_reports.png"
+type = "image"
+title = "📱 لقطة 4 — التقارير والإحصائيات"
