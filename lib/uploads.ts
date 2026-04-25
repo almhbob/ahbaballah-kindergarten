@@ -1,4 +1,5 @@
-import { Platform } from 'react-native';
+import { Platform, Alert } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { getApiUrl } from '@/lib/query-client';
 
 export type UploadedFile = {
@@ -99,4 +100,38 @@ export async function uploadMany(uris: string[]): Promise<string[]> {
 /** True if the URI is already a server-hosted URL (http/https). */
 export function isRemoteUrl(uri: string | undefined | null): boolean {
   return !!uri && /^https?:\/\//i.test(uri);
+}
+
+/**
+ * Open the device image picker, upload the selected image, and return { publicUrl }.
+ * Returns null if the user cancels or the platform doesn't support the picker.
+ * @param _context - Optional label for debugging (unused at runtime).
+ */
+export async function pickAndUploadImage(
+  _context?: string,
+): Promise<{ publicUrl: string } | null> {
+  if (Platform.OS !== 'web') {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('الصلاحية مرفوضة', 'يرجى السماح بالوصول إلى مكتبة الصور من الإعدادات');
+      return null;
+    }
+  }
+
+  const result = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes: ['images'],
+    allowsEditing: true,
+    quality: 0.85,
+    base64: false,
+  });
+
+  if (result.canceled || !result.assets?.length) return null;
+
+  const asset = result.assets[0];
+  const publicUrl = await uploadFile(asset.uri, {
+    name: asset.fileName ?? undefined,
+    mime: asset.mimeType ?? undefined,
+  });
+
+  return { publicUrl };
 }
