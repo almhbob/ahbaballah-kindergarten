@@ -1,6 +1,6 @@
 import { Platform, Alert } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { getApiUrl } from '@/lib/query-client';
+import { makeApiUrl, getApiOrigin } from '@/lib/query-client';
 
 export type UploadedFile = {
   id: number;
@@ -39,16 +39,10 @@ async function dataUrlToBlob(dataUrl: string): Promise<Blob> {
   return await res.blob();
 }
 
-/**
- * Upload an image/file to /api/files/upload and return the absolute public URL.
- * Works on web (data URL, http(s) URL, blob: URL) and native (file:// URI).
- * Returns the absolute URL so it can be rendered from anywhere (parent/teacher app).
- */
 export async function uploadFile(uri: string, opts?: { name?: string; mime?: string }): Promise<string> {
   if (!uri) throw new Error('لا يوجد ملف للرفع');
 
-  const apiBase = getApiUrl();
-  const endpoint = new URL('/api/files/upload', apiBase).toString();
+  const endpoint = makeApiUrl('/api/files/upload');
 
   const form = new FormData();
 
@@ -60,13 +54,11 @@ export async function uploadFile(uri: string, opts?: { name?: string; mime?: str
       const r = await fetch(uri);
       blob = await r.blob();
     } else {
-      // assume already-uploaded URL
       return uri;
     }
     const name = opts?.name || `upload_${Date.now()}.${(blob.type.split('/')[1] || 'bin').split(';')[0]}`;
     form.append('file', blob, name);
   } else {
-    // React Native: pass {uri,name,type} object
     const name = opts?.name || fileNameFromUri(uri, `upload_${Date.now()}.jpg`);
     const type = opts?.mime || guessMime(uri);
     // @ts-expect-error RN FormData accepts this object shape
@@ -87,26 +79,18 @@ export async function uploadFile(uri: string, opts?: { name?: string; mime?: str
   }
 
   const file: UploadedFile = json.file;
-  // make URL absolute so it works from any origin (mobile clients)
   if (file.public_url.startsWith('http')) return file.public_url;
-  return new URL(file.public_url, apiBase).toString();
+  return new URL(file.public_url, getApiOrigin()).toString();
 }
 
-/** Upload many files in parallel, returning their public URLs in order. */
 export async function uploadMany(uris: string[]): Promise<string[]> {
   return Promise.all(uris.map(u => uploadFile(u)));
 }
 
-/** True if the URI is already a server-hosted URL (http/https). */
 export function isRemoteUrl(uri: string | undefined | null): boolean {
   return !!uri && /^https?:\/\//i.test(uri);
 }
 
-/**
- * Open the device image picker, upload the selected image, and return { publicUrl }.
- * Returns null if the user cancels or the platform doesn't support the picker.
- * @param _context - Optional label for debugging (unused at runtime).
- */
 export async function pickAndUploadImage(
   _context?: string,
 ): Promise<{ publicUrl: string } | null> {
