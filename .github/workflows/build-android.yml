@@ -1,18 +1,18 @@
 name: Build Android — بناء تطبيق أندرويد
 
 on:
-  # يعمل تلقائياً عند إنشاء إصدار جديد (tag)
   push:
+    branches:
+      - main
     tags:
       - 'v*.*.*'
 
-  # أو يدوياً من صفحة Actions
   workflow_dispatch:
     inputs:
       profile:
         description: 'EAS Build Profile'
         required: true
-        default: 'preview'
+        default: 'apk'
         type: choice
         options:
           - preview
@@ -28,7 +28,6 @@ env:
   EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
 jobs:
-  # ─── مرحلة 1: التحقق ───────────────────────────────────────────────────────
   validate:
     name: Validate Code
     runs-on: ubuntu-latest
@@ -47,7 +46,6 @@ jobs:
       - name: TypeScript check
         run: npx tsc --noEmit --skipLibCheck
 
-  # ─── مرحلة 2: بناء APK للاختبار الداخلي ──────────────────────────────────
   build-apk:
     name: Build APK (Internal Testing)
     runs-on: ubuntu-latest
@@ -82,7 +80,6 @@ jobs:
           EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID: ${{ secrets.EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID }}
           EXPO_PUBLIC_DOMAIN: ${{ secrets.EXPO_PUBLIC_DOMAIN }}
 
-  # ─── مرحلة 3: بناء AAB للنشر على Google Play ──────────────────────────────
   build-aab:
     name: Build AAB (Google Play)
     runs-on: ubuntu-latest
@@ -111,7 +108,7 @@ jobs:
         run: |
           BUILD_ID=$(eas build --platform android --profile play-store --non-interactive --json --no-wait | jq -r 'if type=="array" then .[0].id else .id end')
           echo "build_id=$BUILD_ID" >> $GITHUB_OUTPUT
-          echo "✓ EAS Build started: $BUILD_ID"
+          echo "EAS Build started: $BUILD_ID"
         env:
           EXPO_PUBLIC_FIREBASE_API_KEY: ${{ secrets.EXPO_PUBLIC_FIREBASE_API_KEY }}
           EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN }}
@@ -124,12 +121,11 @@ jobs:
 
       - name: Build summary
         run: |
-          echo "## Android Build Started 🚀" >> $GITHUB_STEP_SUMMARY
-          echo "- **Profile:** play-store (AAB)" >> $GITHUB_STEP_SUMMARY
-          echo "- **Version:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Monitor:** https://expo.dev/accounts/almhbob2026/projects/ahbaballah-kindergarten/builds" >> $GITHUB_STEP_SUMMARY
+          echo "## Android Build Started" >> $GITHUB_STEP_SUMMARY
+          echo "- Profile: play-store (AAB)" >> $GITHUB_STEP_SUMMARY
+          echo "- Version: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Monitor: https://expo.dev/accounts/almhbob2026/projects/ahbaballah-kindergarten/builds" >> $GITHUB_STEP_SUMMARY
 
-  # ─── مرحلة 4: إنشاء GitHub Release ───────────────────────────────────────
   create-release:
     name: Create GitHub Release
     runs-on: ubuntu-latest
@@ -167,19 +163,17 @@ jobs:
           draft: false
           prerelease: false
           body: |
-            ## 🎉 إصدار ${{ steps.version.outputs.version }}
+            ## إصدار ${{ steps.version.outputs.version }}
 
-            **نظام إدارة روضة أحباب الله**
-            تطبيق إداري متكامل لرياض الأطفال
+            نظام إدارة روضة أحباب الله
 
             ### التغييرات في هذا الإصدار:
             ```
             ${{ steps.changelog.outputs.changes }}
             ```
 
-            ### روابط:
-            - 📦 [متابعة البناء على EAS](https://expo.dev/accounts/almhbob2026/projects/ahbaballah-kindergarten/builds)
-            - 📱 [Google Play Console](https://play.google.com/console)
+            روابط:
+            - متابعة البناء على EAS: https://expo.dev/accounts/almhbob2026/projects/ahbaballah-kindergarten/builds
+            - Google Play Console: https://play.google.com/console
 
-            ---
-            *تطوير: م / عاصم عبدالرحمن محمد*
+            تطوير: م / عاصم عبدالرحمن محمد
