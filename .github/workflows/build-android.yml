@@ -68,8 +68,16 @@ jobs:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
 
-      - name: Build APK
-        run: eas build --platform android --profile ${{ github.event.inputs.profile || 'apk' }} --non-interactive --no-wait
+      - name: Build APK and wait for result
+        run: |
+          eas build --platform android --profile ${{ github.event.inputs.profile || 'apk' }} --non-interactive
+
+      - name: Build summary
+        if: always()
+        run: |
+          echo "## Android APK Build" >> $GITHUB_STEP_SUMMARY
+          echo "- Profile: ${{ github.event.inputs.profile || 'apk' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- EAS builds: https://expo.dev/accounts/almhbob2026/projects/ahbaballah-kindergarten/builds" >> $GITHUB_STEP_SUMMARY
 
   build-aab:
     name: Build AAB (Google Play)
@@ -94,19 +102,15 @@ jobs:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
 
-      - name: Build AAB for Google Play
-        id: build
-        run: |
-          BUILD_ID=$(eas build --platform android --profile play-store --non-interactive --json --no-wait | jq -r 'if type=="array" then .[0].id else .id end')
-          echo "build_id=$BUILD_ID" >> $GITHUB_OUTPUT
-          echo "EAS Build started: $BUILD_ID"
+      - name: Build AAB for Google Play and wait for result
+        run: eas build --platform android --profile play-store --non-interactive
 
       - name: Build summary
+        if: always()
         run: |
-          echo "## Android Build Started" >> $GITHUB_STEP_SUMMARY
-          echo "- Profile: play-store (AAB)" >> $GITHUB_STEP_SUMMARY
-          echo "- Version: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Monitor: https://expo.dev/accounts/almhbob2026/projects/ahbaballah-kindergarten/builds" >> $GITHUB_STEP_SUMMARY
+          echo "## Android AAB Build" >> $GITHUB_STEP_SUMMARY
+          echo "- Profile: play-store" >> $GITHUB_STEP_SUMMARY
+          echo "- EAS builds: https://expo.dev/accounts/almhbob2026/projects/ahbaballah-kindergarten/builds" >> $GITHUB_STEP_SUMMARY
 
   create-release:
     name: Create GitHub Release
