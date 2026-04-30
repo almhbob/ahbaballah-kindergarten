@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useMemo, ReactNo
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
-import { getApiUrl } from '@/lib/query-client';
+import { makeApiUrl } from '@/lib/query-client';
 import { registerAndSaveToken } from '@/lib/push-service';
 
 export type UserRole = 'admin' | 'teacher' | 'parent' | 'guest';
@@ -82,13 +82,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const init = async () => {
-      const data = await AsyncStorage.getItem('auth_user');
-      if (data) setUser(JSON.parse(data));
-      const flag = await secureGet(BIOMETRIC_FLAG);
-      setIsBiometricEnabled(flag === 'true');
-      const hist = await AsyncStorage.getItem(LOGIN_HISTORY_KEY);
-      if (hist) setLoginHistory(JSON.parse(hist));
-      setIsLoading(false);
+      try {
+        const data = await AsyncStorage.getItem('auth_user');
+        if (data) setUser(JSON.parse(data));
+        const flag = await secureGet(BIOMETRIC_FLAG);
+        setIsBiometricEnabled(flag === 'true');
+        const hist = await AsyncStorage.getItem(LOGIN_HISTORY_KEY);
+        if (hist) setLoginHistory(JSON.parse(hist));
+      } catch {
+        await AsyncStorage.removeItem('auth_user');
+      } finally {
+        setIsLoading(false);
+      }
     };
     init();
   }, []);
@@ -101,7 +106,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
     setLoginHistory(prev => {
       const updated = [event, ...prev].slice(0, MAX_HISTORY);
-      AsyncStorage.setItem(LOGIN_HISTORY_KEY, JSON.stringify(updated));
+      AsyncStorage.setItem(LOGIN_HISTORY_KEY, JSON.stringify(updated)).catch(() => {});
       return updated;
     });
   };
@@ -126,15 +131,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const apiLogin = async (role: UserRole, credential: string, password: string): Promise<ApiAuthResult> => {
     try {
-      const url = new URL('/api/auth/login', getApiUrl()).toString();
-      const res = await fetch(url, {
+      const res = await fetch(makeApiUrl('/api/auth/login'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ role, credential, password }),
         credentials: 'include',
       });
-      const json = await res.json();
-      return json;
+      return await res.json();
     } catch {
       return { ok: false, error: 'تعذّر الاتصال بالخادم' };
     }
@@ -145,15 +148,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     role: UserRole; password: string; linked_id?: string;
   }): Promise<ApiAuthResult> => {
     try {
-      const url = new URL('/api/auth/register', getApiUrl()).toString();
-      const res = await fetch(url, {
+      const res = await fetch(makeApiUrl('/api/auth/register'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
         credentials: 'include',
       });
-      const json = await res.json();
-      return json;
+      return await res.json();
     } catch {
       return { ok: false, error: 'تعذّر الاتصال بالخادم' };
     }
@@ -161,8 +162,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const apiLogout = async () => {
     try {
-      const url = new URL('/api/auth/logout', getApiUrl()).toString();
-      await fetch(url, { method: 'POST', credentials: 'include' });
+      await fetch(makeApiUrl('/api/auth/logout'), { method: 'POST', credentials: 'include' });
     } catch { /* ignore */ }
   };
 
