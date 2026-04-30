@@ -22,16 +22,19 @@ SplashScreen.preventAutoHideAsync();
 
 function RootLayoutNav() {
   return (
-    <Stack screenOptions={{ headerShown: false, animation: 'fade' }}>
-      <Stack.Screen name="index"        options={{ headerShown: false }} />
-      <Stack.Screen name="login"        options={{ headerShown: false }} />
-      <Stack.Screen name="school-login" options={{ headerShown: false }} />
-      <Stack.Screen name="register"     options={{ headerShown: false }} />
-      <Stack.Screen name="(admin)"      options={{ headerShown: false }} />
-      <Stack.Screen name="(teacher)"    options={{ headerShown: false }} />
-      <Stack.Screen name="(parent)"     options={{ headerShown: false }} />
-      <Stack.Screen name="privacy"      options={{ headerShown: false }} />
-      <Stack.Screen name="onboarding"   options={{ headerShown: false }} />
+    <Stack screenOptions={{ headerShown: false, animation: "fade" }}>
+      <Stack.Screen name="index" />
+      <Stack.Screen name="platform" />
+      <Stack.Screen name="login" />
+      <Stack.Screen name="school-login" />
+      <Stack.Screen name="register" />
+      <Stack.Screen name="school-request" />
+      <Stack.Screen name="(admin)" />
+      <Stack.Screen name="(teacher)" />
+      <Stack.Screen name="(parent)" />
+      <Stack.Screen name="(guest)" />
+      <Stack.Screen name="privacy" />
+      <Stack.Screen name="onboarding" />
     </Stack>
   );
 }
