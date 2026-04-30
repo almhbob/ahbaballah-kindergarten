@@ -3,10 +3,20 @@ import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
 const FALLBACK_DOMAIN = "2da91909-13d4-406a-9a2d-d1b8d967dac8-00-3nkqebbufimgh.pike.replit.dev";
 
+function normalizeApiHost(rawHost?: string): string {
+  const trimmed = rawHost?.trim();
+  if (!trimmed) return FALLBACK_DOMAIN;
+  return trimmed.replace(/^https?:\/\//i, "").replace(/\/+$/, "");
+}
+
 export function getApiUrl(): string {
-  const host = process.env.EXPO_PUBLIC_DOMAIN || FALLBACK_DOMAIN;
-  const protocol = host.includes("localhost") ? "http" : "https";
+  const host = normalizeApiHost(process.env.EXPO_PUBLIC_DOMAIN || FALLBACK_DOMAIN);
+  const protocol = host.includes("localhost") || host.startsWith("127.0.0.1") ? "http" : "https";
   return `${protocol}://${host}`;
+}
+
+export function makeApiUrl(route: string): string {
+  return new URL(route, getApiUrl()).toString();
 }
 
 async function throwIfResNotOk(res: Response) {
@@ -21,10 +31,9 @@ export async function apiRequest(
   route: string,
   data?: unknown | undefined,
 ): Promise<Response> {
-  const baseUrl = getApiUrl();
-  const url = new URL(route, baseUrl);
+  const url = makeApiUrl(route);
 
-  const res = await fetch(url.toString(), {
+  const res = await fetch(url, {
     method,
     headers: data ? { "Content-Type": "application/json" } : {},
     body: data ? JSON.stringify(data) : undefined,
@@ -41,10 +50,9 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    const baseUrl = getApiUrl();
-    const url = new URL(queryKey.join("/") as string, baseUrl);
+    const url = makeApiUrl(queryKey.join("/") as string);
 
-    const res = await fetch(url.toString(), {
+    const res = await fetch(url, {
       credentials: "include",
     });
 
