@@ -9,14 +9,26 @@ function normalizeApiHost(rawHost?: string): string {
   return trimmed.replace(/^https?:\/\//i, "").replace(/\/+$/, "");
 }
 
-export function getApiUrl(): string {
-  const host = normalizeApiHost(process.env.EXPO_PUBLIC_DOMAIN || FALLBACK_DOMAIN);
+function getApiHost(): string {
+  return normalizeApiHost(process.env.EXPO_PUBLIC_DOMAIN || FALLBACK_DOMAIN);
+}
+
+export function getApiOrigin(): string {
+  const host = getApiHost();
   const protocol = host.includes("localhost") || host.startsWith("127.0.0.1") ? "http" : "https";
   return `${protocol}://${host}`;
 }
 
+/**
+ * Legacy helper kept for older screens that prepend their own protocol.
+ * For new code, prefer getApiOrigin() or makeApiUrl().
+ */
+export function getApiUrl(): string {
+  return getApiHost();
+}
+
 export function makeApiUrl(route: string): string {
-  return new URL(route, getApiUrl()).toString();
+  return new URL(route, getApiOrigin()).toString();
 }
 
 async function throwIfResNotOk(res: Response) {
