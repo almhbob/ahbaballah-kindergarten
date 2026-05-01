@@ -32,13 +32,20 @@ export default function ChildProfileScreen() {
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
   const bottomPadding = Platform.OS === 'web' ? 34 : insets.bottom + 90;
 
-  const child = students.find(s => s.id === user?.studentId) || students[0];
-  if (!child) return null;
+  const child = students.find(s => s.id === user?.studentId) || students[0] || null;
 
   const avgGrade = useMemo(() => {
-    if (!child.grades.length) return 0;
+    if (!child?.grades?.length) return 0;
     return Math.round(child.grades.reduce((a, g) => a + (g.score / g.total) * 100, 0) / child.grades.length);
-  }, [child.grades]);
+  }, [child?.grades]);
+
+  if (!child) {
+    return (
+      <View style={[s.container, { justifyContent: 'center', alignItems: 'center', padding: 24 }]}> 
+        <Text style={s.emptyText}>لا توجد بيانات طالب مرتبطة بهذا الحساب</Text>
+      </View>
+    );
+  }
 
   const behColor = { 'ممتاز': Colors.success, 'جيد': '#3B82F6', 'مقبول': Colors.warning, 'يحتاج متابعة': Colors.danger }[child.behavior] ?? Colors.textLight;
   const hwColor  = { 'منجز': Colors.success, 'ناقص': Colors.warning, 'لم ينجز': Colors.danger }[child.homework] ?? Colors.textLight;
