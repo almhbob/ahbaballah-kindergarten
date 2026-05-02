@@ -3,36 +3,31 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ─── school data: namespaced per school ───────────────────────────────────
-    // Main sub-documents (students, employees, messages, etc.)
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
     match /schools/{schoolId}/{collection}/{docId} {
-      allow read:  if true;
-      allow write: if true;
+      allow read, write: if isAuthenticated();
     }
 
-    // ─── nested sub-collections (e.g. /schools/{id}/config/{docId}) ──────────
-    match /schools/{schoolId}/config/{docId} {
-      allow read, write: if true;
-    }
-
-    // ─── school root document (settings) ─────────────────────────────────────
     match /schools/{schoolId} {
-      allow read, write: if true;
+      allow read, write: if isAuthenticated();
     }
 
-    // ─── school registry (multi-school SaaS) ─────────────────────────────────
     match /schoolRegistry/{schoolId} {
-      allow read:  if true;
-      allow write: if request.auth != null;
+      allow read: if true;
+      allow write: if isAuthenticated();
     }
 
-    // ─── school admin accounts (Firebase Auth UID → schoolId mapping) ─────────
     match /schoolAccounts/{uid} {
-      // Each admin can only read their own account
-      allow read:  if request.auth != null && request.auth.uid == uid;
-      // Allow creation during account setup; existing docs are admin-only
+      allow read: if isOwner(uid);
       allow create: if true;
-      allow update, delete: if request.auth != null && request.auth.uid == uid;
+      allow update, delete: if isOwner(uid);
     }
   }
 }
