@@ -1,28 +1,29 @@
 import { fetch } from "expo/fetch";
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
-const FALLBACK_DOMAIN = "2da91909-13d4-406a-9a2d-d1b8d967dac8-00-3nkqebbufimgh.pike.replit.dev";
-
 function normalizeApiHost(rawHost?: string): string {
   const trimmed = rawHost?.trim();
-  if (!trimmed) return FALLBACK_DOMAIN;
+  if (!trimmed) return "";
   return trimmed.replace(/^https?:\/\//i, "").replace(/\/+$/, "");
 }
 
 function getApiHost(): string {
-  return normalizeApiHost(process.env.EXPO_PUBLIC_DOMAIN || FALLBACK_DOMAIN);
+  return normalizeApiHost(process.env.EXPO_PUBLIC_DOMAIN);
+}
+
+export function hasApiHost(): boolean {
+  return getApiHost().length > 0;
 }
 
 export function getApiOrigin(): string {
   const host = getApiHost();
+  if (!host) {
+    throw new Error("API host is not configured. Set EXPO_PUBLIC_DOMAIN for backend features.");
+  }
   const protocol = host.includes("localhost") || host.startsWith("127.0.0.1") ? "http" : "https";
   return `${protocol}://${host}`;
 }
 
-/**
- * Legacy helper kept for older screens that prepend their own protocol.
- * For new code, prefer getApiOrigin() or makeApiUrl().
- */
 export function getApiUrl(): string {
   return getApiHost();
 }
