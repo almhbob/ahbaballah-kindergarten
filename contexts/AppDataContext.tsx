@@ -30,6 +30,41 @@ export interface AssessmentResult {
 
 export type BloodType = 'A+' | 'A-' | 'B+' | 'B-' | 'AB+' | 'AB-' | 'O+' | 'O-';
 
+export interface Vaccination {
+  name: string;
+  date: string;
+  done: boolean;
+}
+
+export interface HealthInfo {
+  allergies: string[];
+  conditions: string[];
+  medications: string[];
+  doctorName: string;
+  doctorPhone: string;
+  healthNotes: string;
+  vaccinations: Vaccination[];
+}
+
+export interface ConsentResponse {
+  studentId: string;
+  parentName: string;
+  response: 'approved' | 'rejected' | 'pending';
+  respondedAt?: string;
+  note?: string;
+}
+
+export interface ConsentRequest {
+  id: string;
+  title: string;
+  description: string;
+  eventDate: string;
+  createdAt: string;
+  targetLevel: string;
+  status: 'active' | 'closed';
+  responses: ConsentResponse[];
+}
+
 export interface Student {
   id: string;
   name: string;
@@ -54,6 +89,7 @@ export interface Student {
   grades: { subject: string; score: number; total: number; date: string }[];
   dailyReports: { date: string; ate: string; learned: string; behaviorNote: string; mood: string }[];
   assessments: AssessmentResult[];
+  healthInfo?: HealthInfo;
 }
 
 export interface AttendanceRecord {
@@ -553,6 +589,11 @@ interface AppDataContextValue {
   galleryPhotos: GalleryPhoto[];
   addGalleryPhoto: (p: GalleryPhoto) => void;
   removeGalleryPhoto: (id: string) => void;
+  consentRequests: ConsentRequest[];
+  addConsentRequest: (r: ConsentRequest) => void;
+  updateConsentRequest: (id: string, data: Partial<ConsentRequest>) => void;
+  removeConsentRequest: (id: string) => void;
+  respondConsent: (requestId: string, response: ConsentResponse) => void;
 }
 
 const DEMO_YEARLY_SNAPSHOTS: YearlySnapshot[] = [
@@ -686,6 +727,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const [appSettings, setAppSettingsState] = useState<AppSettings>(DEFAULT_APP_SETTINGS);
   const [schoolEvents, setSchoolEvents] = useState<SchoolEvent[]>(DEMO_SCHOOL_EVENTS);
   const [galleryPhotos, setGalleryPhotos] = useState<GalleryPhoto[]>([]);
+  const [consentRequests, setConsentRequests] = useState<ConsentRequest[]>([]);
   const welcomeRef = useRef<string>(DEFAULT_WELCOME_MSG);
 
   const cloudSync = (key: string, value: any) => {
@@ -765,8 +807,10 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       if (savedRegs) setRegistrationRequests(savedRegs);
       const savedEvents = await get('app_school_events');
       const savedPhotos = await get('app_gallery_photos');
+      const savedConsents = await get('app_consent_requests');
       if (savedEvents) setSchoolEvents(savedEvents);
       if (savedPhotos) setGalleryPhotos(savedPhotos);
+      if (savedConsents) setConsentRequests(savedConsents);
     };
     load();
   }, []);
@@ -1295,6 +1339,45 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  const addConsentRequest = (r: ConsentRequest) => {
+    setConsentRequests(prev => {
+      const updated = [r, ...prev];
+      saveState('app_consent_requests', updated);
+      return updated;
+    });
+  };
+
+  const updateConsentRequest = (id: string, data: Partial<ConsentRequest>) => {
+    setConsentRequests(prev => {
+      const updated = prev.map(r => r.id === id ? { ...r, ...data } : r);
+      saveState('app_consent_requests', updated);
+      return updated;
+    });
+  };
+
+  const removeConsentRequest = (id: string) => {
+    setConsentRequests(prev => {
+      const updated = prev.filter(r => r.id !== id);
+      saveState('app_consent_requests', updated);
+      return updated;
+    });
+  };
+
+  const respondConsent = (requestId: string, response: ConsentResponse) => {
+    setConsentRequests(prev => {
+      const updated = prev.map(r => {
+        if (r.id !== requestId) return r;
+        const existing = r.responses.findIndex(res => res.studentId === response.studentId);
+        const newResponses = existing >= 0
+          ? r.responses.map((res, i) => i === existing ? response : res)
+          : [...r.responses, response];
+        return { ...r, responses: newResponses };
+      });
+      saveState('app_consent_requests', updated);
+      return updated;
+    });
+  };
+
   const value = useMemo(() => ({
     students, employees, news, inbox, messages, meetings, schedule,
     welcomeMessage, schoolInfo, honorWeights,
@@ -1316,7 +1399,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     appSettings, updateAppSettings,
     schoolEvents, addSchoolEvent, updateSchoolEvent, removeSchoolEvent,
     galleryPhotos, addGalleryPhoto, removeGalleryPhoto,
-  }), [students, employees, news, inbox, messages, meetings, schedule, welcomeMessage, schoolInfo, honorWeights, annualPlan, graduationTasks, certificates, transportRoutes, transportSubscriptions, banners, yearlySnapshots, registrationRequests, appSettings, schoolEvents, galleryPhotos]);
+    consentRequests, addConsentRequest, updateConsentRequest, removeConsentRequest, respondConsent,
+  }), [students, employees, news, inbox, messages, meetings, schedule, welcomeMessage, schoolInfo, honorWeights, annualPlan, graduationTasks, certificates, transportRoutes, transportSubscriptions, banners, yearlySnapshots, registrationRequests, appSettings, schoolEvents, galleryPhotos, consentRequests]);
 
   return <AppDataContext.Provider value={value}>{children}</AppDataContext.Provider>;
 }

@@ -94,6 +94,8 @@ function ClassicAdminTabs() {
       <Tabs.Screen name="gallery"               options={{ href: null }} />
       <Tabs.Screen name="notifications-send"    options={{ href: null }} />
       <Tabs.Screen name="analytics"             options={{ href: null }} />
+      <Tabs.Screen name="health-records"        options={{ href: null }} />
+      <Tabs.Screen name="consent"               options={{ href: null }} />
     </Tabs>
   );
 }

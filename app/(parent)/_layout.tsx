@@ -80,8 +80,9 @@ function ClassicParentTabs() {
       <Tabs.Screen name="transport"     options={{ title: 'الترحيل',    tabBarIcon: ({ color }) => <MaterialCommunityIcons name="bus-school" size={22} color={color} /> }} />
       <Tabs.Screen name="messages"      options={{ title: 'التواصل',    tabBarIcon: ({ color }) => <Ionicons name="chatbubble"    size={22} color={color} /> }} />
       <Tabs.Screen name="notifications" options={{ title: 'الإشعارات',  tabBarIcon: ({ color }) => <Ionicons name="notifications" size={22} color={color} />, tabBarBadge: notifBadge > 0 ? notifBadge : undefined }} />
-      <Tabs.Screen name="fees"    options={{ href: null }} />
-      <Tabs.Screen name="profile" options={{ href: null }} />
+      <Tabs.Screen name="fees"     options={{ href: null }} />
+      <Tabs.Screen name="profile"  options={{ href: null }} />
+      <Tabs.Screen name="consents" options={{ href: null }} />
     </Tabs>
   );
 }

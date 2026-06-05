@@ -242,6 +242,8 @@ export default function AdminDashboard() {
             <QuickAction icon="bell-plus" label="إشعار جماعي" color="#7C3AED" onPress={() => router.push('/(admin)/notifications-send')} />
             <QuickAction icon="chart-donut" label="التحليلات" color="#06B6D4" onPress={() => router.push('/(admin)/analytics')} />
             <QuickAction icon="palette" label="الهوية البصرية" color="#A855F7" onPress={() => router.push('/(admin)/branding')} />
+            <QuickAction icon="medical-bag" label="السجلات الصحية" color="#DC2626" onPress={() => router.push('/(admin)/health-records')} />
+            <QuickAction icon="clipboard-check-outline" label="طلبات الموافقة" color="#0f766e" onPress={() => router.push('/(admin)/consent')} />
           </View>
 
           <LoginChart history={loginHistory} />

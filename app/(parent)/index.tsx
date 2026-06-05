@@ -19,11 +19,20 @@ const PARENT_COLOR = '#7B3FA0';
 export default function ParentHomeScreen() {
   const insets = useSafeAreaInsets();
   const { user, logout, apiLogout } = useAuth();
-  const { students, messages } = useAppData();
+  const { students, messages, consentRequests } = useAppData();
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
   const bottomPadding = Platform.OS === 'web' ? 34 : insets.bottom + 90;
 
   const child = students.find(s => s.id === user?.studentId);
+
+  const pendingConsents = useMemo(() => {
+    if (!child) return 0;
+    return consentRequests.filter(r =>
+      r.status === 'active' &&
+      (r.targetLevel === 'الكل' || r.targetLevel === child.level) &&
+      r.responses.find(res => res.studentId === child.id)?.response === 'pending'
+    ).length;
+  }, [consentRequests, child]);
 
   const honorData = useMemo(() => buildHonorBoard(students, messages), [students, messages]);
   const myParentEntry = useMemo(() => {
@@ -164,6 +173,17 @@ export default function ParentHomeScreen() {
             <Pressable style={styles.parentQuickLink} onPress={() => router.push('/(parent)/profile')}>
               <Ionicons name="person-circle-outline" size={22} color="#F59E0B" />
               <Text style={styles.parentQuickLinkText}>ملف الطالب</Text>
+            </Pressable>
+            <Pressable style={[styles.parentQuickLink, pendingConsents > 0 && { borderColor: PARENT_COLOR + '40', borderWidth: 1 }]} onPress={() => router.push('/(parent)/consents')}>
+              <View style={{ position: 'relative' }}>
+                <MaterialCommunityIcons name="clipboard-check-outline" size={22} color="#0f766e" />
+                {pendingConsents > 0 && (
+                  <View style={{ position: 'absolute', top: -4, right: -4, backgroundColor: '#DC2626', borderRadius: 6, minWidth: 12, height: 12, alignItems: 'center', justifyContent: 'center' }}>
+                    <Text style={{ fontSize: 8, fontFamily: 'Inter_700Bold', color: '#fff' }}>{pendingConsents}</Text>
+                  </View>
+                )}
+              </View>
+              <Text style={styles.parentQuickLinkText}>الموافقات</Text>
             </Pressable>
           </View>
           <View style={styles.statsRow}>
