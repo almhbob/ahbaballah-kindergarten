@@ -7,6 +7,7 @@ import {
 import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { getFirebaseAuth, getDb, isFirebaseReady } from './firebase';
 import type { SubscriptionTier } from './subscription-tiers';
+import * as ExpoCrypto from 'expo-crypto';
 
 export interface SchoolAdminAccount {
   uid:       string;
@@ -55,10 +56,7 @@ const PRIMARY_TIER: SubscriptionTier = 'enterprise';
 const PRIMARY_PW_HASH = '13ce58d682fcdeaebf049a8db37bc77f5441a3d83a8a8a106c0c97e163fc40a0';
 
 async function sha256(text: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(text);
-  const buf  = await crypto.subtle.digest('SHA-256', data);
-  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+  return ExpoCrypto.digestStringAsync(ExpoCrypto.CryptoDigestAlgorithm.SHA256, text);
 }
 
 async function verifyPrimaryAdmin(email: string, password: string): Promise<boolean> {
