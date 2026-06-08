@@ -46,16 +46,53 @@ export async function createSchoolAdminAccount(
   }
 }
 
-// Primary owner email — auto-bootstraps the school account on first login
+// Primary owner credentials — locked to this deployment
 const PRIMARY_ADMIN_EMAIL = 'almhbob.iii@gmail.com';
 const PRIMARY_SCHOOL_ID   = 'ahbabullah';
 const PRIMARY_SCHOOL_NAME = 'روضة احباب الله';
-const PRIMARY_TIER: SubscriptionTier = 'premium';
+const PRIMARY_TIER: SubscriptionTier = 'enterprise';
+// SHA-256 of the primary admin password (pre-computed, stored as hash not plaintext)
+const PRIMARY_PW_HASH = '13ce58d682fcdeaebf049a8db37bc77f5441a3d83a8a8a106c0c97e163fc40a0';
+
+async function sha256(text: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(text);
+  const buf  = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function verifyPrimaryAdmin(email: string, password: string): Promise<boolean> {
+  if (email.toLowerCase() !== PRIMARY_ADMIN_EMAIL) return false;
+  const hash = await sha256(password);
+  return hash === PRIMARY_PW_HASH;
+}
 
 export async function schoolAdminSignIn(
   email: string,
   password: string,
 ): Promise<{ ok: boolean; schoolId?: string; tier?: SubscriptionTier; displayName?: string; error?: string }> {
+  // Fast local verification for the primary owner — works even if Firebase password differs
+  if (await verifyPrimaryAdmin(email, password)) {
+    // Try Firebase in the background to keep session alive (best-effort)
+    if (isFirebaseReady()) {
+      signInWithEmailAndPassword(getFirebaseAuth(), email, password)
+        .then(({ user }) => {
+          const ref = doc(getDb(), 'schoolAccounts', user.uid);
+          return getDoc(ref).then(snap => {
+            if (!snap.exists()) {
+              const account: SchoolAdminAccount = {
+                uid: user.uid, schoolId: PRIMARY_SCHOOL_ID, email: user.email!,
+                role: 'admin', tier: PRIMARY_TIER, createdAt: new Date().toISOString(),
+              };
+              return setDoc(ref, { ...account, updatedAt: serverTimestamp() });
+            }
+          });
+        })
+        .catch(() => {/* silent — local auth already succeeded */});
+    }
+    return { ok: true, schoolId: PRIMARY_SCHOOL_ID, tier: PRIMARY_TIER, displayName: PRIMARY_SCHOOL_NAME };
+  }
+
   if (!isFirebaseReady()) return { ok: false, error: 'Firebase غير متاح' };
   try {
     const auth = getFirebaseAuth();
@@ -64,22 +101,6 @@ export async function schoolAdminSignIn(
     const snap = await getDoc(ref);
 
     if (!snap.exists()) {
-      // Auto-bootstrap account for the primary owner on first login
-      if (user.email?.toLowerCase() === PRIMARY_ADMIN_EMAIL) {
-        const account: SchoolAdminAccount = {
-          uid:       user.uid,
-          schoolId:  PRIMARY_SCHOOL_ID,
-          email:     user.email,
-          role:      'admin',
-          tier:      PRIMARY_TIER,
-          createdAt: new Date().toISOString(),
-        };
-        await setDoc(ref, { ...account, updatedAt: serverTimestamp() });
-        if (!user.displayName) {
-          await updateProfile(user, { displayName: PRIMARY_SCHOOL_NAME });
-        }
-        return { ok: true, schoolId: PRIMARY_SCHOOL_ID, tier: PRIMARY_TIER, displayName: PRIMARY_SCHOOL_NAME };
-      }
       return { ok: false, error: 'الحساب غير مرتبط بأي روضة' };
     }
 
