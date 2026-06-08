@@ -46,6 +46,12 @@ export async function createSchoolAdminAccount(
   }
 }
 
+// Primary owner email — auto-bootstraps the school account on first login
+const PRIMARY_ADMIN_EMAIL = 'almhbob.iii@gmail.com';
+const PRIMARY_SCHOOL_ID   = 'ahbabullah';
+const PRIMARY_SCHOOL_NAME = 'روضة احباب الله';
+const PRIMARY_TIER: SubscriptionTier = 'premium';
+
 export async function schoolAdminSignIn(
   email: string,
   password: string,
@@ -54,8 +60,29 @@ export async function schoolAdminSignIn(
   try {
     const auth = getFirebaseAuth();
     const { user } = await signInWithEmailAndPassword(auth, email, password);
-    const snap = await getDoc(doc(getDb(), 'schoolAccounts', user.uid));
-    if (!snap.exists()) return { ok: false, error: 'الحساب غير مرتبط بأي روضة' };
+    const ref  = doc(getDb(), 'schoolAccounts', user.uid);
+    const snap = await getDoc(ref);
+
+    if (!snap.exists()) {
+      // Auto-bootstrap account for the primary owner on first login
+      if (user.email?.toLowerCase() === PRIMARY_ADMIN_EMAIL) {
+        const account: SchoolAdminAccount = {
+          uid:       user.uid,
+          schoolId:  PRIMARY_SCHOOL_ID,
+          email:     user.email,
+          role:      'admin',
+          tier:      PRIMARY_TIER,
+          createdAt: new Date().toISOString(),
+        };
+        await setDoc(ref, { ...account, updatedAt: serverTimestamp() });
+        if (!user.displayName) {
+          await updateProfile(user, { displayName: PRIMARY_SCHOOL_NAME });
+        }
+        return { ok: true, schoolId: PRIMARY_SCHOOL_ID, tier: PRIMARY_TIER, displayName: PRIMARY_SCHOOL_NAME };
+      }
+      return { ok: false, error: 'الحساب غير مرتبط بأي روضة' };
+    }
+
     const data = snap.data() as SchoolAdminAccount;
     return { ok: true, schoolId: data.schoolId, tier: data.tier, displayName: user.displayName ?? data.email };
   } catch (err: any) {
