@@ -670,12 +670,67 @@ const DEMO_STUDENTS: Student[] = [
   {
     id: 's4', name: 'ليلى عبدالله الحربي', level: 'براعم', parentName: 'عبدالله الحربي', parentPhone: '+249945678901',
     attendance: 80, behavior: 'مقبول', homework: 'لم ينجز', notes: 'غيابات متكررة',
+    grades: [{ subject: 'الأنشطة', score: 12, total: 20, date: '2026-02-10' }],
+    dailyReports: [{ date: '2026-03-08', ate: 'أكل وجبته جزئياً', learned: 'التعرف على الحيوانات', behaviorNote: 'تحسّن ملحوظ', mood: 'هادئ' }],
+    assessments: [],
+  },
+  {
+    id: 's5', name: 'يوسف إبراهيم النجار', level: 'مستوى أول', parentName: 'إبراهيم النجار', parentPhone: '+249956789012',
+    attendance: 91, behavior: 'ممتاز', homework: 'منجز', notes: 'مبدع في الأنشطة الفنية',
     grades: [
-      { subject: 'الأنشطة', score: 12, total: 20, date: '2026-02-10' },
+      { subject: 'الرياضيات', score: 17, total: 20, date: '2026-02-10' },
+      { subject: 'اللغة العربية', score: 18, total: 20, date: '2026-02-10' },
     ],
-    dailyReports: [
-      { date: '2026-03-08', ate: 'أكل وجبته جزئياً', learned: 'التعرف على الحيوانات', behaviorNote: 'تحسّن ملحوظ', mood: 'هادئ' },
+    dailyReports: [{ date: '2026-03-08', ate: 'أكل وجبته كاملة', learned: 'القراءة والكتابة', behaviorNote: 'إبداعي ومتعاون', mood: 'سعيد' }],
+    assessments: [],
+  },
+  {
+    id: 's6', name: 'نور محمد البلوي', level: 'مستوى ثاني', parentName: 'محمد البلوي', parentPhone: '+249967890123',
+    attendance: 97, behavior: 'ممتاز', homework: 'منجز', notes: 'الأولى على المستوى',
+    grades: [
+      { subject: 'الرياضيات', score: 20, total: 20, date: '2026-02-10' },
+      { subject: 'اللغة العربية', score: 19, total: 20, date: '2026-02-10' },
+      { subject: 'العلوم', score: 20, total: 20, date: '2026-02-10' },
     ],
+    dailyReports: [{ date: '2026-03-08', ate: 'أكل وجبته كاملة', learned: 'العمليات الحسابية', behaviorNote: 'قدوة للزملاء', mood: 'متحمس' }],
+    assessments: [],
+  },
+  {
+    id: 's7', name: 'ريان خالد العسيري', level: 'براعم', parentName: 'خالد العسيري', parentPhone: '+249978901234',
+    attendance: 85, behavior: 'جيد', homework: 'ناقص', notes: 'يحتاج متابعة في اللغة',
+    grades: [{ subject: 'الأنشطة', score: 14, total: 20, date: '2026-02-10' }],
+    dailyReports: [{ date: '2026-03-08', ate: 'أكل نصف الوجبة', learned: 'التعرف على الأشكال', behaviorNote: 'مبتهج ونشيط', mood: 'نشيط' }],
+    assessments: [],
+  },
+  {
+    id: 's8', name: 'هند سلطان القرشي', level: 'مستوى أول', parentName: 'سلطان القرشي', parentPhone: '+249989012345',
+    attendance: 78, behavior: 'يحتاج متابعة', homework: 'لم ينجز', notes: 'يجب التواصل مع الأسرة',
+    grades: [
+      { subject: 'الرياضيات', score: 11, total: 20, date: '2026-02-10' },
+      { subject: 'اللغة العربية', score: 13, total: 20, date: '2026-02-10' },
+    ],
+    dailyReports: [{ date: '2026-03-08', ate: 'لم تأكل الغداء', learned: 'الأرقام والحروف', behaviorNote: 'بحاجة إلى دعم إضافي', mood: 'هادئ' }],
+    assessments: [],
+  },
+  {
+    id: 's9', name: 'مازن عمر الغامدي', level: 'مستوى ثاني', parentName: 'عمر الغامدي', parentPhone: '+249990123456',
+    attendance: 93, behavior: 'ممتاز', homework: 'منجز', notes: 'موهوب في العلوم',
+    grades: [
+      { subject: 'الرياضيات', score: 16, total: 20, date: '2026-02-10' },
+      { subject: 'اللغة العربية', score: 15, total: 20, date: '2026-02-10' },
+      { subject: 'العلوم', score: 19, total: 20, date: '2026-02-10' },
+    ],
+    dailyReports: [{ date: '2026-03-08', ate: 'أكل وجبته كاملة', learned: 'الظواهر الطبيعية', behaviorNote: 'فضولي ومحب للتعلم', mood: 'متحمس' }],
+    assessments: [],
+  },
+  {
+    id: 's10', name: 'دانة فيصل الشمري', level: 'مستوى أول', parentName: 'فيصل الشمري', parentPhone: '+249901234567',
+    attendance: 89, behavior: 'جيد', homework: 'منجز', notes: 'تتحسن باستمرار',
+    grades: [
+      { subject: 'الرياضيات', score: 14, total: 20, date: '2026-02-10' },
+      { subject: 'اللغة العربية', score: 16, total: 20, date: '2026-02-10' },
+    ],
+    dailyReports: [{ date: '2026-03-08', ate: 'أكل وجبته كاملة', learned: 'القصص والحكايات', behaviorNote: 'اجتماعية ومحبوبة', mood: 'سعيد' }],
     assessments: [],
   },
 ];
