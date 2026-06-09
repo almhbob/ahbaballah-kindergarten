@@ -3,12 +3,11 @@ import { Tabs, Redirect } from "expo-router";
 import { NativeTabs, Icon, Label, Badge } from "expo-router/unstable-native-tabs";
 import { BlurView } from "expo-blur";
 import { Platform, StyleSheet, View, ActivityIndicator } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { Colors } from "@/constants/colors";
 import { useAppData } from "@/contexts/AppDataContext";
 import { useAuth } from "@/contexts/AuthContext";
-
-const PARENT_COLOR = "#7B3FA0";
 
 function NativeParentTabs() {
   const { messages, news } = useAppData();
@@ -46,6 +45,8 @@ function NativeParentTabs() {
 function ClassicParentTabs() {
   const isWeb = Platform.OS === "web";
   const isIOS = Platform.OS === "ios";
+  const insets = useSafeAreaInsets();
+  const bottomPad = isWeb ? 0 : isIOS ? 0 : insets.bottom;
   const { messages, news } = useAppData();
   const { user } = useAuth();
   const unreadMsgs = messages.filter(m => m.senderId === 'admin' && m.receiverId === user?.id && !m.read).length;
@@ -63,8 +64,8 @@ function ClassicParentTabs() {
           borderTopWidth: 1,
           borderTopColor: "rgba(168,85,247,0.15)",
           elevation: 0,
-          height: isWeb ? 84 : isIOS ? undefined : 65,
-          paddingBottom: isWeb || isIOS ? undefined : 6,
+          height: isWeb ? 84 : isIOS ? undefined : 60 + bottomPad,
+          paddingBottom: isWeb ? undefined : isIOS ? undefined : 8 + bottomPad,
         },
         tabBarBackground: () =>
           isIOS ? (

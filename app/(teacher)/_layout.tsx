@@ -3,6 +3,7 @@ import { Tabs, Redirect } from "expo-router";
 import { NativeTabs, Icon, Label, Badge } from "expo-router/unstable-native-tabs";
 import { BlurView } from "expo-blur";
 import { Platform, StyleSheet, View, ActivityIndicator } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "@/constants/colors";
 import { useAppData } from "@/contexts/AppDataContext";
@@ -43,6 +44,8 @@ function NativeTeacherTabs() {
 function ClassicTeacherTabs() {
   const isWeb = Platform.OS === "web";
   const isIOS = Platform.OS === "ios";
+  const insets = useSafeAreaInsets();
+  const bottomPad = isWeb ? 0 : isIOS ? 0 : insets.bottom;
   const { news, messages } = useAppData();
   const { user } = useAuth();
   const unread = messages.filter(m => m.senderId === 'admin' && m.receiverId === user?.id && !m.read).length + news.length;
@@ -59,8 +62,8 @@ function ClassicTeacherTabs() {
           borderTopWidth: 1,
           borderTopColor: Colors.borderLight,
           elevation: 0,
-          height: isWeb ? 84 : isIOS ? undefined : 65,
-          paddingBottom: isWeb || isIOS ? undefined : 6,
+          height: isWeb ? 84 : isIOS ? undefined : 60 + bottomPad,
+          paddingBottom: isWeb ? undefined : isIOS ? undefined : 8 + bottomPad,
         },
         tabBarBackground: () =>
           isIOS ? (
