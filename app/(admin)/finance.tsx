@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/colors';
-import { useAppData, Student } from '@/contexts/AppDataContext';
+import { useAppData, Student, Expense, ExpenseCategory } from '@/contexts/AppDataContext';
 import * as Haptics from 'expo-haptics';
 import { notifyPaymentReminder, getAllTokensByRole, sendToTokens } from '@/lib/push-service';
 
@@ -19,11 +19,15 @@ const LEVEL_FEES: Record<string, number> = {
 
 export default function FinanceScreen() {
   const insets = useSafeAreaInsets();
-  const { employees, students, updateStudent } = useAppData();
-  const [activeTab, setActiveTab] = useState<'fees' | 'payroll'>('fees');
+  const { employees, students, updateStudent, expenses, addExpense, removeExpense } = useAppData();
+  const [activeTab, setActiveTab] = useState<'fees' | 'payroll' | 'expenses'>('fees');
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [payAmount, setPayAmount] = useState('');
   const [payNote, setPayNote] = useState('');
+  const [showExpenseModal, setShowExpenseModal] = useState(false);
+  const [expCategory, setExpCategory] = useState<ExpenseCategory>('إيجار');
+  const [expDesc, setExpDesc] = useState('');
+  const [expAmount, setExpAmount] = useState('');
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
   const bottomPadding = Platform.OS === 'web' ? 34 : insets.bottom + 90;
 
@@ -50,6 +54,21 @@ export default function FinanceScreen() {
     setPayAmount(remaining > 0 ? String(remaining) : '');
     setPayNote('');
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  }
+
+  const EXPENSE_CATEGORIES: ExpenseCategory[] = ['إيجار', 'كهرباء', 'ماء', 'مستلزمات', 'صيانة', 'رواتب إضافية', 'أخرى'];
+  const totalExpenses = expenses.reduce((a, e) => a + e.amount, 0);
+
+  function handleSaveExpense() {
+    const amount = parseInt(expAmount);
+    if (!expDesc.trim() || isNaN(amount) || amount <= 0) {
+      Alert.alert('تنبيه', 'يرجى ملء الوصف والمبلغ بشكل صحيح');
+      return;
+    }
+    addExpense({ id: `exp_${Date.now()}`, category: expCategory, description: expDesc.trim(), amount, date: new Date().toISOString().split('T')[0] });
+    setExpDesc(''); setExpAmount(''); setExpCategory('إيجار');
+    setShowExpenseModal(false);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   }
 
   function handleSavePayment() {
@@ -137,8 +156,9 @@ export default function FinanceScreen() {
 
         <View style={styles.tabs}>
           {[
-            { id: 'fees', label: 'الرسوم الدراسية' },
-            { id: 'payroll', label: 'مسير الرواتب' },
+            { id: 'fees', label: 'الرسوم' },
+            { id: 'payroll', label: 'الرواتب' },
+            { id: 'expenses', label: 'المصاريف' },
           ].map(t => (
             <Pressable
               key={t.id}
@@ -266,8 +286,76 @@ export default function FinanceScreen() {
               })}
             </>
           )}
+          {activeTab === 'expenses' && (
+            <>
+              <View style={[styles.payrollSummary, { borderRightColor: Colors.danger }]}>
+                <Text style={styles.payrollSummaryLabel}>إجمالي المصاريف</Text>
+                <Text style={[styles.payrollSummaryValue, { color: Colors.danger }]}>{totalExpenses.toLocaleString('ar-SA')} ج.س</Text>
+              </View>
+              <Pressable
+                style={[styles.reminderBtn, { alignSelf: 'flex-end', marginBottom: 10, backgroundColor: Colors.danger + '15', borderColor: Colors.danger + '40' }]}
+                onPress={() => setShowExpenseModal(true)}
+              >
+                <MaterialCommunityIcons name="plus" size={15} color={Colors.danger} />
+                <Text style={[styles.reminderBtnText, { color: Colors.danger }]}>إضافة مصروف</Text>
+              </Pressable>
+              {expenses.length === 0 && (
+                <View style={styles.emptyCard}>
+                  <MaterialCommunityIcons name="receipt" size={44} color={Colors.textLight} />
+                  <Text style={styles.emptyTxt}>لا توجد مصاريف مسجّلة</Text>
+                </View>
+              )}
+              {expenses.map(exp => (
+                <View key={exp.id} style={[styles.payrollCard, { borderRightColor: Colors.danger }]}>
+                  <View style={styles.payrollCardRow}>
+                    <Pressable onPress={() => { Alert.alert('حذف', 'حذف هذا المصروف؟', [{ text: 'إلغاء', style: 'cancel' }, { text: 'حذف', style: 'destructive', onPress: () => removeExpense(exp.id) }]); }}>
+                      <MaterialCommunityIcons name="trash-can-outline" size={18} color={Colors.danger} />
+                    </Pressable>
+                    <View style={styles.payrollInfo}>
+                      <Text style={styles.payrollName}>{exp.description}</Text>
+                      <Text style={styles.payrollRole}>{exp.category} · {exp.date}</Text>
+                    </View>
+                    <Text style={[styles.payrollSummaryValue, { fontSize: 15, color: Colors.danger }]}>{exp.amount.toLocaleString('ar-SA')} ج.س</Text>
+                  </View>
+                </View>
+              ))}
+            </>
+          )}
         </View>
       </ScrollView>
+
+      {/* ── Expense Modal ── */}
+      <Modal visible={showExpenseModal} transparent animationType="slide">
+        <View style={styles.overlay}>
+          <View style={[styles.sheet, { paddingBottom: insets.bottom + 24 }]}>
+            <View style={styles.sheetHandle} />
+            <Text style={styles.sheetTitle}>تسجيل مصروف</Text>
+            <Text style={styles.modalLabel}>الفئة</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                {(['إيجار', 'كهرباء', 'ماء', 'مستلزمات', 'صيانة', 'رواتب إضافية', 'أخرى'] as ExpenseCategory[]).map(c => (
+                  <Pressable key={c} onPress={() => setExpCategory(c)}
+                    style={[{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10, borderWidth: 1, borderColor: Colors.border, backgroundColor: expCategory === c ? Colors.danger : Colors.surface }]}>
+                    <Text style={{ fontFamily: 'Inter_600SemiBold', fontSize: 12, color: expCategory === c ? '#fff' : Colors.text }}>{c}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            </ScrollView>
+            <Text style={styles.modalLabel}>الوصف</Text>
+            <TextInput style={styles.modalInput} value={expDesc} onChangeText={setExpDesc} placeholder="مثال: إيجار الشهر يناير" placeholderTextColor={Colors.textLight} textAlign="right" />
+            <Text style={styles.modalLabel}>المبلغ (ج.س)</Text>
+            <TextInput style={styles.modalInput} value={expAmount} onChangeText={setExpAmount} keyboardType="numeric" placeholder="0" placeholderTextColor={Colors.textLight} textAlign="right" />
+            <View style={styles.modalBtns}>
+              <Pressable style={[styles.modalBtn, styles.cancelBtn]} onPress={() => setShowExpenseModal(false)}>
+                <Text style={styles.cancelBtnTxt}>إلغاء</Text>
+              </Pressable>
+              <Pressable style={[styles.modalBtn, styles.saveBtn]} onPress={handleSaveExpense}>
+                <Text style={styles.saveBtnTxt}>حفظ</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {/* ── Payment Modal ── */}
       <Modal visible={!!editingStudent} transparent animationType="slide">
@@ -390,6 +478,7 @@ const styles = StyleSheet.create({
   modalInput: { backgroundColor: Colors.surfaceAlt, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 18, fontFamily: 'Inter_700Bold', color: Colors.text, borderWidth: 1, borderColor: Colors.border, marginBottom: 8 },
   modalHint: { fontSize: 11, fontFamily: 'Inter_400Regular', color: Colors.textLight, textAlign: 'right', marginBottom: 16 },
   modalActions: { flexDirection: 'row', gap: 12 },
+  modalBtns: { flexDirection: 'row', gap: 12, marginTop: 16 },
   modalBtn: { flex: 1, height: 50, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
   cancelBtn: { backgroundColor: Colors.surfaceAlt },
   cancelBtnTxt: { fontSize: 15, fontFamily: 'Inter_600SemiBold', color: Colors.textSecondary },

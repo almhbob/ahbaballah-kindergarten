@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Colors } from '@/constants/colors';
-import { useAppData, RegistrationRequest, RegistrationStatus } from '@/contexts/AppDataContext';
+import { useAppData, RegistrationRequest, RegistrationStatus, Student } from '@/contexts/AppDataContext';
 import * as Haptics from 'expo-haptics';
 
 type Tab = 'pending' | 'approved' | 'rejected';
@@ -293,7 +293,7 @@ const detail = StyleSheet.create({
 
 export default function RegistrationsScreen() {
   const insets = useSafeAreaInsets();
-  const { registrationRequests, updateRegistrationRequest, removeRegistrationRequest } = useAppData();
+  const { registrationRequests, updateRegistrationRequest, removeRegistrationRequest, addStudent, students } = useAppData();
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
   const bottomPadding = Platform.OS === 'web' ? 34 : insets.bottom + 90;
 
@@ -313,8 +313,32 @@ export default function RegistrationsScreen() {
 
   const handleApprove = (id: string) => {
     updateRegistrationRequest(id, { status: 'approved', approvedAt: new Date().toISOString() });
+    const req = registrationRequests.find(r => r.id === id);
+    if (req) {
+      const alreadyExists = students.some(
+        s => s.name === req.childName && s.parentPhone === req.parentPhone
+      );
+      if (!alreadyExists) {
+        const newStudent: Student = {
+          id: `s_${Date.now()}`,
+          name: req.childName,
+          level: req.requestedLevel,
+          parentName: req.parentName,
+          parentPhone: req.parentPhone,
+          attendance: 100,
+          behavior: 'جيد',
+          homework: 'منجز',
+          notes: req.notes ?? '',
+          grades: [],
+          dailyReports: [],
+          assessments: [],
+        };
+        addStudent(newStudent);
+      }
+    }
     setSelected(null);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    Alert.alert('تمت الموافقة', req ? `تم قبول ${req.childName} وإضافته للنظام تلقائياً` : 'تمت الموافقة على الطلب');
   };
 
   const handleReject = (id: string, reason: string) => {

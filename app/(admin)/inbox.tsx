@@ -3,6 +3,7 @@ import {
   View, Text, StyleSheet, FlatList, Pressable,
   TextInput, Modal, Platform, ScrollView,
 } from 'react-native';
+import { sendLocalNotificationNow } from '@/lib/notifications';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -63,6 +64,10 @@ export default function InboxScreen() {
   const handleReply = () => {
     if (!replyText.trim() || !selectedMsg) return;
     replyInbox(selectedMsg.id, replyText);
+    sendLocalNotificationNow(
+      `رد من إدارة الروضة`,
+      `تم الرد على رسالتك: "${replyText.slice(0, 60)}${replyText.length > 60 ? '...' : ''}"`,
+    ).catch(() => {});
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setSelectedMsg(null);
   };

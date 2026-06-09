@@ -1,16 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Pressable,
   TextInput, Modal, Platform, Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Colors } from '@/constants/colors';
 import { useAppData, Student, AssessmentResult } from '@/contexts/AppDataContext';
 import HexFrame from '@/components/HexFrame';
 import * as Haptics from 'expo-haptics';
 
-const SUBJECTS = ['الرياضيات', 'اللغة العربية', 'العلوم', 'التربية الفنية', 'الأنشطة'];
+const DEFAULT_SUBJECTS = ['الرياضيات', 'اللغة العربية', 'العلوم', 'التربية الفنية', 'الأنشطة'];
+const CUSTOM_SUBJECTS_KEY = 'custom_grade_subjects';
 
 function genId() {
   return Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
@@ -51,7 +53,7 @@ export default function GradesScreen() {
   const [mode, setMode] = useState<ScreenMode>('grades');
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
 
-  const [subject, setSubject] = useState(SUBJECTS[0]);
+  const [subject, setSubject] = useState(DEFAULT_SUBJECTS[0]);
   const [score, setScore] = useState('');
   const [total, setTotal] = useState('20');
   const [showAdd, setShowAdd] = useState(false);
@@ -64,6 +66,36 @@ export default function GradesScreen() {
   const [numbersMax, setNumbersMax] = useState('20');
   const [mathScore, setMathScore] = useState('');
   const [mathMax, setMathMax] = useState('20');
+
+  const [customSubjects, setCustomSubjects] = useState<string[]>([]);
+  const [showAddSubject, setShowAddSubject] = useState(false);
+  const [newSubjectName, setNewSubjectName] = useState('');
+
+  const allSubjects = [...DEFAULT_SUBJECTS, ...customSubjects];
+
+  useEffect(() => {
+    AsyncStorage.getItem(CUSTOM_SUBJECTS_KEY).then(raw => {
+      if (raw) {
+        try { setCustomSubjects(JSON.parse(raw)); } catch {}
+      }
+    });
+  }, []);
+
+  const handleAddSubject = async () => {
+    const name = newSubjectName.trim();
+    if (!name) return;
+    if (allSubjects.includes(name)) {
+      Alert.alert('تنبيه', 'هذه المادة موجودة بالفعل');
+      return;
+    }
+    const updated = [...customSubjects, name];
+    setCustomSubjects(updated);
+    await AsyncStorage.setItem(CUSTOM_SUBJECTS_KEY, JSON.stringify(updated));
+    setSubject(name);
+    setNewSubjectName('');
+    setShowAddSubject(false);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  };
 
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
   const bottomPadding = Platform.OS === 'web' ? 34 : insets.bottom + 90;
@@ -297,7 +329,7 @@ export default function GradesScreen() {
 
             <Text style={styles.fieldLabel}>المادة</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.subjectsRow}>
-              {SUBJECTS.map(s => (
+              {allSubjects.map(s => (
                 <Pressable
                   key={s}
                   style={[styles.subjectChip, subject === s && styles.subjectChipActive]}
@@ -306,6 +338,12 @@ export default function GradesScreen() {
                   <Text style={[styles.subjectChipText, subject === s && styles.subjectChipTextActive]}>{s}</Text>
                 </Pressable>
               ))}
+              <Pressable
+                style={styles.subjectAddChip}
+                onPress={() => { setNewSubjectName(''); setShowAddSubject(true); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+              >
+                <Ionicons name="add" size={18} color="#1A6B5C" />
+              </Pressable>
             </ScrollView>
 
             <View style={styles.scoreRow}>
@@ -344,6 +382,35 @@ export default function GradesScreen() {
             </View>
           </View>
         </View>
+      </Modal>
+
+      {/* ── Add Custom Subject Modal ── */}
+      <Modal visible={showAddSubject} transparent animationType="fade">
+        <Pressable style={styles.overlay} onPress={() => setShowAddSubject(false)}>
+          <Pressable style={[styles.subjectSheet, { paddingBottom: insets.bottom + 24 }]} onPress={e => e.stopPropagation()}>
+            <View style={styles.sheetHandle} />
+            <Text style={styles.sheetTitle}>إضافة مادة جديدة</Text>
+            <Text style={styles.assessNote}>أدخل اسم المادة التي تريد إضافتها</Text>
+            <TextInput
+              style={styles.subjectInput}
+              value={newSubjectName}
+              onChangeText={setNewSubjectName}
+              placeholder="مثال: التربية الإسلامية"
+              placeholderTextColor={Colors.textLight}
+              textAlign="right"
+              autoFocus
+              onSubmitEditing={handleAddSubject}
+            />
+            <View style={styles.modalActions}>
+              <Pressable style={[styles.modalBtn, styles.cancelBtn]} onPress={() => setShowAddSubject(false)}>
+                <Text style={styles.cancelBtnText}>إلغاء</Text>
+              </Pressable>
+              <Pressable style={[styles.modalBtn, styles.confirmBtn]} onPress={handleAddSubject}>
+                <Text style={styles.confirmBtnText}>إضافة</Text>
+              </Pressable>
+            </View>
+          </Pressable>
+        </Pressable>
       </Modal>
 
       {/* ── Add Assessment Modal ── */}
@@ -447,6 +514,9 @@ const styles = StyleSheet.create({
   subjectChipActive: { backgroundColor: '#1A6B5C' },
   subjectChipText: { fontSize: 13, fontFamily: 'Inter_500Medium', color: Colors.textSecondary },
   subjectChipTextActive: { color: '#FFFFFF', fontFamily: 'Inter_700Bold' },
+  subjectAddChip: { width: 36, height: 36, borderRadius: 10, backgroundColor: Colors.surfaceAlt, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: '#1A6B5C', borderStyle: 'dashed' },
+  subjectSheet: { backgroundColor: Colors.surface, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 24, marginTop: 'auto' },
+  subjectInput: { backgroundColor: Colors.surfaceAlt, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 14, fontSize: 16, fontFamily: 'Inter_500Medium', color: Colors.text, marginTop: 4 },
   scoreRow: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'center', gap: 16, marginTop: 8 },
   scoreField: { alignItems: 'center' },
   scoreInput: { width: 80, height: 60, backgroundColor: Colors.surfaceAlt, borderRadius: 14, fontSize: 24, fontFamily: 'Inter_700Bold', color: Colors.text },

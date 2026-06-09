@@ -302,6 +302,15 @@ export interface RegistrationRequest {
 
 export type BannerType = 'offer' | 'alert' | 'event' | 'ad';
 
+export type ExpenseCategory = 'إيجار' | 'كهرباء' | 'ماء' | 'مستلزمات' | 'صيانة' | 'رواتب إضافية' | 'أخرى';
+export interface Expense {
+  id: string;
+  category: ExpenseCategory;
+  description: string;
+  amount: number;
+  date: string;
+}
+
 export interface Banner {
   id: string;
   type: BannerType;
@@ -589,6 +598,9 @@ interface AppDataContextValue {
   galleryPhotos: GalleryPhoto[];
   addGalleryPhoto: (p: GalleryPhoto) => void;
   removeGalleryPhoto: (id: string) => void;
+  expenses: Expense[];
+  addExpense: (e: Expense) => void;
+  removeExpense: (id: string) => void;
   consentRequests: ConsentRequest[];
   addConsentRequest: (r: ConsentRequest) => void;
   updateConsentRequest: (id: string, data: Partial<ConsentRequest>) => void;
@@ -783,6 +795,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const [schoolEvents, setSchoolEvents] = useState<SchoolEvent[]>(DEMO_SCHOOL_EVENTS);
   const [galleryPhotos, setGalleryPhotos] = useState<GalleryPhoto[]>([]);
   const [consentRequests, setConsentRequests] = useState<ConsentRequest[]>([]);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
   const welcomeRef = useRef<string>(DEFAULT_WELCOME_MSG);
 
   const cloudSync = (key: string, value: any) => {
@@ -866,6 +879,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       if (savedEvents) setSchoolEvents(savedEvents);
       if (savedPhotos) setGalleryPhotos(savedPhotos);
       if (savedConsents) setConsentRequests(savedConsents);
+      const savedExpenses = await get('app_expenses');
+      if (savedExpenses) setExpenses(savedExpenses);
     };
     load();
   }, []);
@@ -1394,6 +1409,17 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  const addExpense = (e: Expense) => {
+    const updated = [e, ...expenses];
+    setExpenses(updated);
+    saveState('app_expenses', updated);
+  };
+  const removeExpense = (id: string) => {
+    const updated = expenses.filter(e => e.id !== id);
+    setExpenses(updated);
+    saveState('app_expenses', updated);
+  };
+
   const addConsentRequest = (r: ConsentRequest) => {
     setConsentRequests(prev => {
       const updated = [r, ...prev];
@@ -1454,8 +1480,9 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     appSettings, updateAppSettings,
     schoolEvents, addSchoolEvent, updateSchoolEvent, removeSchoolEvent,
     galleryPhotos, addGalleryPhoto, removeGalleryPhoto,
+    expenses, addExpense, removeExpense,
     consentRequests, addConsentRequest, updateConsentRequest, removeConsentRequest, respondConsent,
-  }), [students, employees, news, inbox, messages, meetings, schedule, welcomeMessage, schoolInfo, honorWeights, annualPlan, graduationTasks, certificates, transportRoutes, transportSubscriptions, banners, yearlySnapshots, registrationRequests, appSettings, schoolEvents, galleryPhotos, consentRequests]);
+  }), [students, employees, news, inbox, messages, meetings, schedule, welcomeMessage, schoolInfo, honorWeights, annualPlan, graduationTasks, certificates, transportRoutes, transportSubscriptions, banners, yearlySnapshots, registrationRequests, appSettings, schoolEvents, galleryPhotos, expenses, consentRequests]);
 
   return <AppDataContext.Provider value={value}>{children}</AppDataContext.Provider>;
 }

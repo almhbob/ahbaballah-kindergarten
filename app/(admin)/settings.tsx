@@ -50,6 +50,10 @@ export default function SettingsScreen() {
   const [showHonorModal, setShowHonorModal] = useState(false);
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
   const [showPasswords, setShowPasswords] = useState(false);
+  const [showPassModal, setShowPassModal] = useState(false);
+  const [oldPass, setOldPass] = useState('');
+  const [newPass, setNewPass] = useState('');
+  const [confirmPass, setConfirmPass] = useState('');
 
   const [draftInfo, setDraftInfo] = useState<SchoolInfo>(schoolInfo);
   const [draftWeights, setDraftWeights] = useState<HonorWeights>(honorWeights);
@@ -85,6 +89,18 @@ export default function SettingsScreen() {
     setWelcomeMessage(draftWelcome.trim());
     setShowWelcomeModal(false);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  };
+
+  const handleChangePassword = () => {
+    const current = appSettings?.adminPassword ?? '1234';
+    if (oldPass !== current) { Alert.alert('خطأ', 'كلمة المرور الحالية غير صحيحة'); return; }
+    if (newPass.length < 4)   { Alert.alert('تنبيه', 'كلمة المرور الجديدة 4 أحرف على الأقل'); return; }
+    if (newPass !== confirmPass) { Alert.alert('تنبيه', 'كلمة المرور الجديدة غير متطابقة'); return; }
+    updateAppSettings({ adminPassword: newPass });
+    setOldPass(''); setNewPass(''); setConfirmPass('');
+    setShowPassModal(false);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    Alert.alert('تم', 'تم تغيير كلمة المرور بنجاح');
   };
 
   const handleReset = () => {
@@ -285,6 +301,11 @@ export default function SettingsScreen() {
           </Pressable>
         </View>
 
+        <SectionHeader title="الأمان" />
+        <View style={styles.section}>
+          <SettingRow icon="lock-reset" label="تغيير كلمة مرور المدير" onPress={() => { setOldPass(''); setNewPass(''); setConfirmPass(''); setShowPassModal(true); }} color={Colors.danger} />
+        </View>
+
         <SectionHeader title="قانوني" />
         <View style={styles.section}>
           <SettingRow
@@ -440,6 +461,39 @@ export default function SettingsScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* Change Password Modal */}
+      <Modal visible={showPassModal} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalBox}>
+            <Text style={styles.modalTitle}>تغيير كلمة مرور المدير</Text>
+            {[
+              { label: 'كلمة المرور الحالية', val: oldPass, set: setOldPass },
+              { label: 'كلمة المرور الجديدة', val: newPass, set: setNewPass },
+              { label: 'تأكيد كلمة المرور', val: confirmPass, set: setConfirmPass },
+            ].map((f, i) => (
+              <View key={i}>
+                <Text style={[styles.label, { marginTop: 12 }]}>{f.label}</Text>
+                <TextInput
+                  style={styles.input}
+                  value={f.val}
+                  onChangeText={f.set}
+                  secureTextEntry
+                  textAlign="right"
+                  placeholderTextColor={Colors.textLight}
+                  placeholder="••••••"
+                />
+              </View>
+            ))}
+            <Pressable style={[styles.saveBtn, { marginTop: 20 }]} onPress={handleChangePassword}>
+              <Text style={styles.saveBtnText}>تغيير كلمة المرور</Text>
+            </Pressable>
+            <Pressable onPress={() => setShowPassModal(false)} style={{ marginTop: 10, alignItems: 'center' }}>
+              <Text style={{ color: Colors.textLight, fontFamily: 'Inter_500Medium', fontSize: 13 }}>إلغاء</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -483,4 +537,9 @@ const styles = StyleSheet.create({
   weightBtn: { width: 32, height: 32, borderRadius: 8, backgroundColor: Colors.surfaceAlt, justifyContent: 'center', alignItems: 'center' },
   weightValueBox: { width: 56, height: 36, borderRadius: 8, borderWidth: 2, justifyContent: 'center', alignItems: 'center' },
   weightValue: { fontSize: 14, fontFamily: 'Inter_700Bold' },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 24 },
+  modalBox: { width: '100%', backgroundColor: Colors.surface, borderRadius: 20, padding: 24 },
+  modalTitle: { fontSize: 17, fontFamily: 'Inter_700Bold', color: Colors.text, textAlign: 'right', marginBottom: 4 },
+  label: { fontSize: 13, fontFamily: 'Inter_600SemiBold', color: Colors.textSecondary, textAlign: 'right', marginBottom: 6 },
+  input: { backgroundColor: Colors.surfaceAlt, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, fontFamily: 'Inter_500Medium', color: Colors.text, borderWidth: 1, borderColor: Colors.borderLight },
 });
