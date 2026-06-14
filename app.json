@@ -32,7 +32,11 @@
         "android.permission.POST_NOTIFICATIONS",
         "android.permission.VIBRATE",
         "android.permission.INTERNET",
-        "android.permission.ACCESS_NETWORK_STATE"
+        "android.permission.ACCESS_NETWORK_STATE",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.READ_MEDIA_VIDEO",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.CAMERA"
       ]
     },
     "web": {
@@ -48,6 +52,13 @@
       "expo-font",
       "expo-web-browser",
       "expo-secure-store",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "يحتاج التطبيق للوصول إلى مكتبة الصور لرفع صور الطلاب والمواد التعليمية",
+          "cameraPermission": "يحتاج التطبيق للوصول إلى الكاميرا لالتقاط صور الطلاب"
+        }
+      ],
       [
         "expo-notifications",
         {

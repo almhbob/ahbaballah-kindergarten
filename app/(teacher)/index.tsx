@@ -24,6 +24,7 @@ export default function TeacherScheduleScreen() {
   const { user, logout, apiLogout } = useAuth();
   const { students, schedule } = useAppData();
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
+  const bottomPadding = Platform.OS === 'web' ? 34 : insets.bottom + 90;
 
   const teacherClass = (user as any)?.teacherClass as ScheduleLevel | undefined;
   const myStudents = teacherClass ? students.filter(s => s.level === teacherClass) : students;
@@ -45,7 +46,7 @@ export default function TeacherScheduleScreen() {
 
   return (
     <View style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false} contentInsetAdjustmentBehavior="automatic">
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: bottomPadding }}>
         <LinearGradient colors={['#061e1a', '#0d3d35', '#1A6B5C']} style={[styles.header, { paddingTop: topPadding + 16 }]}>
           {/* Hex decorations */}
           <View pointerEvents="none" style={StyleSheet.absoluteFill}>

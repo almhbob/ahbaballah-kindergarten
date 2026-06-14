@@ -23,6 +23,7 @@ export default function NewsScreen() {
   const [body, setBody] = useState('');
   const [type, setType] = useState<'news' | 'trip' | 'activity'>('news');
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
+  const bottomPadding = Platform.OS === 'web' ? 34 : insets.bottom + 90;
 
   const handleAdd = () => {
     if (!title || !body) {
@@ -67,7 +68,7 @@ export default function NewsScreen() {
         </View>
       </View>
 
-      <ScrollView contentInsetAdjustmentBehavior="automatic" showsVerticalScrollIndicator={false}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: bottomPadding }}>
         <View style={styles.list}>
           {news.length === 0 ? (
             <View style={styles.empty}>

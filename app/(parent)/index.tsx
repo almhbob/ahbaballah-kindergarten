@@ -104,7 +104,7 @@ export default function ParentHomeScreen() {
 
   return (
     <View style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false} contentInsetAdjustmentBehavior="automatic">
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: bottomPadding }}>
         <LinearGradient colors={['#1a0830', '#3d1a5c', '#7B3FA0']} style={[styles.header, { paddingTop: topPadding + 16 }]}>
           {/* Hex decorations */}
           <View pointerEvents="none" style={StyleSheet.absoluteFill}>
