@@ -237,12 +237,6 @@ export default function IDCardsScreen() {
               )}
             </ScrollView>
 
-            {/* Info */}
-            <View style={s.infoRow}>
-              <Ionicons name="information-circle-outline" size={14} color={Colors.textSecondary} />
-              <Text style={s.infoTxt}>تحميل بجودة 1080px مناسبة للطباعة ومنصات التواصل</Text>
-            </View>
-
             {/* Download button */}
             <Pressable
               style={[s.dlBtn, downloading && { opacity: 0.6 }]}
@@ -390,9 +384,6 @@ const s = StyleSheet.create({
   sheetHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
   sheetTitle: { fontSize: 15, fontFamily: 'Inter_700Bold', color: Colors.text, flex: 1, textAlign: 'center' },
   iconBtn: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.background },
-
-  infoRow: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: Colors.background, borderRadius: 10, padding: 10, marginHorizontal: 0, marginBottom: 12 },
-  infoTxt: { flex: 1, fontSize: 11, fontFamily: 'Inter_400Regular', color: Colors.textSecondary, textAlign: 'right', lineHeight: 16 },
 
   dlBtn: { borderRadius: 14, overflow: 'hidden' },
   dlGrad: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14 },
