@@ -44,7 +44,22 @@
     }
     .feat-icon { font-size: 22px; margin-bottom: 4px; }
     .feat-label { font-size: 11px; color: #475569; font-weight: 600; }
-    .steps { margin-bottom: 24px; }
+
+    .methods { margin-bottom: 24px; }
+    .method-tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+    .method-tab {
+      flex: 1; padding: 10px 8px; border-radius: 12px; cursor: pointer;
+      border: 2px solid #e2e8f0; background: #f8fafc;
+      font-size: 12px; font-weight: 700; color: #64748b; text-align: center;
+      transition: all 0.2s;
+    }
+    .method-tab.active {
+      border-color: #1A6B5C; background: #f0faf8; color: #1A6B5C;
+    }
+    .method-panel { display: none; }
+    .method-panel.active { display: block; }
+
+    .steps { margin-bottom: 0; }
     .steps-title { font-size: 13px; font-weight: 700; color: #0F2B4E; margin-bottom: 12px; }
     .step { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 10px; }
     .step-num {
@@ -57,12 +72,16 @@
       display: block; background: linear-gradient(135deg, #1A6B5C, #0F2B4E);
       color: #fff; text-align: center; padding: 16px; border-radius: 14px;
       font-size: 15px; font-weight: 700; text-decoration: none;
-      margin-bottom: 16px; letter-spacing: 0.3px;
+      margin-top: 16px; letter-spacing: 0.3px;
       box-shadow: 0 4px 20px rgba(26,107,92,0.4);
       transition: opacity 0.2s;
     }
     .cta:hover { opacity: 0.9; }
-    .cta-note { font-size: 11px; color: #94a3b8; text-align: center; margin-bottom: 20px; }
+    .cta-green {
+      background: linear-gradient(135deg, #16a34a, #15803d);
+      box-shadow: 0 4px 20px rgba(22,163,74,0.4);
+    }
+    .cta-note { font-size: 11px; color: #94a3b8; text-align: center; margin-top: 8px; }
     .divider { border: none; border-top: 1px solid #f1f5f9; margin: 20px 0; }
     .login-box {
       background: #f8fafc; border-radius: 12px; padding: 14px 16px;
@@ -78,9 +97,13 @@
     }
     .footer p { font-size: 11px; color: #94a3b8; line-height: 1.6; }
     .footer a { color: #1A6B5C; text-decoration: none; }
+    .apk-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      background: #dcfce7; color: #166534; font-size: 10px; font-weight: 700;
+      padding: 2px 8px; border-radius: 99px; margin-right: 4px;
+    }
     @media (max-width: 400px) {
       .body { padding: 20px; }
-      .features { grid-template-columns: 1fr 1fr; }
     }
   </style>
 </head>
@@ -109,30 +132,70 @@
         <div class="feat"><div class="feat-icon">🔔</div><div class="feat-label">الإشعارات</div></div>
       </div>
 
-      <div class="steps">
-        <p class="steps-title">⚡ كيف تبدأ؟</p>
-        <div class="step">
-          <div class="step-num">1</div>
-          <div class="step-text">اضغط على زر "انضم كمختبر" أدناه وقبل الدعوة من Google Play</div>
+      <div class="methods">
+        <div class="method-tabs">
+          <div class="method-tab active" onclick="switchTab('apk')">
+            📦 APK مباشر<br/><span style="font-size:10px;font-weight:400">(أسرع وأسهل)</span>
+          </div>
+          <div class="method-tab" onclick="switchTab('play')">
+            ▶ Google Play<br/><span style="font-size:10px;font-weight:400">(الطريق الرسمية)</span>
+          </div>
         </div>
-        <div class="step">
-          <div class="step-num">2</div>
-          <div class="step-text">ثبّت التطبيق من Google Play Store (قد يستغرق ظهوره بضع دقائق)</div>
+
+        <!-- APK Method -->
+        <div class="method-panel active" id="panel-apk">
+          <div class="steps">
+            <p class="steps-title">⚡ تثبيت APK مباشر</p>
+            <div class="step">
+              <div class="step-num">1</div>
+              <div class="step-text">اضغط زر التحميل أدناه لفتح صفحة التحميل المباشر</div>
+            </div>
+            <div class="step">
+              <div class="step-num">2</div>
+              <div class="step-text">في إعدادات هاتفك: <strong>الإعدادات → الأمان → مصادر غير معروفة</strong> — فعّلها</div>
+            </div>
+            <div class="step">
+              <div class="step-num">3</div>
+              <div class="step-text">ثبّت ملف APK المحمّل وافتح التطبيق</div>
+            </div>
+            <div class="step">
+              <div class="step-num">4</div>
+              <div class="step-text">أرسل ملاحظاتك على: <strong>almhbob.iii@gmail.com</strong></div>
+            </div>
+          </div>
+          <a class="cta cta-green" href="https://expo.dev/accounts/almhbob609/projects/ahbaballah-kindergarten/builds/c01df2a9-2a8f-4ac7-9b81-56218c4dd95a" target="_blank">
+            📦 تحميل APK مباشرة
+          </a>
+          <p class="cta-note">الحجم تقريباً 120 MB • Android 10 أو أحدث</p>
         </div>
-        <div class="step">
-          <div class="step-num">3</div>
-          <div class="step-text">افتح التطبيق وجرّب جميع الوظائف باستخدام بيانات الدخول أدناه</div>
-        </div>
-        <div class="step">
-          <div class="step-num">4</div>
-          <div class="step-text">أرسل ملاحظاتك على: <strong>almhbob.iii@gmail.com</strong></div>
+
+        <!-- Play Store Method -->
+        <div class="method-panel" id="panel-play">
+          <div class="steps">
+            <p class="steps-title">⚡ كيف تبدأ عبر Play؟</p>
+            <div class="step">
+              <div class="step-num">1</div>
+              <div class="step-text">اضغط "انضم كمختبر" أدناه وقبل الدعوة من Google Play</div>
+            </div>
+            <div class="step">
+              <div class="step-num">2</div>
+              <div class="step-text">ثبّت التطبيق من Google Play Store (قد يستغرق ظهوره بضع دقائق)</div>
+            </div>
+            <div class="step">
+              <div class="step-num">3</div>
+              <div class="step-text">افتح التطبيق وجرّب جميع الوظائف باستخدام بيانات الدخول أدناه</div>
+            </div>
+            <div class="step">
+              <div class="step-num">4</div>
+              <div class="step-text">أرسل ملاحظاتك على: <strong>almhbob.iii@gmail.com</strong></div>
+            </div>
+          </div>
+          <a class="cta" href="https://play.google.com/apps/testing/com.ahbaballah.kindergarten" target="_blank">
+            📲 انضم كمختبر على Google Play
+          </a>
+          <p class="cta-note">يجب أن يكون حسابك على Google مضافاً في قائمة المختبرين</p>
         </div>
       </div>
-
-      <a class="cta" href="https://play.google.com/apps/testing/com.ahbaballah.kindergarten" target="_blank">
-        📲 انضم كمختبر على Google Play
-      </a>
-      <p class="cta-note">يجب أن يكون حسابك على Google مضافاً في قائمة المختبرين</p>
 
       <hr class="divider" />
 
@@ -161,5 +224,15 @@
       </p>
     </div>
   </div>
+
+  <script>
+    function switchTab(method) {
+      document.querySelectorAll('.method-tab').forEach((t, i) => {
+        t.classList.toggle('active', (i === 0 && method === 'apk') || (i === 1 && method === 'play'));
+      });
+      document.getElementById('panel-apk').classList.toggle('active', method === 'apk');
+      document.getElementById('panel-play').classList.toggle('active', method === 'play');
+    }
+  </script>
 </body>
 </html>
