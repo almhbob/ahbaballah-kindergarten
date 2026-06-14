@@ -1,0 +1,57 @@
+default_platform(:android)
+
+platform :android do
+  desc "Upload only screenshots"
+  lane :upload_screenshots_only do
+    supply(
+      package_name:            "com.ahbaballah.kindergarten",
+      json_key:                "./google-play-key.json",
+      metadata_path:           "./fastlane/metadata/android",
+      track:                   "internal",
+      skip_upload_apk:         true,
+      skip_upload_aab:         true,
+      skip_upload_metadata:    true,
+      skip_upload_changelogs:  true,
+      skip_upload_images:      true,
+      skip_upload_screenshots: false,
+      sync_image_upload:       true,
+      version_code:            1,
+    )
+  end
+
+  desc "Upload icon and feature graphic"
+  lane :upload_images_only do
+    supply(
+      package_name:            "com.ahbaballah.kindergarten",
+      json_key:                "./google-play-key.json",
+      metadata_path:           "./fastlane/metadata/android",
+      track:                   "internal",
+      skip_upload_apk:         true,
+      skip_upload_aab:         true,
+      skip_upload_metadata:    true,
+      skip_upload_changelogs:  true,
+      skip_upload_images:      false,
+      skip_upload_screenshots: true,
+      sync_image_upload:       true,
+      version_code:            1,
+    )
+  end
+
+  desc "Upload everything: screenshots + images + metadata"
+  lane :upload_all do
+    supply(
+      package_name:            "com.ahbaballah.kindergarten",
+      json_key:                "./google-play-key.json",
+      metadata_path:           "./fastlane/metadata/android",
+      track:                   "internal",
+      skip_upload_apk:         true,
+      skip_upload_aab:         true,
+      skip_upload_metadata:    false,
+      skip_upload_changelogs:  true,
+      skip_upload_images:      false,
+      skip_upload_screenshots: false,
+      sync_image_upload:       true,
+      version_code:            1,
+    )
+  end
+end

@@ -40,3 +40,4 @@ yarn-error.*
 
 .env
 google-play-key.json
+fastlane/report.xml
