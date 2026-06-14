@@ -463,14 +463,6 @@ export default function ExportScreen() {
           ))
         )}
 
-        {filtered.length > 0 && (
-          <View style={styles.footerNote}>
-            <MaterialCommunityIcons name="information-outline" size={14} color={Colors.textLight} />
-            <Text style={styles.footerNoteText}>
-              اضغط على زر الطباعة لفتح نافذة الطباعة بتنسيق احترافي قابل للطباعة والحفظ كـ PDF
-            </Text>
-          </View>
-        )}
       </ScrollView>
 
       {/* Print Button */}
@@ -580,12 +572,6 @@ const styles = StyleSheet.create({
   },
   levelFooterText: { fontSize: 11, fontFamily: 'Inter_400Regular', color: Colors.textSecondary, textAlign: 'right' },
 
-  footerNote: {
-    flexDirection: 'row', gap: 8, alignItems: 'flex-start',
-    backgroundColor: Colors.surface, borderRadius: 12,
-    padding: 14, borderWidth: 1, borderColor: Colors.borderLight,
-  },
-  footerNoteText: { flex: 1, fontSize: 12, fontFamily: 'Inter_400Regular', color: Colors.textLight, textAlign: 'right' },
 
   printBar: {
     position: 'absolute', bottom: 0, left: 0, right: 0,

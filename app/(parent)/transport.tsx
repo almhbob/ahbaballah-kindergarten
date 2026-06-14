@@ -324,11 +324,6 @@ export default function ParentTransportScreen() {
           )}
         </View>
 
-        {/* Info note */}
-        <View style={s.infoNote}>
-          <Ionicons name="information-circle-outline" size={16} color={Colors.textSecondary} />
-          <Text style={s.infoNoteTxt}>للاستفسار عن خدمة الترحيل تواصل مع إدارة الروضة</Text>
-        </View>
       </ScrollView>
     </View>
   );
@@ -470,11 +465,4 @@ const s = StyleSheet.create({
   },
   noRouteTxt: { fontSize: 13, fontFamily: 'Inter_400Regular', color: Colors.textLight },
 
-  infoNote: {
-    flexDirection: 'row', alignItems: 'center', gap: 8,
-    marginHorizontal: 16, marginTop: 4, marginBottom: 8,
-    backgroundColor: Colors.surface, borderRadius: 12,
-    padding: 12, borderWidth: 1, borderColor: Colors.border,
-  },
-  infoNoteTxt: { flex: 1, fontSize: 12, fontFamily: 'Inter_400Regular', color: Colors.textSecondary, textAlign: 'right' },
 });
