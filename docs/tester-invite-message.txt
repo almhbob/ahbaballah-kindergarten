@@ -19,8 +19,8 @@
 📲 *خيار 1 — تثبيت APK مباشر (أسرع):*
 
 1️⃣ فعّل "مصادر غير معروفة" من إعدادات هاتفك
-2️⃣ حمّل التطبيق من الرابط:
-https://almhbob.github.io/ahbaballah-kindergarten/invite.html
+2️⃣ حمّل التطبيق من الرابط المباشر:
+https://expo.dev/artifacts/eas/k0XnJPi3bCaFvpdvT0w9yQog2Ed_CFJDF85PGHeris4.apk
 3️⃣ ثبّت ملف APK وافتح التطبيق
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━
