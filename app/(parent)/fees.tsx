@@ -128,12 +128,6 @@ export default function FeesScreen() {
           </View>
         ))}
 
-        <View style={s.noteCard}>
-          <Ionicons name="information-circle-outline" size={20} color={PARENT_COLOR} />
-          <Text style={s.noteText}>
-            للاستفسار عن الرسوم أو تحديث بيانات السداد، يرجى التواصل مع إدارة الروضة مباشرةً.
-          </Text>
-        </View>
       </ScrollView>
     </View>
   );
@@ -171,6 +165,4 @@ const s = StyleSheet.create({
   methodIcon: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   methodLabel: { fontSize: 14, fontFamily: 'Inter_600SemiBold', color: Colors.text, textAlign: 'right' },
   methodDetail: { fontSize: 11, fontFamily: 'Inter_400Regular', color: Colors.textLight, textAlign: 'right', marginTop: 2 },
-  noteCard: { flexDirection: 'row', gap: 10, backgroundColor: PARENT_COLOR + '15', borderRadius: 12, padding: 14, borderWidth: 1, borderColor: PARENT_COLOR + '30' },
-  noteText: { flex: 1, fontSize: 12, fontFamily: 'Inter_400Regular', color: Colors.text, textAlign: 'right', lineHeight: 20 },
 });

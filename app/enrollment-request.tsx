@@ -338,8 +338,6 @@ const s = StyleSheet.create({
   docThumb: { width: 44, height: 44, borderRadius: 10 },
   docLabel: { fontSize: 13, fontFamily: 'Inter_600SemiBold', color: '#fff', textAlign: 'right' },
   docSub: { fontSize: 11, fontFamily: 'Inter_400Regular', color: 'rgba(255,255,255,0.4)', marginTop: 2, textAlign: 'right' },
-  infoBox: { flexDirection: 'row', gap: 8, alignItems: 'flex-start', backgroundColor: Colors.accent + '15', borderRadius: 10, padding: 12, borderWidth: 1, borderColor: Colors.accent + '30' },
-  infoText: { flex: 1, fontSize: 12, fontFamily: 'Inter_400Regular', color: 'rgba(255,255,255,0.7)', textAlign: 'right', lineHeight: 18 },
   doneWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32, gap: 20 },
   doneIcon: { marginBottom: 8 },
   doneGrad: { width: 100, height: 100, borderRadius: 50, alignItems: 'center', justifyContent: 'center' },

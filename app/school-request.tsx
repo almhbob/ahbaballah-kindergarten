@@ -663,13 +663,6 @@ const s = StyleSheet.create({
   previewName:   { fontSize: 15, fontFamily: 'Inter_700Bold', textAlign: 'right' },
   previewSlogan: { fontSize: 11, fontFamily: 'Inter_400Regular', textAlign: 'right' },
 
-  infoBox: {
-    flexDirection: 'row', alignItems: 'flex-start', gap: 10,
-    backgroundColor: 'rgba(96,165,250,0.08)', borderRadius: 14, padding: 14,
-    borderWidth: 1, borderColor: 'rgba(96,165,250,0.20)', marginBottom: 4,
-  },
-  infoBoxTxt: { flex: 1, fontSize: 12, fontFamily: 'Inter_400Regular', color: 'rgba(255,255,255,0.50)', textAlign: 'right', lineHeight: 20 },
-
   trialCard:       { borderRadius: 18, overflow: 'hidden', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.08)', marginBottom: 16 },
   trialCardActive: { borderColor: 'rgba(52,211,153,0.40)' },
   trialInner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 18 },

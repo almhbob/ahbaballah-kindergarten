@@ -334,13 +334,6 @@ const s = StyleSheet.create({
     color: '#fff', paddingHorizontal: 12,
   },
 
-  noteBox: {
-    width: '100%', flexDirection: 'row', alignItems: 'flex-start',
-    backgroundColor: 'rgba(201,149,42,0.07)',
-    borderRadius: 10, borderWidth: 1, borderColor: 'rgba(201,149,42,0.18)',
-    paddingHorizontal: 12, paddingVertical: 10, marginTop: 18, marginBottom: 22,
-  },
-  noteTxt: { flex: 1, fontSize: 11, fontFamily: 'Inter_400Regular', color: 'rgba(255,255,255,0.5)', textAlign: 'right', lineHeight: 17 },
 
   submitBtn: { width: '100%', borderRadius: 14, overflow: 'hidden', marginBottom: 16 },
   submitGrad: { height: 54, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8 },
