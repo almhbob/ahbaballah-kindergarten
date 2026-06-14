@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>دعوة اختبار — روضة احباب الله</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+      background: linear-gradient(135deg, #0F2B4E 0%, #1A6B5C 100%);
+      min-height: 100vh; display: flex; align-items: center; justify-content: center;
+      padding: 20px;
+    }
+    .card {
+      background: #fff; border-radius: 24px; max-width: 480px; width: 100%;
+      overflow: hidden; box-shadow: 0 32px 80px rgba(0,0,0,0.35);
+    }
+    .header {
+      background: linear-gradient(135deg, #0F2B4E, #1A6B5C);
+      padding: 36px 32px 28px; text-align: center; position: relative;
+    }
+    .badge {
+      display: inline-block; background: rgba(74,222,128,0.15);
+      border: 1px solid rgba(74,222,128,0.4); color: #4ADE80;
+      font-size: 11px; font-weight: 700; padding: 4px 14px;
+      border-radius: 99px; letter-spacing: 1px; margin-bottom: 16px;
+    }
+    .logo {
+      width: 80px; height: 80px; border-radius: 20px; margin: 0 auto 16px;
+      background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.2);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 36px;
+    }
+    .app-name { color: #fff; font-size: 26px; font-weight: 800; margin-bottom: 6px; }
+    .app-sub { color: rgba(255,255,255,0.65); font-size: 13px; }
+    .body { padding: 28px 32px; }
+    .greeting { font-size: 16px; color: #1e293b; margin-bottom: 12px; font-weight: 600; }
+    .desc { font-size: 13px; color: #64748b; line-height: 1.8; margin-bottom: 24px; }
+    .features { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 24px; }
+    .feat {
+      background: #f8fafc; border-radius: 12px; padding: 12px;
+      border: 1px solid #e2e8f0; text-align: center;
+    }
+    .feat-icon { font-size: 22px; margin-bottom: 4px; }
+    .feat-label { font-size: 11px; color: #475569; font-weight: 600; }
+    .steps { margin-bottom: 24px; }
+    .steps-title { font-size: 13px; font-weight: 700; color: #0F2B4E; margin-bottom: 12px; }
+    .step { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 10px; }
+    .step-num {
+      width: 26px; height: 26px; min-width: 26px; border-radius: 50%;
+      background: #1A6B5C; color: #fff; font-size: 12px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .step-text { font-size: 12px; color: #475569; line-height: 1.6; padding-top: 4px; }
+    .cta {
+      display: block; background: linear-gradient(135deg, #1A6B5C, #0F2B4E);
+      color: #fff; text-align: center; padding: 16px; border-radius: 14px;
+      font-size: 15px; font-weight: 700; text-decoration: none;
+      margin-bottom: 16px; letter-spacing: 0.3px;
+      box-shadow: 0 4px 20px rgba(26,107,92,0.4);
+      transition: opacity 0.2s;
+    }
+    .cta:hover { opacity: 0.9; }
+    .cta-note { font-size: 11px; color: #94a3b8; text-align: center; margin-bottom: 20px; }
+    .divider { border: none; border-top: 1px solid #f1f5f9; margin: 20px 0; }
+    .login-box {
+      background: #f8fafc; border-radius: 12px; padding: 14px 16px;
+      border: 1px solid #e2e8f0; margin-bottom: 20px;
+    }
+    .login-title { font-size: 12px; font-weight: 700; color: #0F2B4E; margin-bottom: 8px; }
+    .login-row { display: flex; justify-content: space-between; margin-bottom: 4px; }
+    .login-key { font-size: 11px; color: #64748b; }
+    .login-val { font-size: 11px; font-weight: 700; color: #1A6B5C; font-family: monospace; }
+    .footer {
+      background: #f8fafc; padding: 16px 32px; text-align: center;
+      border-top: 1px solid #e2e8f0;
+    }
+    .footer p { font-size: 11px; color: #94a3b8; line-height: 1.6; }
+    .footer a { color: #1A6B5C; text-decoration: none; }
+    @media (max-width: 400px) {
+      .body { padding: 20px; }
+      .features { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="header">
+      <div class="badge">🧪 BETA TESTER</div>
+      <div class="logo">🌿</div>
+      <div class="app-name">روضة احباب الله</div>
+      <div class="app-sub">نظام إدارة رياض الأطفال المتكامل</div>
+    </div>
+
+    <div class="body">
+      <p class="greeting">أنت مدعو للانضمام كمختبر رسمي 🎉</p>
+      <p class="desc">
+        نتشرف بدعوتك للمشاركة في اختبار التطبيق قبل إطلاقه الرسمي.
+        رأيك يساعدنا في تقديم أفضل تجربة لإدارة الروضات في الوطن العربي.
+      </p>
+
+      <div class="features">
+        <div class="feat"><div class="feat-icon">📊</div><div class="feat-label">لوحة التحكم</div></div>
+        <div class="feat"><div class="feat-icon">👨‍👩‍👧</div><div class="feat-label">ولي الأمر</div></div>
+        <div class="feat"><div class="feat-icon">👩‍🏫</div><div class="feat-label">المعلمة</div></div>
+        <div class="feat"><div class="feat-icon">📝</div><div class="feat-label">الدرجات</div></div>
+        <div class="feat"><div class="feat-icon">💰</div><div class="feat-label">الماليات</div></div>
+        <div class="feat"><div class="feat-icon">🔔</div><div class="feat-label">الإشعارات</div></div>
+      </div>
+
+      <div class="steps">
+        <p class="steps-title">⚡ كيف تبدأ؟</p>
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-text">اضغط على زر "انضم كمختبر" أدناه وقبل الدعوة من Google Play</div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-text">ثبّت التطبيق من Google Play Store (قد يستغرق ظهوره بضع دقائق)</div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-text">افتح التطبيق وجرّب جميع الوظائف باستخدام بيانات الدخول أدناه</div>
+        </div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-text">أرسل ملاحظاتك على: <strong>almhbob.iii@gmail.com</strong></div>
+        </div>
+      </div>
+
+      <a class="cta" href="https://play.google.com/apps/testing/com.ahbaballah.kindergarten" target="_blank">
+        📲 انضم كمختبر على Google Play
+      </a>
+      <p class="cta-note">يجب أن يكون حسابك على Google مضافاً في قائمة المختبرين</p>
+
+      <hr class="divider" />
+
+      <div class="login-box">
+        <p class="login-title">🔑 بيانات دخول المدير للاختبار</p>
+        <div class="login-row">
+          <span class="login-key">اسم المستخدم</span>
+          <span class="login-val">admin</span>
+        </div>
+        <div class="login-row">
+          <span class="login-key">كلمة المرور</span>
+          <span class="login-val">1234</span>
+        </div>
+        <div class="login-row">
+          <span class="login-key">كلمة مرور لوحة المطوّر</span>
+          <span class="login-val">dev@2026</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <p>
+        هذا الاختبار سري — الرجاء عدم مشاركة البيانات<br/>
+        <a href="https://almhbob.github.io/ahbaballah-kindergarten/privacy/">سياسة الخصوصية</a>
+        · الإصدار 1.0.0 Beta
+      </p>
+    </div>
+  </div>
+</body>
+</html>
