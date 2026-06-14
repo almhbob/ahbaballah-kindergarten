@@ -201,14 +201,6 @@ export default function InboxScreen() {
               <MaterialCommunityIcons name="robot-happy-outline" size={24} color={Colors.accent} />
             </View>
 
-            {/* Info banner */}
-            <View style={styles.infoBanner}>
-              <Ionicons name="information-circle" size={16} color='#3B82F6' />
-              <Text style={styles.infoBannerText}>
-                تُرسَل هذه الرسالة تلقائياً لكل ولي أمر يتواصل مع الروضة لأول مرة عبر الشات
-              </Text>
-            </View>
-
             {/* Preview card */}
             <View style={styles.previewCard}>
               <View style={styles.previewHeader}>
@@ -337,12 +329,6 @@ const styles = StyleSheet.create({
   },
   welcomeHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 },
   welcomeTitle: { fontSize: 16, fontFamily: 'Inter_700Bold', color: Colors.text, flex: 1, textAlign: 'center' },
-  infoBanner: {
-    flexDirection: 'row', alignItems: 'flex-start', gap: 8,
-    backgroundColor: '#EFF6FF', borderRadius: 12, padding: 12,
-    marginBottom: 14, borderWidth: 1, borderColor: '#BFDBFE',
-  },
-  infoBannerText: { flex: 1, fontSize: 12, fontFamily: 'Inter_400Regular', color: '#1D4ED8', textAlign: 'right', lineHeight: 18 },
   previewCard: {
     backgroundColor: Colors.surfaceAlt, borderRadius: 16, padding: 12,
     marginBottom: 14, borderWidth: 1, borderColor: Colors.borderLight,

@@ -261,9 +261,6 @@ const styles = StyleSheet.create({
   tabLabelActive: { color: '#fff' },
 
   body: { padding: 16, paddingBottom: 100 },
-  infoBox: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#EFF6FF', borderRadius: 12, padding: 12, marginBottom: 16, borderRightWidth: 3, borderRightColor: '#3B82F6' },
-  infoText: { flex: 1, fontSize: 12, fontFamily: 'Inter_500Medium', color: '#1e40af', textAlign: 'right' },
-
   sectionLabel: { fontSize: 13, fontFamily: 'Inter_700Bold', color: Colors.text, textAlign: 'right', marginBottom: 10, marginTop: 4 },
 
   templateRow: { flexDirection: 'row', gap: 10, paddingHorizontal: 2, paddingBottom: 4 },
