@@ -290,11 +290,6 @@ export default function EnrollmentRequestScreen() {
                 );
               })}
 
-              <View style={s.infoBox}>
-                <Ionicons name="information-circle-outline" size={16} color={Colors.accent} />
-                <Text style={s.infoText}>يمكنك إرسال الطلب الآن وإكمال المستندات لاحقاً عند زيارة الروضة</Text>
-              </View>
-
               <Pressable
                 style={({ pressed }) => [s.nextBtn, { opacity: pressed || loading ? 0.8 : 1 }]}
                 onPress={submitRequest}

@@ -143,14 +143,6 @@ export default function SchoolLoginScreen() {
             </LinearGradient>
           </Pressable>
 
-          {/* Tier info banner */}
-          <View style={s.tierBanner}>
-            <Text style={s.tierBannerTitle}>🔑 كيف يعمل نظام الحسابات؟</Text>
-            <Text style={s.tierBannerBody}>
-              كل روضة تحصل على حساب مستقل بالبريد الإلكتروني وكلمة المرور التي أعدّها المطوّر.
-              {'\n'}بياناتها محفوظة بشكل كامل في Firebase ومعزولة عن الروضات الأخرى.
-            </Text>
-          </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </View>
@@ -194,10 +186,4 @@ const s = StyleSheet.create({
   loginGrad: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, paddingVertical: 15 },
   loginTxt:  { fontSize: 16, fontFamily: 'Inter_700Bold', color: '#fff' },
 
-  tierBanner: {
-    backgroundColor: Colors.surfaceAlt, borderRadius: 14, padding: 16,
-    borderWidth: 1, borderColor: Colors.border,
-  },
-  tierBannerTitle: { fontSize: 13, fontFamily: 'Inter_700Bold', color: Colors.text, textAlign: 'right', marginBottom: 8 },
-  tierBannerBody:  { fontSize: 11, fontFamily: 'Inter_400Regular', color: Colors.textSecondary, textAlign: 'right', lineHeight: 18 },
 });

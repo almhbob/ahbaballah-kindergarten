@@ -257,16 +257,6 @@ export default function RegisterScreen() {
             )}
           </View>
 
-          {/* Info note */}
-          <View style={s.noteBox}>
-            <Ionicons name="information-circle-outline" size={15} color="rgba(201,149,42,0.7)" style={{ marginLeft: 6 }} />
-            <Text style={s.noteTxt}>
-              {role === 'parent'
-                ? 'يجب أن يكون رقم هاتفك مسجّلاً مسبقاً من قِبل إدارة الروضة'
-                : 'يجب أن يكون بريدك الإلكتروني مضافاً من قِبل الإدارة'}
-            </Text>
-          </View>
-
           {/* Submit */}
           <Pressable
             style={({ pressed }) => [s.submitBtn, { opacity: pressed ? 0.88 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] }]}

@@ -161,12 +161,6 @@ function Step2({ data, set }: { data: FormData; set: (d: Partial<FormData>) => v
       <Field label="البريد الإلكتروني" value={data.admin_email} onChangeText={v => set({ admin_email: v })}
         placeholder="admin@school.com" keyboardType="email-address" required autoCapitalize="none" />
 
-      <View style={s.infoBox}>
-        <Ionicons name="information-circle-outline" size={18} color="#60a5fa" />
-        <Text style={s.infoBoxTxt}>
-          سيتم إرسال بيانات الدخول إلى البريد الإلكتروني فور الموافقة على الطلب
-        </Text>
-      </View>
     </View>
   );
 }
@@ -294,12 +288,6 @@ function Step4({ data, set }: { data: FormData; set: (d: Partial<FormData>) => v
         onChangeText={v => set({ stamp_info: v })}
         placeholder="رقم يظهر أسفل الوثائق الرسمية" />
 
-      <View style={s.infoBox}>
-        <Ionicons name="print-outline" size={18} color="#c9952a" />
-        <Text style={s.infoBoxTxt}>
-          ستُستخدم هذه البيانات في رأسية الأوراق المروّسة، الشهادات، تقارير الطلاب، وبطاقات الهوية
-        </Text>
-      </View>
     </View>
   );
 }

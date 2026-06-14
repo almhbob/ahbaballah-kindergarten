@@ -112,11 +112,6 @@ export default function TeacherCertificatesScreen() {
       {/* ── ISSUE TAB ── */}
       {tab === 'issue' && (
         <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
-          <View style={styles.infoBox}>
-            <Ionicons name="information-circle" size={18} color="#3B82F6" />
-            <Text style={styles.infoText}>يتطلب اعتماد الإدارة قبل إرسال الشهادة للطالب</Text>
-          </View>
-
           {/* Template picker */}
           <Text style={styles.sectionLabel}>نوع الشهادة</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
