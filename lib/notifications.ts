@@ -19,6 +19,7 @@ Notifications.setNotificationHandler({
 
 export async function registerForPushNotifications(): Promise<string | null> {
   if (Platform.OS === 'web') return null;
+  if (!Device.isDevice) return null;
 
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync('default', {
@@ -37,8 +38,6 @@ export async function registerForPushNotifications(): Promise<string | null> {
     finalStatus = status;
   }
   if (finalStatus !== 'granted') return null;
-
-  if (!Device.isDevice) return null;
 
   try {
     const token = (await Notifications.getExpoPushTokenAsync({ projectId: EAS_PROJECT_ID })).data;
@@ -86,10 +85,14 @@ export function usePushNotificationListener(
 ) {
   const receiveRef = useRef<Notifications.EventSubscription | null>(null);
   const responseRef = useRef<Notifications.EventSubscription | null>(null);
+  const onReceiveRef = useRef(onReceive);
+  const onResponseRef = useRef(onResponse);
+  onReceiveRef.current = onReceive;
+  onResponseRef.current = onResponse;
 
   useEffect(() => {
-    if (onReceive)  receiveRef.current  = Notifications.addNotificationReceivedListener(onReceive);
-    if (onResponse) responseRef.current = Notifications.addNotificationResponseReceivedListener(onResponse);
+    if (onReceive)  receiveRef.current  = Notifications.addNotificationReceivedListener(n => onReceiveRef.current?.(n));
+    if (onResponse) responseRef.current = Notifications.addNotificationResponseReceivedListener(r => onResponseRef.current?.(r));
     return () => { receiveRef.current?.remove(); responseRef.current?.remove(); };
   }, []);
 

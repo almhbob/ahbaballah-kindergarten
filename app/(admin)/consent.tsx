@@ -38,7 +38,11 @@ function ConsentFormModal({ editing, onClose }: { editing: ConsentRequest | null
     }));
 
     if (editing) {
-      updateConsentRequest(editing.id, { title: title.trim(), description: description.trim(), eventDate, targetLevel });
+      const existingMap = new Map(editing.responses.map(r => [r.studentId, r]));
+      const updatedResponses: ConsentResponse[] = targetStudents.map(s =>
+        existingMap.get(s.id) ?? { studentId: s.id, parentName: s.parentName, response: 'pending' },
+      );
+      updateConsentRequest(editing.id, { title: title.trim(), description: description.trim(), eventDate, targetLevel, responses: updatedResponses });
     } else {
       addConsentRequest({
         id: genId(),

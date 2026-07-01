@@ -78,11 +78,11 @@ function ConsentResponseModal({ request, studentId, parentName, onClose }: {
           />
 
           <View style={m.actionRow}>
-            <Pressable style={m.rejectBtn} onPress={() => handleRespond('rejected')}>
+            <Pressable style={m.rejectBtn} onPress={() => handleRespond('rejected')} disabled={loading}>
               <Ionicons name="close-circle" size={20} color={Colors.danger} />
               <Text style={m.rejectText}>رفض</Text>
             </Pressable>
-            <Pressable style={m.approveBtn} onPress={() => handleRespond('approved')}>
+            <Pressable style={m.approveBtn} onPress={() => handleRespond('approved')} disabled={loading}>
               <LinearGradient colors={[PARENT_COLOR, '#9B59B6']} style={m.approveBtnGrad}>
                 <Ionicons name="checkmark-circle" size={20} color="#fff" />
                 <Text style={m.approveText}>موافقة</Text>
