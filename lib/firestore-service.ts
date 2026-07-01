@@ -397,10 +397,12 @@ export async function fsSavePushToken(entry: PushTokenEntry): Promise<void> {
 export async function fsGetParentTokenForStudent(studentId: string): Promise<string | null> {
   if (!guard()) return null;
   try {
+    // Single-field where to avoid composite index requirement; filter role in JS
     const snap = await getDocs(
-      query(col('push_tokens'), where('linkedStudentId', '==', studentId), where('role', '==', 'parent'), limit(1)),
+      query(col('push_tokens'), where('linkedStudentId', '==', studentId)),
     );
-    return snap.empty ? null : (snap.docs[0].data() as PushTokenEntry).token;
+    const entry = snap.docs.map(d => d.data() as PushTokenEntry).find(e => e.role === 'parent');
+    return entry?.token ?? null;
   } catch {
     return null;
   }
