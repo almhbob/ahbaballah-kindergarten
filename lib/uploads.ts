@@ -1,16 +1,7 @@
 import { Platform, Alert } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { makeApiUrl, getApiOrigin } from '@/lib/query-client';
-
-export type UploadedFile = {
-  id: number;
-  file_name: string;
-  file_path: string;
-  mime_type: string;
-  size_bytes: number;
-  public_url: string;
-  created_at: string;
-};
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { getFirebaseStorage } from './firebase';
 
 function guessMime(uri: string): string {
   const ext = uri.split('.').pop()?.toLowerCase().split('?')[0] || '';
@@ -25,62 +16,33 @@ function guessMime(uri: string): string {
   return 'application/octet-stream';
 }
 
-function fileNameFromUri(uri: string, fallback = 'file'): string {
-  try {
-    const clean = uri.split('?')[0];
-    const last = clean.split('/').pop();
-    if (last && last.length > 0) return last;
-  } catch {}
-  return fallback;
-}
-
-async function dataUrlToBlob(dataUrl: string): Promise<Blob> {
-  const res = await fetch(dataUrl);
-  return await res.blob();
+async function uriToBlob(uri: string): Promise<Blob> {
+  if (Platform.OS === 'web') {
+    if (uri.startsWith('data:') || uri.startsWith('blob:') || uri.startsWith('http')) {
+      const r = await fetch(uri);
+      return r.blob();
+    }
+    throw new Error('Unsupported URI scheme on web');
+  }
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.onload = () => resolve(xhr.response);
+    xhr.onerror = () => reject(new Error('Failed to convert URI to blob'));
+    xhr.responseType = 'blob';
+    xhr.open('GET', uri, true);
+    xhr.send(null);
+  });
 }
 
 export async function uploadFile(uri: string, opts?: { name?: string; mime?: string }): Promise<string> {
   if (!uri) throw new Error('لا يوجد ملف للرفع');
-
-  const endpoint = makeApiUrl('/api/files/upload');
-
-  const form = new FormData();
-
-  if (Platform.OS === 'web') {
-    let blob: Blob;
-    if (uri.startsWith('data:')) {
-      blob = await dataUrlToBlob(uri);
-    } else if (uri.startsWith('blob:') || uri.startsWith('http')) {
-      const r = await fetch(uri);
-      blob = await r.blob();
-    } else {
-      return uri;
-    }
-    const name = opts?.name || `upload_${Date.now()}.${(blob.type.split('/')[1] || 'bin').split(';')[0]}`;
-    form.append('file', blob, name);
-  } else {
-    const name = opts?.name || fileNameFromUri(uri, `upload_${Date.now()}.jpg`);
-    const type = opts?.mime || guessMime(uri);
-    // @ts-expect-error RN FormData accepts this object shape
-    form.append('file', { uri, name, type });
-  }
-
-  const res = await fetch(endpoint, {
-    method: 'POST',
-    body: form,
-    credentials: 'include',
-  });
-
-  let json: any;
-  try { json = await res.json(); } catch { json = null; }
-
-  if (!res.ok || !json?.ok) {
-    throw new Error(json?.error || `فشل رفع الملف (HTTP ${res.status})`);
-  }
-
-  const file: UploadedFile = json.file;
-  if (file.public_url.startsWith('http')) return file.public_url;
-  return new URL(file.public_url, getApiOrigin()).toString();
+  const storage = getFirebaseStorage();
+  const blob = await uriToBlob(uri);
+  const name = opts?.name || `upload_${Date.now()}.jpg`;
+  const contentType = opts?.mime || guessMime(uri);
+  const storageRef = ref(storage, `uploads/${name}`);
+  const snapshot = await uploadBytes(storageRef, blob, { contentType });
+  return getDownloadURL(snapshot.ref);
 }
 
 export async function uploadMany(uris: string[]): Promise<string[]> {
