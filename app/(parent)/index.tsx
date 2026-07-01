@@ -12,7 +12,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useAppData, buildHonorBoard } from '@/contexts/AppDataContext';
 import HexFrame from '@/components/HexFrame';
 import * as Haptics from 'expo-haptics';
-import { getApiUrl } from '@/lib/query-client';
+import { fsAddReview } from '@/lib/firestore-service';
 
 const PARENT_COLOR = '#7B3FA0';
 
@@ -54,18 +54,13 @@ export default function ParentHomeScreen() {
     if (!reviewText.trim()) { Alert.alert('تنبيه', 'الرجاء كتابة رأيك أولاً'); return; }
     setSubmitting(true);
     try {
-      const url = new URL('/api/reviews', getApiUrl());
-      const res = await fetch(url.toString(), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          parentName: user?.name ?? 'ولي أمر',
-          childName:  child?.name ?? '',
-          content:    reviewText.trim(),
-          rating:     reviewRating,
-        }),
+      await fsAddReview({
+        id: Date.now().toString(36) + Math.random().toString(36).substr(2, 5),
+        parentName: user?.name ?? 'ولي أمر',
+        childName:  child?.name ?? '',
+        content:    reviewText.trim(),
+        rating:     reviewRating,
       });
-      if (!res.ok) throw new Error('failed');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setSubmitted(true);
     } catch {

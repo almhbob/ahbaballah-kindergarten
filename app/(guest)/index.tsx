@@ -13,7 +13,7 @@ import { useAppData, RegistrationRequest } from '@/contexts/AppDataContext';
 import { useAuth } from '@/contexts/AuthContext';
 import HexFrame from '@/components/HexFrame';
 import * as Haptics from 'expo-haptics';
-import { getApiUrl } from '@/lib/query-client';
+import { fsGetReviews } from '@/lib/firestore-service';
 
 const { width: W } = Dimensions.get('window');
 
@@ -410,13 +410,8 @@ export default function GuestHomeScreen() {
   const [showRegForm, setShowRegForm] = useState(false);
 
   const { data: liveReviews } = useQuery<{ id: string; parentName: string; childName: string; content: string; rating: number }[]>({
-    queryKey: ['/api/reviews'],
-    queryFn: async () => {
-      const url = new URL('/api/reviews', getApiUrl());
-      const res = await fetch(url.toString());
-      if (!res.ok) throw new Error('failed');
-      return res.json();
-    },
+    queryKey: ['firestore/reviews'],
+    queryFn: () => fsGetReviews(),
     staleTime: 60_000,
   });
 

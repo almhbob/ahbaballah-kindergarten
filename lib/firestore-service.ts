@@ -308,3 +308,29 @@ export async function fsBulkUploadEmployees(employees: Employee[]) {
   });
   await batch.commit();
 }
+
+// ─── Reviews ─────────────────────────────────────────────────────────────────
+
+export interface Review {
+  id: string;
+  parentName: string;
+  childName: string;
+  content: string;
+  rating: number;
+  createdAt: ReturnType<typeof serverTimestamp>;
+}
+
+export async function fsAddReview(review: Omit<Review, 'createdAt'>): Promise<void> {
+  if (!guard()) return;
+  await setDoc(docRef('reviews', review.id), { ...review, createdAt: serverTimestamp() });
+}
+
+export async function fsGetReviews(): Promise<Omit<Review, 'createdAt'>[]> {
+  if (!guard()) return [];
+  try {
+    const snap = await getDocs(query(col('reviews'), orderBy('createdAt', 'desc'), limit(20)));
+    return snap.docs.map(d => d.data() as Omit<Review, 'createdAt'>);
+  } catch {
+    return [];
+  }
+}
