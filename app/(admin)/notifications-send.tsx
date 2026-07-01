@@ -11,7 +11,7 @@ import * as Haptics from 'expo-haptics';
 import { Colors } from '@/constants/colors';
 import { useAppData } from '@/contexts/AppDataContext';
 import { sendLocalNotificationNow } from '@/lib/notifications';
-import { getAllTokensByRole, broadcastToAll } from '@/lib/push-service';
+import { getAllTokensByRole, getParentTokenForStudent, broadcastToAll } from '@/lib/push-service';
 
 type Audience = 'all' | 'parents' | 'teachers' | 'level_براعم' | 'level_مستوى أول' | 'level_مستوى ثاني';
 type NotifType = 'general' | 'exam' | 'event' | 'urgent' | 'financial';
@@ -85,7 +85,11 @@ export default function NotificationsSendScreen() {
         tokens.push(...await getAllTokensByRole('teacher'));
       }
       if (audience.startsWith('level_')) {
-        tokens.push(...await getAllTokensByRole('parent'));
+        const level = audience.replace('level_', '');
+        const levelTokens = await Promise.all(
+          students.filter(s => s.level === level).map(s => getParentTokenForStudent(s.id)),
+        );
+        tokens.push(...(levelTokens.filter(Boolean) as string[]));
       }
 
       if (tokens.length > 0) {
