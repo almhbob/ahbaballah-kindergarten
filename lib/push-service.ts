@@ -1,9 +1,9 @@
-import { getApiUrl } from '@/lib/query-client';
 import { getSavedPushToken, registerForPushNotifications } from '@/lib/notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 
 const TOKEN_REGISTRY_KEY = 'push_token_registry';
+const EXPO_PUSH_URL = 'https://exp.host/--/api/v2/push/send';
 
 interface TokenEntry {
   token: string;
@@ -78,24 +78,17 @@ export async function getAllTokensByRole(role: 'admin' | 'teacher' | 'parent'): 
   }
 }
 
-async function callPushApi(endpoint: string, body: object): Promise<boolean> {
-  if (Platform.OS === 'web') {
-    console.log(`[PushService] Push skipped on web: ${endpoint}`, body);
-    return false;
-  }
+async function sendExpoPush(messages: Array<{ to: string; title: string; body: string; data?: Record<string, unknown> }>): Promise<boolean> {
+  if (Platform.OS === 'web' || messages.length === 0) return false;
   try {
-    const apiUrl = getApiUrl();
-    const url = new URL(`/api/push/${endpoint}`, `https://${apiUrl}`);
-    const res = await fetch(url.toString(), {
+    const res = await fetch(EXPO_PUSH_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify(messages),
     });
-    const data = await res.json();
-    console.log(`[PushService] /${endpoint}:`, data);
     return res.ok;
   } catch (err) {
-    console.warn(`[PushService] /${endpoint} error:`, err);
+    console.warn('[PushService] sendExpoPush error:', err);
     return false;
   }
 }
@@ -107,11 +100,7 @@ export async function notifyDailyReport(params: {
 }): Promise<void> {
   const token = await getParentTokenForStudent(params.studentId);
   if (!token) return;
-  await callPushApi('daily-report', {
-    parentToken: token,
-    studentName: params.studentName,
-    mood: params.mood,
-  });
+  await sendExpoPush([{ to: token, title: 'تقرير يومي', body: `${params.studentName}: ${params.mood}` }]);
 }
 
 export async function notifyAttendanceAlert(params: {
@@ -121,11 +110,7 @@ export async function notifyAttendanceAlert(params: {
 }): Promise<void> {
   const token = await getParentTokenForStudent(params.studentId);
   if (!token) return;
-  await callPushApi('attendance-alert', {
-    parentToken: token,
-    studentName: params.studentName,
-    attendance: params.attendance,
-  });
+  await sendExpoPush([{ to: token, title: 'تنبيه الحضور', body: `${params.studentName} – نسبة الحضور ${params.attendance}%` }]);
 }
 
 export async function notifyPaymentReminder(params: {
@@ -136,12 +121,7 @@ export async function notifyPaymentReminder(params: {
 }): Promise<void> {
   const token = await getParentTokenForStudent(params.studentId);
   if (!token) return;
-  await callPushApi('payment-reminder', {
-    parentToken: token,
-    studentName: params.studentName,
-    remaining: params.remaining,
-    totalFees: params.totalFees,
-  });
+  await sendExpoPush([{ to: token, title: 'تذكير بالرسوم', body: `${params.studentName} – المتبقي ${params.remaining} ر.س` }]);
 }
 
 export async function broadcastToAll(params: {
@@ -152,7 +132,7 @@ export async function broadcastToAll(params: {
   data?: Record<string, unknown>;
 }): Promise<void> {
   if (params.tokens.length === 0) return;
-  await callPushApi('broadcast', params);
+  await sendExpoPush(params.tokens.map(to => ({ to, title: params.title, body: params.body, data: params.data })));
 }
 
 export async function sendToTokens(params: {
@@ -162,5 +142,5 @@ export async function sendToTokens(params: {
   data?: Record<string, unknown>;
 }): Promise<void> {
   if (params.tokens.length === 0) return;
-  await callPushApi('send', params);
+  await sendExpoPush(params.tokens.map(to => ({ to, title: params.title, body: params.body, data: params.data })));
 }
