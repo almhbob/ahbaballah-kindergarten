@@ -15,7 +15,6 @@
       "android": { "buildType": "apk" },
       "channel": "preview",
       "env": {
-        "EXPO_PUBLIC_DOMAIN": "2da91909-13d4-406a-9a2d-d1b8d967dac8-00-3nkqebbufimgh.pike.replit.dev",
         "EXPO_PUBLIC_FIREBASE_API_KEY": "AIzaSyDtkSHPV0MzTQZcvjjaLRJaz7JWrrPRbUw",
         "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN": "ahbabullah-e85a6.firebaseapp.com",
         "EXPO_PUBLIC_FIREBASE_PROJECT_ID": "ahbabullah-e85a6",
@@ -32,7 +31,6 @@
       },
       "channel": "production",
       "env": {
-        "EXPO_PUBLIC_DOMAIN": "2da91909-13d4-406a-9a2d-d1b8d967dac8-00-3nkqebbufimgh.pike.replit.dev",
         "EXPO_PUBLIC_FIREBASE_API_KEY": "AIzaSyDtkSHPV0MzTQZcvjjaLRJaz7JWrrPRbUw",
         "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN": "ahbabullah-e85a6.firebaseapp.com",
         "EXPO_PUBLIC_FIREBASE_PROJECT_ID": "ahbabullah-e85a6",
@@ -49,7 +47,6 @@
       },
       "channel": "production",
       "env": {
-        "EXPO_PUBLIC_DOMAIN": "2da91909-13d4-406a-9a2d-d1b8d967dac8-00-3nkqebbufimgh.pike.replit.dev",
         "EXPO_PUBLIC_FIREBASE_API_KEY": "AIzaSyDtkSHPV0MzTQZcvjjaLRJaz7JWrrPRbUw",
         "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN": "ahbabullah-e85a6.firebaseapp.com",
         "EXPO_PUBLIC_FIREBASE_PROJECT_ID": "ahbabullah-e85a6",
@@ -67,7 +64,6 @@
       },
       "channel": "production",
       "env": {
-        "EXPO_PUBLIC_DOMAIN": "2da91909-13d4-406a-9a2d-d1b8d967dac8-00-3nkqebbufimgh.pike.replit.dev",
         "EXPO_PUBLIC_FIREBASE_API_KEY": "AIzaSyDtkSHPV0MzTQZcvjjaLRJaz7JWrrPRbUw",
         "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN": "ahbabullah-e85a6.firebaseapp.com",
         "EXPO_PUBLIC_FIREBASE_PROJECT_ID": "ahbabullah-e85a6",
