@@ -20,7 +20,7 @@
 
 1️⃣ فعّل "مصادر غير معروفة" من إعدادات هاتفك
 2️⃣ حمّل التطبيق من الرابط المباشر:
-https://expo.dev/artifacts/eas/hPB9vaHFVJ_tZMPVkRDEh7eTHnaBYVZ5v1kow_TfFLo.apk
+https://expo.dev/artifacts/eas/NfjUQ4xKdQQVBnmBnrJZm7alxnqnDzgr4uE1p2Skalo.apk
 3️⃣ ثبّت ملف APK وافتح التطبيق
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━
