@@ -1,17 +1,15 @@
-import { getSavedPushToken, registerForPushNotifications } from '@/lib/notifications';
+import { registerForPushNotifications } from '@/lib/notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
+import {
+  fsSavePushToken,
+  fsGetParentTokenForStudent,
+  fsGetAllTokensByRole,
+  type PushTokenEntry,
+} from '@/lib/firestore-service';
 
 const TOKEN_REGISTRY_KEY = 'push_token_registry';
 const EXPO_PUSH_URL = 'https://exp.host/--/api/v2/push/send';
-
-interface TokenEntry {
-  token: string;
-  userId: string;
-  role: 'admin' | 'teacher' | 'parent';
-  linkedStudentId?: string;
-  registeredAt: string;
-}
 
 export async function registerAndSaveToken(
   userId: string,
@@ -22,7 +20,7 @@ export async function registerAndSaveToken(
     const token = await registerForPushNotifications();
     if (!token) return null;
 
-    const entry: TokenEntry = {
+    const entry: PushTokenEntry = {
       token,
       userId,
       role,
@@ -30,11 +28,15 @@ export async function registerAndSaveToken(
       registeredAt: new Date().toISOString(),
     };
 
+    // Persist locally for fast offline access
     const raw = await AsyncStorage.getItem(TOKEN_REGISTRY_KEY);
-    const registry: TokenEntry[] = raw ? JSON.parse(raw) : [];
+    const registry: PushTokenEntry[] = raw ? JSON.parse(raw) : [];
     const filtered = registry.filter(e => e.userId !== userId);
     filtered.push(entry);
     await AsyncStorage.setItem(TOKEN_REGISTRY_KEY, JSON.stringify(filtered));
+
+    // Sync to Firestore so other devices (admin) can look up tokens
+    fsSavePushToken(entry).catch(() => {});
 
     return token;
   } catch (err) {
@@ -47,7 +49,7 @@ export async function getTokenForUser(userId: string): Promise<string | null> {
   try {
     const raw = await AsyncStorage.getItem(TOKEN_REGISTRY_KEY);
     if (!raw) return null;
-    const registry: TokenEntry[] = JSON.parse(raw);
+    const registry: PushTokenEntry[] = JSON.parse(raw);
     const entry = registry.find(e => e.userId === userId);
     return entry?.token || null;
   } catch {
@@ -56,10 +58,14 @@ export async function getTokenForUser(userId: string): Promise<string | null> {
 }
 
 export async function getParentTokenForStudent(studentId: string): Promise<string | null> {
+  // Check Firestore first (cross-device), fall back to local AsyncStorage
+  const firestoreToken = await fsGetParentTokenForStudent(studentId);
+  if (firestoreToken) return firestoreToken;
+
   try {
     const raw = await AsyncStorage.getItem(TOKEN_REGISTRY_KEY);
     if (!raw) return null;
-    const registry: TokenEntry[] = JSON.parse(raw);
+    const registry: PushTokenEntry[] = JSON.parse(raw);
     const entry = registry.find(e => e.linkedStudentId === studentId && e.role === 'parent');
     return entry?.token || null;
   } catch {
@@ -68,10 +74,14 @@ export async function getParentTokenForStudent(studentId: string): Promise<strin
 }
 
 export async function getAllTokensByRole(role: 'admin' | 'teacher' | 'parent'): Promise<string[]> {
+  // Check Firestore first (cross-device), fall back to local AsyncStorage
+  const firestoreTokens = await fsGetAllTokensByRole(role);
+  if (firestoreTokens.length > 0) return firestoreTokens;
+
   try {
     const raw = await AsyncStorage.getItem(TOKEN_REGISTRY_KEY);
     if (!raw) return [];
-    const registry: TokenEntry[] = JSON.parse(raw);
+    const registry: PushTokenEntry[] = JSON.parse(raw);
     return registry.filter(e => e.role === role).map(e => e.token);
   } catch {
     return [];

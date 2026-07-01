@@ -378,3 +378,40 @@ export async function fsDeleteSchoolRequest(id: string): Promise<void> {
   if (!guard()) return;
   await deleteDoc(schoolRequestDoc(id));
 }
+
+// ─── Push Tokens ─────────────────────────────────────────────────────────────
+
+export interface PushTokenEntry {
+  token: string;
+  userId: string;
+  role: 'admin' | 'teacher' | 'parent';
+  linkedStudentId?: string;
+  registeredAt: string;
+}
+
+export async function fsSavePushToken(entry: PushTokenEntry): Promise<void> {
+  if (!guard()) return;
+  await setDoc(docRef('push_tokens', entry.userId), { ...entry, updatedAt: serverTimestamp() });
+}
+
+export async function fsGetParentTokenForStudent(studentId: string): Promise<string | null> {
+  if (!guard()) return null;
+  try {
+    const snap = await getDocs(
+      query(col('push_tokens'), where('linkedStudentId', '==', studentId), where('role', '==', 'parent'), limit(1)),
+    );
+    return snap.empty ? null : (snap.docs[0].data() as PushTokenEntry).token;
+  } catch {
+    return null;
+  }
+}
+
+export async function fsGetAllTokensByRole(role: 'admin' | 'teacher' | 'parent'): Promise<string[]> {
+  if (!guard()) return [];
+  try {
+    const snap = await getDocs(query(col('push_tokens'), where('role', '==', role)));
+    return snap.docs.map(d => (d.data() as PushTokenEntry).token).filter(Boolean);
+  } catch {
+    return [];
+  }
+}
