@@ -92,7 +92,8 @@ export default function SettingsScreen() {
   };
 
   const handleChangePassword = () => {
-    const current = appSettings?.adminPassword ?? '1234';
+    if (!appSettings) { Alert.alert('تنبيه', 'جارٍ تحميل الإعدادات، حاول مجدداً'); return; }
+    const current = appSettings.adminPassword ?? '1234';
     if (oldPass !== current) { Alert.alert('خطأ', 'كلمة المرور الحالية غير صحيحة'); return; }
     if (newPass.length < 4)   { Alert.alert('تنبيه', 'كلمة المرور الجديدة 4 أحرف على الأقل'); return; }
     if (newPass !== confirmPass) { Alert.alert('تنبيه', 'كلمة المرور الجديدة غير متطابقة'); return; }

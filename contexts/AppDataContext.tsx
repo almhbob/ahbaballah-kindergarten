@@ -1410,14 +1410,18 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   };
 
   const addExpense = (e: Expense) => {
-    const updated = [e, ...expenses];
-    setExpenses(updated);
-    saveState('app_expenses', updated);
+    setExpenses(prev => {
+      const updated = [e, ...prev];
+      saveState('app_expenses', updated);
+      return updated;
+    });
   };
   const removeExpense = (id: string) => {
-    const updated = expenses.filter(e => e.id !== id);
-    setExpenses(updated);
-    saveState('app_expenses', updated);
+    setExpenses(prev => {
+      const updated = prev.filter(ex => ex.id !== id);
+      saveState('app_expenses', updated);
+      return updated;
+    });
   };
 
   const addConsentRequest = (r: ConsentRequest) => {

@@ -247,7 +247,7 @@ export default function FinanceScreen() {
                 </View>
               ))}
             </>
-          ) : (
+          ) : activeTab === 'payroll' ? (
             <>
               <View style={styles.payrollSummary}>
                 <Text style={styles.payrollSummaryLabel}>إجمالي رواتب هذا الشهر</Text>
@@ -285,7 +285,7 @@ export default function FinanceScreen() {
                 );
               })}
             </>
-          )}
+          ) : null}
           {activeTab === 'expenses' && (
             <>
               <View style={[styles.payrollSummary, { borderRightColor: Colors.danger }]}>

@@ -104,7 +104,7 @@ export default function ConsentsScreen() {
 
   const [responding, setResponding] = useState<ConsentRequest | null>(null);
 
-  const child = students.find(s => s.id === user?.studentId) || students[0] || null;
+  const child = user?.studentId ? (students.find(s => s.id === user.studentId) ?? null) : null;
 
   const myRequests = useMemo(() => {
     if (!child) return [];

@@ -312,8 +312,8 @@ export default function RegistrationsScreen() {
   }), [registrationRequests]);
 
   const handleApprove = (id: string) => {
-    updateRegistrationRequest(id, { status: 'approved', approvedAt: new Date().toISOString() });
     const req = registrationRequests.find(r => r.id === id);
+    updateRegistrationRequest(id, { status: 'approved', approvedAt: new Date().toISOString() });
     if (req) {
       const alreadyExists = students.some(
         s => s.name === req.childName && s.parentPhone === req.parentPhone

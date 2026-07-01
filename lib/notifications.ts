@@ -62,7 +62,7 @@ export async function scheduleLocalNotification(
   try {
     await Notifications.scheduleNotificationAsync({
       content: { title, body, sound: 'default', priority: Notifications.AndroidNotificationPriority.HIGH },
-      trigger: delaySeconds > 1
+      trigger: delaySeconds >= 1
         ? { type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL, seconds: delaySeconds }
         : null,
     });
