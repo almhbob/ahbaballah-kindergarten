@@ -27,11 +27,11 @@ const INSTALLMENTS = [
 export default function FeesScreen() {
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
-  const { students } = useAppData();
+  const { students, schoolInfo } = useAppData();
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
   const bottomPadding = Platform.OS === 'web' ? 34 : insets.bottom + 90;
 
-  const child = students.find(s => s.id === user?.studentId) || students[0];
+  const child = user?.studentId ? (students.find(s => s.id === user.studentId) ?? null) : null;
   if (!child) return null;
 
   const totalFees = LEVEL_FEES[child.level] ?? 10000;
@@ -113,9 +113,9 @@ export default function FeesScreen() {
 
         <Text style={s.sectionTitle}>طرق السداد</Text>
         {[
-          { icon: 'bank', label: 'تحويل بنكي', detail: 'بنك الخرطوم — رقم الحساب: 1234-5678-9012', color: '#1D4ED8' },
+          { icon: 'bank', label: 'تحويل بنكي', detail: 'بنك الخرطوم — تواصل مع الإدارة للحصول على رقم الحساب', color: '#1D4ED8' },
           { icon: 'cash', label: 'دفع نقدي', detail: 'في مكتب المديرة — من الأحد إلى الخميس 8ص–2م', color: Colors.success },
-          { icon: 'cellphone', label: 'محفظة إلكترونية', detail: 'Zain Cash / MTN Money — 0912345678', color: '#8B5CF6' },
+          { icon: 'cellphone', label: 'محفظة إلكترونية', detail: `Zain Cash / MTN Money — ${schoolInfo?.phone ?? 'تواصل مع الإدارة'}`, color: '#8B5CF6' },
         ].map((method, i) => (
           <View key={i} style={s.methodCard}>
             <View style={[s.methodIcon, { backgroundColor: method.color + '18' }]}>
