@@ -19,7 +19,7 @@ export default function ReportScreen() {
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
   const bottomPadding = Platform.OS === 'web' ? 34 : insets.bottom + 90;
 
-  const child = students.find(s => s.id === user?.studentId) || students[0];
+  const child = user?.studentId ? (students.find(s => s.id === user.studentId) ?? null) : null;
   if (!child) return null;
 
   return (

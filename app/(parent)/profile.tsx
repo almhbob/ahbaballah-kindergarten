@@ -88,7 +88,7 @@ export default function ChildProfileScreen() {
 
   const [showEdit, setShowEdit] = useState(false);
 
-  const child = students.find(s => s.id === user?.studentId) || students[0] || null;
+  const child = user?.studentId ? (students.find(s => s.id === user.studentId) ?? null) : null;
 
   const avgGrade = useMemo(() => {
     if (!child?.grades?.length) return 0;
