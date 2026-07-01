@@ -334,3 +334,47 @@ export async function fsGetReviews(): Promise<Omit<Review, 'createdAt'>[]> {
     return [];
   }
 }
+
+// ─── School Requests (top-level, not per-school) ─────────────────────────────
+
+export interface SchoolRequest {
+  id: string;
+  status: 'pending' | 'contacted' | 'approved' | 'rejected';
+  notes?: string;
+  reviewed_by?: string;
+  [key: string]: unknown;
+}
+
+function schoolRequestsCol() {
+  return collection(getDb(), 'school_requests');
+}
+function schoolRequestDoc(id: string) {
+  return doc(getDb(), 'school_requests', id);
+}
+
+export async function fsAddSchoolRequest(data: Record<string, unknown>): Promise<string> {
+  if (!guard()) throw new Error('Firebase not ready');
+  const id = Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+  await setDoc(schoolRequestDoc(id), { ...data, id, status: 'pending', createdAt: serverTimestamp() });
+  return id;
+}
+
+export async function fsGetSchoolRequests(): Promise<SchoolRequest[]> {
+  if (!guard()) return [];
+  try {
+    const snap = await getDocs(query(schoolRequestsCol(), orderBy('createdAt', 'desc')));
+    return snap.docs.map(d => d.data() as SchoolRequest);
+  } catch {
+    return [];
+  }
+}
+
+export async function fsUpdateSchoolRequest(id: string, data: Partial<SchoolRequest>): Promise<void> {
+  if (!guard()) return;
+  await updateDoc(schoolRequestDoc(id), { ...data, updatedAt: serverTimestamp() });
+}
+
+export async function fsDeleteSchoolRequest(id: string): Promise<void> {
+  if (!guard()) return;
+  await deleteDoc(schoolRequestDoc(id));
+}

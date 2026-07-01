@@ -15,7 +15,7 @@ import * as Haptics from 'expo-haptics';
 import * as Clipboard from 'expo-clipboard';
 import { SUBSCRIPTION_TIERS, TIER_ORDER, getTierById, checkCapacity, capacityColor, SubscriptionTier } from '@/lib/subscription-tiers';
 import { createSchoolAdminAccount } from '@/lib/school-auth';
-import { getApiUrl } from '@/lib/query-client';
+import { fsGetSchoolRequests, fsUpdateSchoolRequest, fsDeleteSchoolRequest } from '@/lib/firestore-service';
 
 function genId() {
   return Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
@@ -582,7 +582,7 @@ export default function DeveloperScreen() {
 
   // ── School Requests state ──
   interface SchoolRequest {
-    id: number; school_name: string; school_type: string; city: string;
+    id: string; school_name: string; school_type: string; city: string;
     address: string; license_number: string; admin_name: string;
     admin_phone: string; admin_email: string; logo_url: string;
     primary_color: string; accent_color: string; slogan: string;
@@ -600,11 +600,8 @@ export default function DeveloperScreen() {
   const fetchSchoolRequests = async () => {
     setRequestsLoading(true);
     try {
-      const base = getApiUrl();
-      const url  = new URL('/api/school-requests', `https://${base}`).toString();
-      const res  = await fetch(url);
-      const json = await res.json();
-      if (json.ok) setSchoolRequests(json.data ?? []);
+      const data = await fsGetSchoolRequests();
+      setSchoolRequests(data as unknown as SchoolRequest[]);
     } catch (e) {
       console.warn('[developer] fetchSchoolRequests error', e);
     } finally {
@@ -612,15 +609,9 @@ export default function DeveloperScreen() {
     }
   };
 
-  const updateRequestStatus = async (id: number, status: string, notes?: string) => {
+  const updateRequestStatus = async (id: string, status: string, notes?: string) => {
     try {
-      const base = getApiUrl();
-      const url  = new URL(`/api/school-requests/${id}`, `https://${base}`).toString();
-      await fetch(url, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status, notes, reviewed_by: 'developer' }),
-      });
+      await fsUpdateSchoolRequest(id, { status: status as 'pending' | 'contacted' | 'approved' | 'rejected', notes, reviewed_by: 'developer' });
       await fetchSchoolRequests();
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (e) {
@@ -628,13 +619,11 @@ export default function DeveloperScreen() {
     }
   };
 
-  const deleteRequest = async (id: number) => {
+  const deleteRequest = async (id: string) => {
     Alert.alert('تأكيد', 'حذف الطلب نهائياً؟', [
       { text: 'إلغاء', style: 'cancel' },
       { text: 'حذف', style: 'destructive', onPress: async () => {
-        const base = getApiUrl();
-        const url  = new URL(`/api/school-requests/${id}`, `https://${base}`).toString();
-        await fetch(url, { method: 'DELETE' });
+        await fsDeleteSchoolRequest(id);
         await fetchSchoolRequests();
       }},
     ]);
@@ -701,21 +690,15 @@ export default function DeveloperScreen() {
               authOk = authRes.ok;
             }
 
-            // 6. Persist provisioning data in DB
-            const base = getApiUrl();
-            const url  = new URL(`/api/school-requests/${req.id}`, `https://${base}`).toString();
-            await fetch(url, {
-              method: 'PATCH',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                status:             'approved',
-                notes:              `تم التفعيل. معرّف الروضة: ${schoolId}. ${req.notes ?? ''}`.trim(),
-                reviewed_by:        'developer',
-                subscription_start: startDate,
-                subscription_end:   endDate,
-                approved_school_id: schoolId,
-                initial_password:   initialPassword,
-              }),
+            // 6. Persist provisioning data in Firestore
+            await fsUpdateSchoolRequest(req.id, {
+              status:             'approved',
+              notes:              `تم التفعيل. معرّف الروضة: ${schoolId}. ${req.notes ?? ''}`.trim(),
+              reviewed_by:        'developer',
+              subscription_start: startDate,
+              subscription_end:   endDate,
+              approved_school_id: schoolId,
+              initial_password:   initialPassword,
             });
 
             // 7. Refresh requests list
