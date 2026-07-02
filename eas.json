@@ -78,8 +78,8 @@
     "play-store": {
       "android": {
         "serviceAccountKeyPath": "./google-play-key.json",
-        "track": "internal",
-        "releaseStatus": "draft"
+        "track": "alpha",
+        "releaseStatus": "completed"
       }
     }
   }
