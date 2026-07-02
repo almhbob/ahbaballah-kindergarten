@@ -19,7 +19,7 @@
     },
     "android": {
       "package": "com.ahbaballah.kindergarten",
-      "versionCode": 2,
+      "versionCode": 3,
       "adaptiveIcon": {
         "backgroundColor": "#0F2B4E",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
