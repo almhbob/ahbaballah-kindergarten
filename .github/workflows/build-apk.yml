@@ -5,34 +5,88 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
-      
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          
+          cache: npm
+
       - name: Install dependencies
         run: npm ci
-        
+
       - name: Install EAS CLI
-        run: npm install -g eas-cli
-        
-      - name: Build APK via EAS
-        env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN2 }}
-        run: eas build --platform android --profile apk --non-interactive --wait
-        
-      - name: Download and upload APK artifact
+        run: npm install -g eas-cli@latest
+
+      - name: Build APK via EAS (submit and wait)
+        id: eas_build
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN2 }}
         run: |
-          URL=$(eas build:list --platform android --limit 1 --json --non-interactive | python3 -c "import sys,json; builds=json.load(sys.stdin); print(builds[0]['artifacts']['buildUrl'])")
-          curl -L "$URL" -o app-release.apk
-          echo "APK downloaded"
-          
-      - name: Upload APK
+          BUILD_OUTPUT=$(eas build \
+            --platform android \
+            --profile apk \
+            --non-interactive \
+            --wait \
+            --json 2>/dev/null || \
+          eas build \
+            --platform android \
+            --profile apk \
+            --non-interactive \
+            --wait 2>&1)
+          echo "$BUILD_OUTPUT"
+          # Extract URL from JSON if possible
+          APK_URL=$(echo "$BUILD_OUTPUT" | python3 -c "
+import sys, json
+data = sys.stdin.read()
+# Try to parse as JSON array
+try:
+    builds = json.loads(data)
+    if isinstance(builds, list) and builds:
+        print(builds[0].get('artifacts', {}).get('buildUrl', ''))
+    elif isinstance(builds, dict):
+        print(builds.get('artifacts', {}).get('buildUrl', ''))
+except:
+    pass
+" 2>/dev/null || true)
+          echo "APK_URL=$APK_URL" >> $GITHUB_OUTPUT
+
+      - name: Download APK from EAS
+        if: steps.eas_build.outputs.APK_URL != ''
+        run: |
+          curl -L "${{ steps.eas_build.outputs.APK_URL }}" -o app-release.apk
+          ls -lh app-release.apk
+
+      - name: Fetch latest build URL if needed
+        if: steps.eas_build.outputs.APK_URL == ''
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN2 }}
+        run: |
+          sleep 10
+          URL=$(eas build:list \
+            --platform android \
+            --limit 1 \
+            --json \
+            --non-interactive 2>/dev/null | \
+          python3 -c "
+import sys, json
+builds = json.load(sys.stdin)
+if builds:
+    print(builds[0].get('artifacts', {}).get('buildUrl', ''))
+")
+          if [ -n "$URL" ]; then
+            curl -L "$URL" -o app-release.apk
+            ls -lh app-release.apk
+          else
+            echo "Could not find APK URL"
+            exit 1
+          fi
+
+      - name: Upload APK as artifact
         uses: actions/upload-artifact@v4
         with:
-          name: app-release
+          name: ahbaballah-apk
           path: app-release.apk
+          retention-days: 30
