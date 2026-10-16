@@ -25,7 +25,7 @@ on:
         type: boolean
 
 env:
-  EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+  EXPO_TOKEN: ${{ secrets.EXPO_TOKEN2 }}
 
 jobs:
   validate:
@@ -68,21 +68,71 @@ jobs:
       - name: Install dependencies
         run: npm ci --legacy-peer-deps
 
-      - name: Setup EAS
-        uses: expo/expo-github-action@v8
-        with:
-          eas-version: latest
-          token: ${{ secrets.EXPO_TOKEN }}
+      - name: Install EAS CLI
+        run: npm install -g eas-cli@latest
+
+      - name: Verify EAS Auth
+        run: eas whoami
 
       - name: Build APK and wait for result
-        run: eas build --platform android --profile ${{ github.event.inputs.profile || 'apk' }} --non-interactive
+        run: |
+          eas build \
+            --platform android \
+            --profile ${{ github.event.inputs.profile || 'apk' }} \
+            --non-interactive \
+            --wait \
+            --json 2>/dev/null | python3 -c "
+          import sys, json
+          builds = json.loads(sys.stdin.read())
+          b = builds[0] if isinstance(builds, list) else builds
+          url = b.get('artifacts', {}).get('buildUrl', '')
+          if url:
+              print(f'✅ APK URL: {url}')
+          else:
+              print('Build submitted - check expo.dev for download')
+          " 2>/dev/null || \
+          eas build \
+            --platform android \
+            --profile ${{ github.event.inputs.profile || 'apk' }} \
+            --non-interactive \
+            --wait
+
+      - name: Download and upload APK artifact
+        id: download_apk
+        run: |
+          APK_URL=$(eas build:list \
+            --platform android \
+            --limit 1 \
+            --json \
+            --non-interactive 2>/dev/null | \
+          python3 -c "
+          import sys, json
+          builds = json.loads(sys.stdin.read())
+          if builds:
+              url = builds[0].get('artifacts', {}).get('buildUrl', '')
+              if url: print(url)
+          " 2>/dev/null || true)
+          if [ -n "$APK_URL" ]; then
+            echo "Downloading APK from: $APK_URL"
+            curl -L --retry 3 "$APK_URL" -o ahbaballah.apk
+            ls -lh ahbaballah.apk
+            echo "apk_found=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Upload APK to GitHub Artifacts
+        if: steps.download_apk.outputs.apk_found == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ahbaballah-kindergarten-apk
+          path: ahbaballah.apk
+          retention-days: 30
 
       - name: Build summary
         if: always()
         run: |
           echo "## Android APK Build" >> $GITHUB_STEP_SUMMARY
           echo "- Profile: ${{ github.event.inputs.profile || 'apk' }}" >> $GITHUB_STEP_SUMMARY
-          echo "- EAS builds: https://expo.dev/accounts/almhbob2026/projects/ahbaballah-kindergarten/builds" >> $GITHUB_STEP_SUMMARY
+          echo "- EAS builds: https://expo.dev/accounts/almhbob609/projects/ahbaballah-kindergarten/builds" >> $GITHUB_STEP_SUMMARY
 
   build-aab:
     name: Build AAB (Google Play)
@@ -101,21 +151,26 @@ jobs:
       - name: Install dependencies
         run: npm ci --legacy-peer-deps
 
-      - name: Setup EAS
-        uses: expo/expo-github-action@v8
-        with:
-          eas-version: latest
-          token: ${{ secrets.EXPO_TOKEN }}
+      - name: Install EAS CLI
+        run: npm install -g eas-cli@latest
+
+      - name: Verify EAS Auth
+        run: eas whoami
 
       - name: Build AAB for Google Play and wait for result
-        run: eas build --platform android --profile play-store --non-interactive
+        run: |
+          eas build \
+            --platform android \
+            --profile play-store \
+            --non-interactive \
+            --wait
 
       - name: Build summary
         if: always()
         run: |
           echo "## Android AAB Build" >> $GITHUB_STEP_SUMMARY
           echo "- Profile: play-store" >> $GITHUB_STEP_SUMMARY
-          echo "- EAS builds: https://expo.dev/accounts/almhbob2026/projects/ahbaballah-kindergarten/builds" >> $GITHUB_STEP_SUMMARY
+          echo "- EAS builds: https://expo.dev/accounts/almhbob609/projects/ahbaballah-kindergarten/builds" >> $GITHUB_STEP_SUMMARY
 
   create-release:
     name: Create GitHub Release
