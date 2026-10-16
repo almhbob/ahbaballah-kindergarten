@@ -1,6 +1,11 @@
 name: Build APK
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/build-apk.yml'
 
 jobs:
   build:
@@ -20,71 +25,67 @@ jobs:
       - name: Install EAS CLI
         run: npm install -g eas-cli@latest
 
-      - name: Build APK via EAS (submit and wait)
+      - name: Build APK via EAS
         id: eas_build
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN2 }}
         run: |
-          BUILD_OUTPUT=$(eas build \
+          set -e
+          echo "=== EAS Authentication Check ==="
+          eas whoami || { echo "AUTH FAILED - token invalid"; exit 1; }
+          echo "=== Starting EAS Build ==="
+          BUILD_JSON=$(eas build \
             --platform android \
             --profile apk \
             --non-interactive \
             --wait \
-            --json 2>/dev/null || \
-          eas build \
-            --platform android \
-            --profile apk \
-            --non-interactive \
-            --wait 2>&1)
-          echo "$BUILD_OUTPUT"
-          # Extract URL from JSON if possible
-          APK_URL=$(echo "$BUILD_OUTPUT" | python3 -c "
+            --json 2>&1)
+          echo "$BUILD_JSON"
+          APK_URL=$(echo "$BUILD_JSON" | python3 -c "
 import sys, json
 data = sys.stdin.read()
-# Try to parse as JSON array
 try:
     builds = json.loads(data)
     if isinstance(builds, list) and builds:
-        print(builds[0].get('artifacts', {}).get('buildUrl', ''))
+        url = builds[0].get('artifacts', {}).get('buildUrl', '')
+        if url: print(url)
     elif isinstance(builds, dict):
-        print(builds.get('artifacts', {}).get('buildUrl', ''))
-except:
-    pass
+        url = builds.get('artifacts', {}).get('buildUrl', '')
+        if url: print(url)
+except Exception as e:
+    sys.stderr.write(str(e)+'\n')
 " 2>/dev/null || true)
-          echo "APK_URL=$APK_URL" >> $GITHUB_OUTPUT
-
-      - name: Download APK from EAS
-        if: steps.eas_build.outputs.APK_URL != ''
-        run: |
-          curl -L "${{ steps.eas_build.outputs.APK_URL }}" -o app-release.apk
-          ls -lh app-release.apk
-
-      - name: Fetch latest build URL if needed
-        if: steps.eas_build.outputs.APK_URL == ''
-        env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN2 }}
-        run: |
-          sleep 10
-          URL=$(eas build:list \
-            --platform android \
-            --limit 1 \
-            --json \
-            --non-interactive 2>/dev/null | \
-          python3 -c "
-import sys, json
-builds = json.load(sys.stdin)
-if builds:
-    print(builds[0].get('artifacts', {}).get('buildUrl', ''))
-")
-          if [ -n "$URL" ]; then
-            curl -L "$URL" -o app-release.apk
-            ls -lh app-release.apk
+          if [ -n "$APK_URL" ]; then
+            echo "APK_URL=$APK_URL" >> $GITHUB_OUTPUT
+            echo "=== APK URL: $APK_URL ==="
           else
-            echo "Could not find APK URL"
-            exit 1
+            echo "=== Trying eas build:list fallback ==="
+            sleep 5
+            LIST_JSON=$(eas build:list --platform android --limit 1 --json --non-interactive 2>/dev/null || echo "[]")
+            APK_URL=$(echo "$LIST_JSON" | python3 -c "
+import sys, json
+builds = json.loads(sys.stdin.read())
+if builds:
+    url = builds[0].get('artifacts', {}).get('buildUrl', '')
+    if url: print(url)
+" 2>/dev/null || true)
+            if [ -n "$APK_URL" ]; then
+              echo "APK_URL=$APK_URL" >> $GITHUB_OUTPUT
+              echo "=== APK URL (fallback): $APK_URL ==="
+            else
+              echo "ERROR: Could not get APK URL"
+              exit 1
+            fi
           fi
 
-      - name: Upload APK as artifact
+      - name: Download APK
+        run: |
+          APK_URL="${{ steps.eas_build.outputs.APK_URL }}"
+          echo "Downloading from: $APK_URL"
+          curl -L --retry 3 "$APK_URL" -o app-release.apk
+          ls -lh app-release.apk
+
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: ahbaballah-apk
