@@ -75,29 +75,23 @@ jobs:
         run: eas whoami
 
       - name: Build APK via EAS
+        id: eas_build
         run: |
-          echo "=== EAS CLI version ===" | tee -a /tmp/eas-log.txt
-          eas --version 2>&1 | tee -a /tmp/eas-log.txt
-          echo "=== Project info ===" | tee -a /tmp/eas-log.txt
-          node -e "const a=require('./app.json'); console.log('owner:', a.expo.owner, 'slug:', a.expo.slug, 'projectId:', a.expo.extra?.eas?.projectId)" 2>&1 | tee -a /tmp/eas-log.txt
-          echo "=== Starting eas build ===" | tee -a /tmp/eas-log.txt
+          set +e
           eas build \
             --platform android \
             --profile apk \
             --non-interactive \
-            2>&1 | tee -a /tmp/eas-log.txt
+            --wait \
+            2>&1 | tee /tmp/eas-output.txt
           BUILD_EXIT=${PIPESTATUS[0]}
-          echo "=== Build exit: $BUILD_EXIT ===" | tee -a /tmp/eas-log.txt
-          cp /tmp/eas-log.txt ./eas-build-log.txt
+          echo "build_exit=$BUILD_EXIT" >> $GITHUB_OUTPUT
+          # Write full output to step summary so it can be read via API
+          echo "## EAS Build Output" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          cat /tmp/eas-output.txt >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
           exit $BUILD_EXIT
-
-      - name: Upload build log on failure
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: eas-build-log
-          path: eas-build-log.txt
-          retention-days: 1
 
       - name: Download and upload APK artifact
         id: download_apk
