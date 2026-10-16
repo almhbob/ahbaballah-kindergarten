@@ -74,28 +74,19 @@ jobs:
       - name: Verify EAS Auth
         run: eas whoami
 
-      - name: Check EAS project setup
+      - name: Build APK via EAS
         run: |
           echo "=== EAS whoami ==="
           eas whoami
-          echo "=== app.json owner/slug ==="
-          node -e "const a=require('./app.json'); console.log('owner:', a.expo.owner, 'slug:', a.expo.slug)"
-          echo "=== eas.json profiles ==="
-          node -e "const e=require('./eas.json'); console.log(Object.keys(e.build))"
-
-      - name: Build APK and wait for result
-        run: |
-          BUILD_PROFILE="${{ github.event.inputs.profile }}"
-          if [ -z "$BUILD_PROFILE" ]; then
-            BUILD_PROFILE="apk"
-          fi
-          echo "=== Building profile: $BUILD_PROFILE ==="
+          echo "=== Project info ==="
+          node -e "const a=require('./app.json'); console.log('owner:', a.expo.owner, 'slug:', a.expo.slug, 'projectId:', a.expo.extra?.eas?.projectId)"
+          echo "=== Starting EAS build ==="
           eas build \
             --platform android \
-            --profile "$BUILD_PROFILE" \
+            --profile apk \
             --non-interactive \
-            --wait 2>&1
-          echo "=== Build exit code: $? ==="
+            --wait \
+            2>&1; EXIT=$?; echo "Exit: $EXIT"; exit $EXIT
 
       - name: Download and upload APK artifact
         id: download_apk
