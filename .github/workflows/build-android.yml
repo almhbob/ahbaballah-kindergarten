@@ -76,47 +76,39 @@ jobs:
 
       - name: Build APK and wait for result
         run: |
+          BUILD_PROFILE="${{ github.event.inputs.profile }}"
+          if [ -z "$BUILD_PROFILE" ]; then
+            BUILD_PROFILE="apk"
+          fi
+          echo "Building with profile: $BUILD_PROFILE"
           eas build \
             --platform android \
-            --profile ${{ github.event.inputs.profile || 'apk' }} \
-            --non-interactive \
-            --wait \
-            --json 2>/dev/null | python3 -c "
-          import sys, json
-          builds = json.loads(sys.stdin.read())
-          b = builds[0] if isinstance(builds, list) else builds
-          url = b.get('artifacts', {}).get('buildUrl', '')
-          if url:
-              print(f'✅ APK URL: {url}')
-          else:
-              print('Build submitted - check expo.dev for download')
-          " 2>/dev/null || \
-          eas build \
-            --platform android \
-            --profile ${{ github.event.inputs.profile || 'apk' }} \
+            --profile "$BUILD_PROFILE" \
             --non-interactive \
             --wait
 
       - name: Download and upload APK artifact
         id: download_apk
         run: |
-          APK_URL=$(eas build:list \
-            --platform android \
-            --limit 1 \
-            --json \
-            --non-interactive 2>/dev/null | \
-          python3 -c "
-          import sys, json
-          builds = json.loads(sys.stdin.read())
+          echo "Fetching latest build info..."
+          eas build:list --platform android --limit 1 --json --non-interactive > /tmp/build_list.json 2>/dev/null || echo "[]" > /tmp/build_list.json
+          cat /tmp/build_list.json
+          APK_URL=$(python3 -c "
+          import json
+          with open('/tmp/build_list.json') as f:
+              builds = json.load(f)
           if builds:
               url = builds[0].get('artifacts', {}).get('buildUrl', '')
-              if url: print(url)
+              if url:
+                  print(url)
           " 2>/dev/null || true)
+          echo "APK URL: $APK_URL"
           if [ -n "$APK_URL" ]; then
-            echo "Downloading APK from: $APK_URL"
             curl -L --retry 3 "$APK_URL" -o ahbaballah.apk
             ls -lh ahbaballah.apk
             echo "apk_found=true" >> $GITHUB_OUTPUT
+          else
+            echo "apk_found=false" >> $GITHUB_OUTPUT
           fi
 
       - name: Upload APK to GitHub Artifacts
