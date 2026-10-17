@@ -72,7 +72,11 @@ jobs:
         run: npm install -g eas-cli@latest
 
       - name: Verify EAS Auth
-        run: eas whoami
+        run: |
+          WHOAMI_OUT=$(eas whoami 2>&1) || true
+          echo "$WHOAMI_OUT"
+          echo "::warning::WHOAMI_RESULT: $WHOAMI_OUT"
+          echo "$WHOAMI_OUT" | grep -qiE "Not logged in|Forbidden|Error|GraphQL" && exit 1 || true
 
       - name: Debug EAS Setup
         run: |
