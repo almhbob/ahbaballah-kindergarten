@@ -74,23 +74,43 @@ jobs:
       - name: Verify EAS Auth
         run: eas whoami
 
-      - name: Build APK via EAS
+      - name: Debug EAS Setup
+        run: |
+          echo "=== EAS CLI Version ==="
+          eas --version
+          echo "=== EAS Whoami ==="
+          eas whoami
+          echo "=== App Config ==="
+          cat app.json | python3 -c "import json,sys; d=json.load(sys.stdin); a=d.get('expo',{}); print('owner:', a.get('owner')); print('slug:', a.get('slug')); print('projectId:', a.get('extra',{}).get('eas',{}).get('projectId','NOT SET'))"
+          echo "=== EAS JSON ==="
+          cat eas.json | python3 -m json.tool
+          echo "=== Project check ==="
+          eas project:info --non-interactive 2>&1 || echo "project:info failed"
+
+      - name: Build APK via EAS (no wait)
         id: eas_build
         run: |
           set +e
+          echo "Starting EAS build..."
           eas build \
             --platform android \
             --profile apk \
             --non-interactive \
-            --wait \
             2>&1 | tee /tmp/eas-output.txt
           BUILD_EXIT=${PIPESTATUS[0]}
           echo "build_exit=$BUILD_EXIT" >> $GITHUB_OUTPUT
-          # Write full output to step summary so it can be read via API
+          # Write full output to step summary
           echo "## EAS Build Output" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
           cat /tmp/eas-output.txt >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
+          # Extract build ID if submitted
+          BUILD_ID=$(grep -oP 'Build details: https://expo.dev[^\s]+' /tmp/eas-output.txt | grep -oP '[a-f0-9-]{36}$' | head -1 || true)
+          if [ -n "$BUILD_ID" ]; then
+            echo "build_id=$BUILD_ID" >> $GITHUB_OUTPUT
+            echo "Build submitted! ID: $BUILD_ID"
+            echo "URL: https://expo.dev/accounts/almhbob609/projects/ahbaballah-kindergarten/builds/$BUILD_ID"
+          fi
           exit $BUILD_EXIT
 
       - name: Download and upload APK artifact
