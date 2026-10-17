@@ -91,7 +91,9 @@ jobs:
         id: eas_build
         run: |
           set +e
-          echo "Starting EAS build..."
+          echo "=== Checking EAS config ==="
+          eas config --platform android --profile apk --non-interactive 2>&1 | tee /tmp/eas-config.txt || true
+          echo "=== Starting EAS build ==="
           eas build \
             --platform android \
             --profile apk \
@@ -111,7 +113,7 @@ jobs:
             echo "Build submitted! ID: $BUILD_ID"
           fi
           # Copy output to workspace for artifact upload
-          cp /tmp/eas-output.txt ./eas-build-output.txt
+          cat /tmp/eas-config.txt /tmp/eas-output.txt > ./eas-build-output.txt 2>/dev/null || cp /tmp/eas-output.txt ./eas-build-output.txt
           exit $BUILD_EXIT
 
       - name: Upload build log as artifact
@@ -121,6 +123,16 @@ jobs:
           name: eas-build-log
           path: eas-build-output.txt
           retention-days: 7
+
+      - name: Show log in annotation (readable via API)
+        if: always()
+        run: |
+          if [ -f eas-build-output.txt ]; then
+            # Print first 50 lines as warning annotation (visible in API)
+            head -60 eas-build-output.txt | while IFS= read -r line; do
+              echo "::warning::EAS>> $line"
+            done
+          fi
 
       - name: Download and upload APK artifact
         id: download_apk
