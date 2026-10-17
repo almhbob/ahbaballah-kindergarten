@@ -105,13 +105,22 @@ jobs:
           cat /tmp/eas-output.txt >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
           # Extract build ID if submitted
-          BUILD_ID=$(grep -oP 'Build details: https://expo.dev[^\s]+' /tmp/eas-output.txt | grep -oP '[a-f0-9-]{36}$' | head -1 || true)
+          BUILD_ID=$(grep -oP 'Build details: https://expo\.dev[^\s]+' /tmp/eas-output.txt | grep -oP '[a-f0-9-]{36}$' | head -1 || true)
           if [ -n "$BUILD_ID" ]; then
             echo "build_id=$BUILD_ID" >> $GITHUB_OUTPUT
             echo "Build submitted! ID: $BUILD_ID"
-            echo "URL: https://expo.dev/accounts/almhbob609/projects/ahbaballah-kindergarten/builds/$BUILD_ID"
           fi
+          # Copy output to workspace for artifact upload
+          cp /tmp/eas-output.txt ./eas-build-output.txt
           exit $BUILD_EXIT
+
+      - name: Upload build log as artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eas-build-log
+          path: eas-build-output.txt
+          retention-days: 7
 
       - name: Download and upload APK artifact
         id: download_apk
