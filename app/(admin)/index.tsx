@@ -227,6 +227,7 @@ export default function AdminDashboard() {
           <BannerCarousel />
           <Text style={styles.sectionTitle}>الإجراءات السريعة</Text>
           <View style={styles.quickActions}>
+            <QuickAction icon="account-arrow-right" label="انصراف الطلاب" color="#0891B2" onPress={() => router.push('/(admin)/dismissal')} />
             <QuickAction icon="account-group" label="الطلاب" color="#3B82F6" onPress={() => router.push('/(admin)/management')} />
             <QuickAction icon="account-tie" label="المعلمات" color="#8B5CF6" onPress={() => router.push('/(admin)/employees')} />
             <QuickAction icon="cash-multiple" label="الرواتب" color={Colors.success} onPress={() => router.push('/(admin)/finance')} />

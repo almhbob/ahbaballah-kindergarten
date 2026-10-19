@@ -7,6 +7,18 @@ on:
     branches: [main]
 
 jobs:
+  regression-tests:
+    name: Security and dismissal regression tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: npm ci --legacy-peer-deps
+      - run: node --test tests/*.test.cjs
+
   typecheck:
     name: TypeScript Check
     runs-on: ubuntu-latest

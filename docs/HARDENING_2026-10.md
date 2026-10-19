@@ -55,9 +55,9 @@ Prior navigation/API PR #1 was merged; this patch addresses issues still present
 4. Test Android gesture navigation, three-button navigation, small screens,
    larger text, all five primary tabs and branding navigation on a device.
 5. Run the full repository TypeScript/lint/build checks in its complete build
-   environment. The repository manifest currently omits server dependencies
-   (including Express, pg, bcryptjs, multer and their types); this patch does not
-   pretend to repair or validate the entire deployment manifest.
+   environment. The first revision omitted server dependencies from the manifest;
+   the specialist follow-up now declares them and validates lock metadata.
+   See `docs/DISMISSAL_AND_QA.md` for current verification results and remaining limits.
 
 ## Critical remaining work — separate migration, not cosmetic fixes
 
@@ -92,9 +92,12 @@ bootstrap behavior, session rotation and navigation configuration.
 They are **not** live database, deployed endpoint, Firebase-rule, Android visual,
 APK-build or full end-to-end tests. No production data was read or changed.
 
-### Results in the patch preparation environment
+### Results in the first patch preparation environment
 
 - 18 focused tests passed.
 - TypeScript syntax parsing passed for the 15 downloaded/new TS/TSX source files.
 - Standalone type checking passed for `lib/api-origin.ts` (ES2022 + DOM libraries).
 - Full repository type checking, linting, APK build and device testing were not run.
+
+For the later specialist-team update (28 tests, focused type checks, full lint
+results and the new dismissal feature), see `docs/DISMISSAL_AND_QA.md`.

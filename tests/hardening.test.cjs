@@ -214,3 +214,25 @@ test('branding stays off the primary tab bar and Android respects bottom insets'
   assert.match(source, /name="branding"\s+options=\{\{ href: null \}\}/);
   assert.match(source, /60 \+ Math\.max\(insets\.bottom, 6\)/);
 });
+
+test('platform operations reject ordinary admins and unconfigured platform identity', () => {
+  for (const [env, user, expected] of [
+    [{}, undefined, 401],
+    [{}, { role: 'admin', email: 'owner@example.test' }, 403],
+    [{ ADMIN_EMAIL: 'owner@example.test' }, { role: 'parent', email: 'owner@example.test' }, 403],
+    [{ ADMIN_EMAIL: 'owner@example.test' }, { role: 'admin', email: 'other@example.test' }, 403],
+  ]) {
+    const { requirePlatformAdmin } = loadTS('server/access-control.ts', {}, { process: { env } });
+    const res = response();
+    let continued = false;
+    requirePlatformAdmin({ session: { user } }, res, () => { continued = true; });
+    assert.equal(continued, false);
+    assert.equal(res.statusCode, expected);
+  }
+  const { requirePlatformAdmin } = loadTS('server/access-control.ts', {}, {
+    process: { env: { ADMIN_EMAIL: ' Owner@Example.test ' } },
+  });
+  let continued = false;
+  requirePlatformAdmin({ session: { user: { role: 'admin', email: 'owner@example.test' } } }, response(), () => { continued = true; });
+  assert.equal(continued, true);
+});

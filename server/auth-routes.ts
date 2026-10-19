@@ -47,11 +47,11 @@ export async function seedAdminAccount() {
 
 async function establishSession(req: Request, user: NonNullable<Request['session']['user']>) {
   await new Promise<void>((resolve, reject) => {
-    req.session.regenerate(err => err ? reject(err) : resolve());
+    req.session.regenerate((err: unknown) => err ? reject(err) : resolve());
   });
   req.session.user = user;
   await new Promise<void>((resolve, reject) => {
-    req.session.save(err => err ? reject(err) : resolve());
+    req.session.save((err: unknown) => err ? reject(err) : resolve());
   });
 }
 
@@ -162,7 +162,7 @@ router.post('/login', async (req: Request, res: Response) => {
 });
 
 router.post('/logout', (req: Request, res: Response) => {
-  req.session.destroy((err) => {
+  req.session.destroy((err: unknown) => {
     if (err) return res.status(500).json({ ok: false, error: 'تعذّر تسجيل الخروج' });
     res.clearCookie('connect.sid');
     return res.json({ ok: true });

@@ -1588,7 +1588,7 @@ function TeacherProfileSheet({ teacher: teacherProp, onClose }: { teacher: Emplo
                 <View style={pStyles.emptyTab}>
                   <Ionicons name="calendar-outline" size={48} color={Colors.textLight} />
                   <Text style={pStyles.emptyTabTxt}>لم يُسجَّل أي سجل حضور بعد</Text>
-                  <Text style={pStyles.emptyTabSub}>اضغط على "تسجيل حضور اليوم" للبدء</Text>
+                  <Text style={pStyles.emptyTabSub}>اضغط على &quot;تسجيل حضور اليوم&quot; للبدء</Text>
                 </View>
               )}
             </>
