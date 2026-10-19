@@ -25,6 +25,10 @@ parent push delivery or teacher access is claimed.
 
 ## Activation requires an explicit deployment decision
 
+The owner confirmed the current scope is Ahbaballah only, with intended later
+use in other kindergartens. Treat Ahbaballah as the first independent deployment,
+not evidence that the existing app is already safely multi-tenant.
+
 The current server model has global `app_state` and no verified tenant membership.
 Therefore this version **fails closed by default** and is only suitable for a
 confirmed **single-school** deployment:
@@ -32,7 +36,8 @@ confirmed **single-school** deployment:
 1. Verify this instance and its SQL roster belong to one school.
 2. Apply `server/dismissal-schema.sql` to that instance's database.
 3. Configure `DISMISSAL_LEGACY_SINGLE_SCHOOL=true` and the correct IANA
-   `DISMISSAL_TIME_ZONE`, after obtaining deployment approval.
+   `DISMISSAL_TIME_ZONE`, after obtaining deployment approval. Bind records to
+   `DISMISSAL_SCHOOL_ID` (the app's existing Ahbaballah ID is `ahbabullah`).
 4. Sign in with a verified Express admin session, not only a local/Firebase role.
 5. Test two staff devices trying to dismiss the same test student, midnight in
    the school's timezone, API outage and unauthorized requests.
@@ -41,6 +46,17 @@ Do not enable this mode for a multi-school service. That requires verified
 server memberships and school-scoped student/dismissal tables first. The roster
 source remains admin-managed JSON, not an independent identity authority; the
 pickup acknowledgement is a staff declaration, not an identity-verification system.
+
+Dismissal reads/writes and uniqueness now include the server-configured school
+ID, never a school ID supplied in the checkout body. This preserves deployment
+ownership for later migrations; it does not turn the global roster into safe
+shared multi-tenancy. The migration is for the new feature's initial table.
+If an earlier draft schema has already been applied anywhere, stop and review
+its actual rows/constraints before a separate backfill or upgrade; never assign
+old records to a school by guessing.
+
+Use `.env.example` as a list of configuration names, not as a source of secrets
+or a command that activates production. No runtime environment was changed here.
 
 ## Additional source hardening in this update
 
@@ -70,7 +86,8 @@ version mismatches). Those green job labels were not a clean bill of health.
 
 After dependencies were made available locally, an independently rerun focused
 type check covering 18 source files across server/shared/config and the dismissal screen
-reported zero diagnostics. All 28 focused regression tests passed. Full-repository
+reported zero diagnostics. All 30 focused regression tests passed after binding
+records to the confirmed single-school instance. Full-repository
 ESLint analyzed 113 files with **zero errors and 86 remaining warnings**. The
 existing CI warning limit is 50, so that command still must not be called clean.
 A full project
@@ -81,6 +98,10 @@ Focused tests use mocked database/router dependencies; they are not proof of
 live PostgreSQL concurrency, deployed security or physical-device behavior.
 The screen has not been visually exercised on an Android device or built into
 an APK here. Follow the current CI run, not the results of the earlier commit.
+
+The full GitHub TypeScript check and the 28-test CI job subsequently passed for
+commit `326d88700872cd17b21510fad82967a8fb45efce`. This verifies that revision,
+not deployment readiness; final school-binding changes add two more local tests.
 
 Critical migrations remain: verified school membership and Firestore rules,
 unified server/local/Firebase identity, secure invitations/student linkage,

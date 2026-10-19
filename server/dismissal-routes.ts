@@ -3,6 +3,8 @@ import pool from './db';
 
 const router = Router();
 const LEGACY_SINGLE_SCHOOL_ENABLED = process.env.DISMISSAL_LEGACY_SINGLE_SCHOOL === 'true';
+// This identifies one deployment, not a client-selectable tenant or membership proof.
+const INSTANCE_SCHOOL_ID = process.env.DISMISSAL_SCHOOL_ID?.trim() || 'ahbabullah';
 const DEFAULT_TIME_ZONE = 'UTC';
 
 function requireAdmin(req: Request, res: Response, next: NextFunction) {
@@ -15,6 +17,9 @@ function requireAdmin(req: Request, res: Response, next: NextFunction) {
       ok: false,
       error: 'خدمة الانصراف غير مفعّلة: يلزم إعداد وضع المدرسة الواحدة بعد التحقق من نطاق بيانات الطلاب',
     });
+  }
+  if (!/^[a-zA-Z0-9_-]{1,80}$/.test(INSTANCE_SCHOOL_ID)) {
+    return res.status(503).json({ ok: false, error: 'معرّف الروضة على الخادم غير صالح؛ راجع إعدادات الانصراف' });
   }
   return next();
 }
@@ -77,9 +82,9 @@ router.get('/today', async (_req: Request, res: Response) => {
               d.receiver_name, d.receiver_relationship, d.actor_name,
               to_char(c.school_date, 'YYYY-MM-DD') AS current_school_date
        FROM school_clock c
-       LEFT JOIN student_dismissals d ON d.school_date = c.school_date
+       LEFT JOIN student_dismissals d ON d.school_date = c.school_date AND d.school_id = $2
        ORDER BY d.dismissed_at`,
-      [timeZone],
+      [timeZone, INSTANCE_SCHOOL_ID],
     );
     const schoolDate = rows[0]?.current_school_date
       ? String(rows[0].current_school_date).slice(0, 10)
@@ -134,13 +139,13 @@ router.post('/:studentId/checkout', async (req: Request, res: Response) => {
        )
        INSERT INTO student_dismissals
          (student_id, school_date, dismissed_at, receiver_name, receiver_relationship,
-          authorized_pickup_confirmed, actor_user_id, actor_name)
-       SELECT $1, c.school_date, c.dismissed_at, $3, $4, TRUE, $5, $6
+          authorized_pickup_confirmed, actor_user_id, actor_name, school_id)
+       SELECT $1, c.school_date, c.dismissed_at, $3, $4, TRUE, $5, $6, $7
        FROM school_clock c
-       ON CONFLICT (student_id, school_date) DO NOTHING
+       ON CONFLICT (school_id, student_id, school_date) DO NOTHING
        RETURNING id, student_id, to_char(school_date, 'YYYY-MM-DD') AS school_date, dismissed_at, receiver_name,
                  receiver_relationship, actor_name`,
-      [studentId, timeZone, details.receiverName, details.receiverRelationship, actor.id, actor.full_name],
+      [studentId, timeZone, details.receiverName, details.receiverRelationship, actor.id, actor.full_name, INSTANCE_SCHOOL_ID],
     );
     if (rows.length === 0) {
       return res.status(409).json({ ok: false, error: 'تم تسجيل انصراف هذا الطالب اليوم مسبقاً' });

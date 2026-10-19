@@ -124,10 +124,11 @@ test('checkout validates acknowledgement and records actor from session, not req
   });
   assert.equal(valid.statusCode, 201);
   assert.equal(valid.body.dismissal.actorName, 'مديرة');
-  assert.match(calls[1].sql, /ON CONFLICT \(student_id, school_date\) DO NOTHING/);
+  assert.match(calls[1].sql, /ON CONFLICT \(school_id, student_id, school_date\) DO NOTHING/);
   assert.equal(calls[1].params[4], 9);
   assert.equal(calls[1].params[1], 'Asia/Riyadh');
   assert.equal(calls[1].params.includes('other'), false);
+  assert.equal(calls[1].params[6], 'ahbabullah');
 });
 
 test('checkout returns conflict when atomic unique insert rejects a duplicate', async () => {
@@ -180,7 +181,7 @@ test('roster API returns only a minimal student summary, never parent or health 
 
 test('database unique constraint persists one checkout per server-calculated school day', () => {
   const sql = fs.readFileSync(path.join(root, 'server/dismissal-schema.sql'), 'utf8');
-  assert.match(sql, /UNIQUE \(student_id, school_date\)/);
+  assert.match(sql, /UNIQUE \(school_id, student_id, school_date\)/);
   const route = fs.readFileSync(path.join(root, 'server/dismissal-routes.ts'), 'utf8');
   assert.match(route, /\(NOW\(\) AT TIME ZONE \$2\)::date/);
   assert.match(route, /SELECT NOW\(\) AS dismissed_at/);
@@ -197,4 +198,42 @@ test('today keeps the database school-date string without host timezone conversi
   assert.equal(res.statusCode, 200);
   assert.equal(res.body.today.schoolDate, '2026-01-02');
   assert.equal(res.body.today.dismissals.length, 0);
+});
+
+test('today scope comes from server instance configuration, not caller-selected school', async () => {
+  const h = harness();
+  let params;
+  loadTS('server/dismissal-routes.ts', {
+    express: h.express,
+    './db': { default: { query: async (_sql, values) => {
+      params = values;
+      return { rows: [{ current_school_date: '2026-01-02', id: null }] };
+    } }, __esModule: true },
+  }, { process: { env: {
+    DISMISSAL_LEGACY_SINGLE_SCHOOL: 'true',
+    DISMISSAL_SCHOOL_ID: 'ahbabullah',
+    DISMISSAL_TIME_ZONE: 'Africa/Khartoum',
+  } } });
+  const res = await h.dispatch('get', '/today', {
+    session: { user: { role: 'admin' } },
+    query: { schoolId: 'other' },
+  });
+  assert.equal(res.statusCode, 200);
+  assert.equal(params[1], 'ahbabullah');
+  assert.equal(params.includes('other'), false);
+});
+
+test('invalid server school identifier fails closed before any data query', async () => {
+  const h = harness();
+  let queried = false;
+  loadTS('server/dismissal-routes.ts', {
+    express: h.express,
+    './db': { default: { query: async () => { queried = true; return { rows: [] }; } }, __esModule: true },
+  }, { process: { env: {
+    DISMISSAL_LEGACY_SINGLE_SCHOOL: 'true',
+    DISMISSAL_SCHOOL_ID: '../unverified',
+  } } });
+  const res = await h.dispatch('get', '/students', { session: { user: { role: 'admin' } } });
+  assert.equal(res.statusCode, 503);
+  assert.equal(queried, false);
 });
