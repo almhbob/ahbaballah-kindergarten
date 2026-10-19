@@ -1,5 +1,6 @@
 import { fetch } from "expo/fetch";
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
+import { resolveApiOrigin } from "./api-origin";
 
 function normalizeApiHost(rawHost?: string): string {
   const trimmed = rawHost?.trim();
@@ -16,16 +17,12 @@ export function hasApiHost(): boolean {
 }
 
 export function getApiOrigin(): string {
-  const host = getApiHost();
-  if (!host) {
-    throw new Error("API host is not configured. Set EXPO_PUBLIC_DOMAIN for backend features.");
-  }
-  const protocol = host.includes("localhost") || host.startsWith("127.0.0.1") ? "http" : "https";
-  return `${protocol}://${host}`;
+  return resolveApiOrigin(process.env.EXPO_PUBLIC_DOMAIN);
 }
 
 export function getApiUrl(): string {
-  return getApiHost();
+  // Legacy callers use this as the base for new URL(); it must include a protocol.
+  return getApiOrigin();
 }
 
 export function makeApiUrl(route: string): string {

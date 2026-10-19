@@ -5,6 +5,7 @@ import { registerRoutes } from "./routes";
 import pool from "./db";
 import * as fs from "fs";
 import * as path from "path";
+import { randomBytes } from "node:crypto";
 
 async function ensureSchema() {
   try {
@@ -150,29 +151,13 @@ function setupRequestLogging(app: express.Application) {
   app.use((req, res, next) => {
     const start = Date.now();
     const path = req.path;
-    let capturedJsonResponse: Record<string, unknown> | undefined = undefined;
-
-    const originalResJson = res.json;
-    res.json = function (bodyJson, ...args) {
-      capturedJsonResponse = bodyJson;
-      return originalResJson.apply(res, [bodyJson, ...args]);
-    };
-
     res.on("finish", () => {
       if (!path.startsWith("/api")) return;
 
       const duration = Date.now() - start;
 
-      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-      if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
-      }
-
-      if (logLine.length > 80) {
-        logLine = logLine.slice(0, 79) + "…";
-      }
-
-      log(logLine);
+      // Never serialize response bodies: school requests and auth contain private data.
+      log(`${req.method} ${path} ${res.statusCode} in ${duration}ms`);
     });
 
     next();
@@ -312,8 +297,14 @@ function setupErrorHandler(app: express.Application) {
   setupBodyParsing(app);
 
   const isProduction = process.env.NODE_ENV === 'production';
+  const sessionSecret = process.env.SESSION_SECRET;
+  if (isProduction && (!sessionSecret || Buffer.byteLength(sessionSecret, 'utf8') < 32)) {
+    throw new Error('SESSION_SECRET must be configured with at least 32 bytes in production');
+  }
+  // Express is served behind a single HTTPS reverse proxy in the supported deployment.
+  if (isProduction) app.set('trust proxy', 1);
   app.use(session({
-    secret: process.env.SESSION_SECRET || 'ahbaballah-fallback-secret',
+    secret: sessionSecret || randomBytes(32).toString('hex'),
     resave: false,
     saveUninitialized: false,
     cookie: {

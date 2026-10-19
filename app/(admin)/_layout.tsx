@@ -9,6 +9,7 @@ import { useAppData } from "@/contexts/AppDataContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEffect } from "react";
 import { registerForPushNotifications } from "@/lib/notifications";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 function NativeAdminTabs() {
   const { inbox } = useAppData();
@@ -41,6 +42,7 @@ function NativeAdminTabs() {
 }
 
 function ClassicAdminTabs() {
+  const insets = useSafeAreaInsets();
   const { inbox } = useAppData();
   const unread = inbox.filter(m => !m.read).length;
   const isWeb = Platform.OS === "web";
@@ -58,8 +60,8 @@ function ClassicAdminTabs() {
           borderTopWidth: 1,
           borderTopColor: "rgba(201,149,42,0.15)",
           elevation: 0,
-          height: isWeb ? 84 : isIOS ? undefined : 65,
-          paddingBottom: isWeb || isIOS ? undefined : 6,
+          height: isWeb ? 84 : isIOS ? undefined : 60 + Math.max(insets.bottom, 6),
+          paddingBottom: isWeb || isIOS ? undefined : Math.max(insets.bottom, 6),
         },
         tabBarBackground: () =>
           isIOS ? (
@@ -69,7 +71,7 @@ function ClassicAdminTabs() {
           ) : null,
         tabBarLabelStyle: {
           fontFamily: "Inter_500Medium",
-          fontSize: 10,
+          fontSize: 12,
         },
       }}
     >
@@ -94,6 +96,7 @@ function ClassicAdminTabs() {
       <Tabs.Screen name="gallery"               options={{ href: null }} />
       <Tabs.Screen name="notifications-send"    options={{ href: null }} />
       <Tabs.Screen name="analytics"             options={{ href: null }} />
+      <Tabs.Screen name="branding"              options={{ href: null }} />
     </Tabs>
   );
 }

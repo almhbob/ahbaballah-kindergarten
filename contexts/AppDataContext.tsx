@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useRef, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getApiUrl } from '@/lib/query-client';
+import { useAuth } from '@/contexts/AuthContext';
 import { initFirebase, isFirebaseReady } from '@/lib/firebase';
 import {
   fsUpsertStudent, fsDeleteStudent, fsListenStudents,
@@ -665,6 +666,7 @@ const DEMO_MESSAGES: Message[] = [
 ];
 
 export function AppDataProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
   const [students, setStudents] = useState<Student[]>(DEMO_STUDENTS);
   const [employees, setEmployees] = useState<Employee[]>(DEMO_EMPLOYEES);
   const [news, setNews] = useState<NewsItem[]>(DEMO_NEWS);
@@ -693,6 +695,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       const url = new URL(`/api/state/${key}`, getApiUrl()).toString();
       fetch(url, {
         method: 'PUT',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ value }),
       }).catch(() => {});
@@ -710,7 +713,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       let cloud: Record<string, any> = {};
       try {
         const url = new URL('/api/state', getApiUrl()).toString();
-        const res = await fetch(url);
+        const res = await fetch(url, { credentials: 'include' });
         const json = await res.json();
         if (json.ok) cloud = json.data ?? {};
       } catch {}
@@ -769,7 +772,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       if (savedPhotos) setGalleryPhotos(savedPhotos);
     };
     load();
-  }, []);
+  }, [user?.id, user?.role]);
 
   // ─── Firebase real-time listeners ─────────────────────────────────────────
   useEffect(() => {
@@ -974,7 +977,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     AsyncStorage.multiRemove(keysToReset);
     keysToReset.forEach(key => {
       try {
-        fetch(new URL('/api/state/' + key, getApiUrl()).toString(), { method: 'DELETE' }).catch(() => {});
+        fetch(new URL('/api/state/' + key, getApiUrl()).toString(), { method: 'DELETE', credentials: 'include' }).catch(() => {});
       } catch {}
     });
   };

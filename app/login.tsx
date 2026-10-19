@@ -438,8 +438,13 @@ export default function LoginScreen() {
     }
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    // Establish the server session before publishing the local login. The data
+    // provider reloads after the user changes and now requires that session.
+    const apiResult = await apiLogin(selectedRole, credential.trim(), password.trim());
     await login(authUser);
-    apiLogin(selectedRole, credential.trim(), password.trim()).catch(() => {});
+    if (!apiResult.ok && selectedRole === 'admin') {
+      Alert.alert('دخول محلي فقط', 'لم تُنشأ جلسة الخادم. المزامنة الإدارية غير متاحة حتى تسجيل الدخول بحساب الخادم الصحيح.');
+    }
     offerBiometricEnable(authUser);
     if (selectedRole === 'admin') router.replace('/(admin)');
     else if (selectedRole === 'teacher') router.replace('/(teacher)');

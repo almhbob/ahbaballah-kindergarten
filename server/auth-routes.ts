@@ -19,15 +19,22 @@ async function getUserByPhone(phone: string) {
 }
 
 export async function seedAdminAccount() {
+  const email = sanitizeEmail(process.env.ADMIN_EMAIL || '');
+  const password = process.env.ADMIN_INITIAL_PASSWORD || '';
+  // Never create a privileged account with a public, built-in password.
+  if (!email || password.length < 12 || Buffer.byteLength(password, 'utf8') > 72) {
+    console.warn('[auth] Bootstrap skipped: configure ADMIN_EMAIL and a 12+ character ADMIN_INITIAL_PASSWORD (at most 72 UTF-8 bytes)');
+    return;
+  }
   try {
-    const existing = await getUserByEmail('admin@ahbaballah.edu');
+    const existing = await getUserByEmail(email);
     if (!existing) {
-      const password_hash = await bcrypt.hash('1234', 10);
+      const password_hash = await bcrypt.hash(password, 12);
       await pool.query(
         `INSERT INTO users (full_name, email, phone, role, password_hash)
          VALUES ($1, $2, $3, $4, $5)
          ON CONFLICT DO NOTHING`,
-        ['أ. سلوى أحمد داموس', 'admin@ahbaballah.edu', '+249917545129', 'admin', password_hash]
+        ['مدير النظام', email, null, 'admin', password_hash]
       );
       console.log('[auth] Admin account seeded ✓');
     } else {
@@ -36,6 +43,16 @@ export async function seedAdminAccount() {
   } catch (err: any) {
     console.warn('[auth] seed skipped:', err?.message);
   }
+}
+
+async function establishSession(req: Request, user: NonNullable<Request['session']['user']>) {
+  await new Promise<void>((resolve, reject) => {
+    req.session.regenerate(err => err ? reject(err) : resolve());
+  });
+  req.session.user = user;
+  await new Promise<void>((resolve, reject) => {
+    req.session.save(err => err ? reject(err) : resolve());
+  });
 }
 
 router.post('/register', async (req: Request, res: Response) => {
@@ -53,8 +70,8 @@ router.post('/register', async (req: Request, res: Response) => {
     if (!['teacher', 'parent'].includes(role)) {
       return res.status(400).json({ ok: false, error: 'نوع الحساب غير صالح' });
     }
-    if (password.length < 4) {
-      return res.status(400).json({ ok: false, error: 'كلمة المرور قصيرة جداً (4 أحرف كحد أدنى)' });
+    if (password.length < 8 || Buffer.byteLength(password, 'utf8') > 72) {
+      return res.status(400).json({ ok: false, error: 'كلمة المرور يجب أن تكون 8 أحرف على الأقل ولا تتجاوز 72 بايت' });
     }
 
     const credential = role === 'parent' ? phone : email;
@@ -77,13 +94,13 @@ router.post('/register', async (req: Request, res: Response) => {
     );
     const data = rows[0];
 
-    req.session.user = {
+    await establishSession(req, {
       id: data.id,
       full_name: data.full_name,
       email: data.email || '',
       phone: data.phone || null,
       role: data.role,
-    };
+    });
 
     return res.json({
       ok: true,
@@ -91,7 +108,7 @@ router.post('/register', async (req: Request, res: Response) => {
     });
   } catch (err: any) {
     console.error('[auth/register]', err);
-    return res.status(500).json({ ok: false, error: err?.message || 'خطأ داخلي في الخادم' });
+    return res.status(500).json({ ok: false, error: 'خطأ داخلي في الخادم' });
   }
 });
 
@@ -104,30 +121,35 @@ router.post('/login', async (req: Request, res: Response) => {
     if (!rawCredential || !password || !role) {
       return res.status(400).json({ ok: false, error: 'بيانات ناقصة' });
     }
+    if (!['admin', 'teacher', 'parent'].includes(role) || Buffer.byteLength(password, 'utf8') > 72) {
+      return res.status(400).json({ ok: false, error: 'بيانات الدخول غير صالحة' });
+    }
 
     let user: any = null;
     if (role === 'admin') {
-      user = await getUserByEmail(rawCredential);
-      if (!user) user = await getUserByEmail('admin@ahbaballah.edu');
+      const alias = ['admin', 'administrator'].includes(rawCredential.toLowerCase());
+      const email = alias ? process.env.ADMIN_EMAIL : rawCredential;
+      if (email) user = await getUserByEmail(email);
     } else if (role === 'teacher') {
       user = await getUserByEmail(rawCredential);
     } else if (role === 'parent') {
       user = await getUserByPhone(rawCredential);
     }
 
-    if (!user) return res.status(401).json({ ok: false, error: 'الحساب غير موجود في النظام' });
-    if (user.role !== role) return res.status(401).json({ ok: false, error: 'نوع الحساب غير مطابق' });
+    if (!user || user.role !== role) {
+      return res.status(401).json({ ok: false, error: 'بيانات الدخول غير صحيحة' });
+    }
 
     const ok = await bcrypt.compare(password, user.password_hash);
-    if (!ok) return res.status(401).json({ ok: false, error: 'كلمة المرور غير صحيحة' });
+    if (!ok) return res.status(401).json({ ok: false, error: 'بيانات الدخول غير صحيحة' });
 
-    req.session.user = {
+    await establishSession(req, {
       id: user.id,
       full_name: user.full_name,
       email: user.email || '',
       phone: user.phone || null,
       role: user.role,
-    };
+    });
 
     return res.json({
       ok: true,
@@ -135,7 +157,7 @@ router.post('/login', async (req: Request, res: Response) => {
     });
   } catch (err: any) {
     console.error('[auth/login]', err);
-    return res.status(500).json({ ok: false, error: err?.message || 'خطأ داخلي في الخادم' });
+    return res.status(500).json({ ok: false, error: 'خطأ داخلي في الخادم' });
   }
 });
 
