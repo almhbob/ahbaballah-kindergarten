@@ -1,7 +1,13 @@
 import { Router } from 'express';
 import pool from './db';
+import { requirePlatformAdmin } from './access-control';
 
 const router = Router();
+// Only submitting a new request is public. Never trust a developer-screen PIN.
+router.use((req, res, next) => {
+  if (req.method === 'POST' && req.path === '/') return next();
+  return requirePlatformAdmin(req, res, next);
+});
 
 // POST /api/school-requests — Submit a new school registration request (public)
 router.post('/', async (req, res) => {
@@ -52,11 +58,17 @@ router.post('/', async (req, res) => {
   }
 });
 
-// GET /api/school-requests — List all requests (dev only — caller verifies password)
+// GET /api/school-requests — Platform-admin only; never return saved passwords.
 router.get('/', async (_req, res) => {
   try {
     const result = await pool.query(
-      `SELECT * FROM school_requests ORDER BY
+      `SELECT id, school_name, school_type, city, address, license_number,
+              admin_name, admin_phone, admin_email, logo_url, primary_color,
+              accent_color, slogan, principal_name, school_motto, letterhead_address,
+              stamp_info, requested_tier, wants_trial, status, notes, reviewed_by,
+              reviewed_at, subscription_start, subscription_end, approved_school_id,
+              created_at
+       FROM school_requests ORDER BY
          CASE status WHEN 'pending' THEN 0 WHEN 'contacted' THEN 1 ELSE 2 END,
          created_at DESC`
     );
@@ -74,7 +86,7 @@ router.patch('/:id', async (req, res) => {
     const {
       status, notes, reviewed_by,
       subscription_start, subscription_end,
-      approved_school_id, initial_password,
+      approved_school_id,
     } = req.body;
     const allowed = ['pending', 'contacted', 'approved', 'rejected'];
     if (status && !allowed.includes(status)) {
@@ -89,13 +101,12 @@ router.patch('/:id', async (req, res) => {
              reviewed_at        = NOW(),
              subscription_start = COALESCE($4, subscription_start),
              subscription_end   = COALESCE($5, subscription_end),
-             approved_school_id = COALESCE($6, approved_school_id),
-             initial_password   = COALESCE($7, initial_password)
-       WHERE id = $8`,
+             approved_school_id = COALESCE($6, approved_school_id)
+       WHERE id = $7`,
       [
         status ?? null, notes ?? null, reviewed_by ?? null,
         subscription_start ?? null, subscription_end ?? null,
-        approved_school_id ?? null, initial_password ?? null,
+        approved_school_id ?? null,
         id,
       ]
     );

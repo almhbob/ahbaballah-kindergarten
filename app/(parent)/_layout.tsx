@@ -4,11 +4,8 @@ import { NativeTabs, Icon, Label, Badge } from "expo-router/unstable-native-tabs
 import { BlurView } from "expo-blur";
 import { Platform, StyleSheet, View, ActivityIndicator } from "react-native";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
-import { Colors } from "@/constants/colors";
 import { useAppData } from "@/contexts/AppDataContext";
 import { useAuth } from "@/contexts/AuthContext";
-
-const PARENT_COLOR = "#7B3FA0";
 
 function NativeParentTabs() {
   const { messages, news } = useAppData();

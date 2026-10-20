@@ -39,3 +39,6 @@ yarn-error.*
 .vercel
 
 .env
+
+# Private runtime files must never enter Git/checkpoints.
+uploads/

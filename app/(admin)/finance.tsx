@@ -23,7 +23,6 @@ export default function FinanceScreen() {
   const [activeTab, setActiveTab] = useState<'fees' | 'payroll'>('fees');
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [payAmount, setPayAmount] = useState('');
-  const [payNote, setPayNote] = useState('');
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
   const bottomPadding = Platform.OS === 'web' ? 34 : insets.bottom + 90;
 
@@ -48,7 +47,6 @@ export default function FinanceScreen() {
     const total = LEVEL_FEES[s.level] ?? 10000;
     const remaining = total - (s.paidFees ?? 0);
     setPayAmount(remaining > 0 ? String(remaining) : '');
-    setPayNote('');
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   }
 

@@ -88,7 +88,7 @@ export default function StudentsScreen() {
   const [editBehavior, setEditBehavior] = useState<Student['behavior']>('ممتاز');
   const [editHomework, setEditHomework] = useState<Student['homework']>('منجز');
   const [attendanceStatus, setAttendanceStatus] = useState<'حاضر' | 'غائب' | 'متأخر'>('حاضر');
-  const [reportDate, setReportDate] = useState(new Date().toISOString().split('T')[0]);
+  const [reportDate] = useState(new Date().toISOString().split('T')[0]);
   const [reportAte, setReportAte] = useState('');
   const [reportLearned, setReportLearned] = useState('');
   const [reportMood, setReportMood] = useState('');

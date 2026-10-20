@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, TextInput, Pressable, Platform,
-  KeyboardAvoidingView, ScrollView, ActivityIndicator, Alert,
+  KeyboardAvoidingView, ScrollView, ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -33,21 +33,26 @@ export default function SchoolLoginScreen() {
     }
     setLoading(true);
     setError('');
-    const result = await schoolAdminSignIn(email.trim().toLowerCase(), password);
-    setLoading(false);
-    if (!result.ok) {
-      setError(result.error ?? 'خطأ في تسجيل الدخول');
-      return;
+    try {
+      const result = await schoolAdminSignIn(email.trim().toLowerCase(), password);
+      if (!result.ok) {
+        setError(result.error ?? 'خطأ في تسجيل الدخول');
+        return;
+      }
+      await login({
+        id: result.schoolId ?? 'school-admin',
+        name: result.displayName ?? 'مدير الروضة',
+        role: 'admin',
+      });
+      if (result.schoolId) await switchSchool(result.schoolId);
+      router.replace('/(admin)');
+    } catch (error) {
+      setError(error instanceof Error
+        ? 'تم التحقق من Firebase، لكن لا توجد جلسة حساب صالحة على خادم التطبيق. استخدم حساب الخادم أو تواصل مع الإدارة.'
+        : 'تعذّر التحقق من جلسة الخادم');
+    } finally {
+      setLoading(false);
     }
-    if (result.schoolId) {
-      await switchSchool(result.schoolId);
-    }
-    await login({
-      id:   result.schoolId ?? 'school-admin',
-      name: result.displayName ?? 'مدير الروضة',
-      role: 'admin',
-    });
-    router.replace('/(admin)');
   };
 
   return (

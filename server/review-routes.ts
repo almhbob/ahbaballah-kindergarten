@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import pool from './db';
+import { requireStateAdmin } from './access-control';
 
 const router = Router();
 
@@ -18,7 +19,7 @@ router.get('/', async (_req, res) => {
   }
 });
 
-router.get('/all', async (_req, res) => {
+router.get('/all', requireStateAdmin, async (_req, res) => {
   try {
     const { rows } = await pool.query(
       `SELECT id, parent_name AS "parentName", child_name AS "childName",
@@ -34,14 +35,15 @@ router.get('/all', async (_req, res) => {
 
 router.post('/', async (req, res) => {
   const { parentName, childName, content, rating } = req.body;
-  if (!parentName?.trim() || !childName?.trim() || !content?.trim()) {
+  if (![parentName, childName, content].every(value => typeof value === 'string' && value.trim()) ||
+      parentName.length > 120 || childName.length > 120 || content.length > 2000) {
     return res.status(400).json({ error: 'جميع الحقول مطلوبة' });
   }
   const r = Math.min(5, Math.max(1, Number(rating) || 5));
   try {
     const { rows } = await pool.query(
       `INSERT INTO reviews (parent_name, child_name, content, rating, approved)
-       VALUES ($1, $2, $3, $4, true)
+       VALUES ($1, $2, $3, $4, false)
        RETURNING id, parent_name AS "parentName", child_name AS "childName",
                  content, rating, approved, created_at AS "createdAt"`,
       [parentName.trim(), childName.trim(), content.trim(), r]
@@ -53,7 +55,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-router.patch('/:id/approve', async (req, res) => {
+router.patch('/:id/approve', requireStateAdmin, async (req, res) => {
   try {
     const { rows } = await pool.query(
       `UPDATE reviews SET approved = true WHERE id = $1
@@ -69,7 +71,7 @@ router.patch('/:id/approve', async (req, res) => {
   }
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requireStateAdmin, async (req, res) => {
   try {
     const { rowCount } = await pool.query('DELETE FROM reviews WHERE id = $1', [req.params.id]);
     if (!rowCount) return res.status(404).json({ error: 'الرأي غير موجود' });

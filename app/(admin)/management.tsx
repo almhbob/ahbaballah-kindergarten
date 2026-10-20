@@ -590,8 +590,8 @@ function AddStudentModal({ visible, editing, onClose, onSave }: {
     }
   }, [editing, visible]);
 
-  const [uploadingPhoto, setUploadingPhoto] = useState(false);
-  const [uploadingBirth, setUploadingBirth] = useState(false);
+  const [, setUploadingPhoto] = useState(false);
+  const [, setUploadingBirth] = useState(false);
 
   const pickPhoto = async () => {
     if (Platform.OS !== 'web') {
@@ -1325,7 +1325,7 @@ function TeacherProfileSheet({ teacher: teacherProp, onClose }: { teacher: Emplo
   const [warnDuration, setWarnDuration] = useState('');
 
   React.useEffect(() => {
-    if (teacherProp) { setActiveTab('نظرة عامة'); setShowAttForm(false); setShowWarnForm(false); }
+    if (teacherProp?.id) { setActiveTab('نظرة عامة'); setShowAttForm(false); setShowWarnForm(false); }
   }, [teacherProp?.id]);
 
   if (!teacherProp) return null;
@@ -1588,7 +1588,7 @@ function TeacherProfileSheet({ teacher: teacherProp, onClose }: { teacher: Emplo
                 <View style={pStyles.emptyTab}>
                   <Ionicons name="calendar-outline" size={48} color={Colors.textLight} />
                   <Text style={pStyles.emptyTabTxt}>لم يُسجَّل أي سجل حضور بعد</Text>
-                  <Text style={pStyles.emptyTabSub}>اضغط على "تسجيل حضور اليوم" للبدء</Text>
+                  <Text style={pStyles.emptyTabSub}>اضغط على &quot;تسجيل حضور اليوم&quot; للبدء</Text>
                 </View>
               )}
             </>

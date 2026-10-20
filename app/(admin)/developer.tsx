@@ -15,7 +15,7 @@ import * as Haptics from 'expo-haptics';
 import * as Clipboard from 'expo-clipboard';
 import { SUBSCRIPTION_TIERS, TIER_ORDER, getTierById, checkCapacity, capacityColor, SubscriptionTier } from '@/lib/subscription-tiers';
 import { createSchoolAdminAccount } from '@/lib/school-auth';
-import { getApiUrl } from '@/lib/query-client';
+import { makeApiUrl } from '@/lib/query-client';
 
 function genId() {
   return Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
@@ -133,7 +133,7 @@ function PasswordGate({ correctPassword, onUnlock }: { correctPassword: string; 
   const [pass,    setPass]    = useState('');
   const [show,    setShow]    = useState(false);
   const [error,   setError]   = useState(false);
-  const [shaking, setShaking] = useState(false);
+  const [, setShaking] = useState(false);
   const shakeAnim = useRef(new Animated.Value(0)).current;
 
   const shake = () => {
@@ -159,8 +159,6 @@ function PasswordGate({ correctPassword, onUnlock }: { correctPassword: string; 
       setTimeout(() => setError(false), 2500);
     }
   };
-
-  const dots = Array.from({ length: Math.min(pass.length, correctPassword.length) });
 
   return (
     <View style={pg.root}>
@@ -398,7 +396,6 @@ function RenewalModal({ visible, school, onClose, onRenew }: {
 }) {
   const insets = useSafeAreaInsets();
   const topPad = Platform.OS === 'web' ? 67 : insets.top;
-  const botPad = Platform.OS === 'web' ? 34 : insets.bottom;
   const [selectedTier, setSelectedTier] = useState<SubscriptionTier>('basic');
   const [months, setMonths]             = useState(1);
   const [saving, setSaving]             = useState(false);
@@ -409,7 +406,7 @@ function RenewalModal({ visible, school, onClose, onRenew }: {
 
   if (!school) return null;
 
-  const tierDef   = getTierById(selectedTier);
+  const tierDef = getTierById(selectedTier);
   const totalSAR  = tierDef.price * months;
   const newExpiry = new Date(Date.now() + months * 30 * 24 * 3600 * 1000)
     .toISOString().split('T')[0];
@@ -600,13 +597,14 @@ export default function DeveloperScreen() {
   const fetchSchoolRequests = async () => {
     setRequestsLoading(true);
     try {
-      const base = getApiUrl();
-      const url  = new URL('/api/school-requests', `https://${base}`).toString();
-      const res  = await fetch(url);
+      const url  = makeApiUrl('/api/school-requests');
+      const res  = await fetch(url, { credentials: 'include' });
+      if (!res.ok) throw new Error(`Failed to fetch school requests: ${res.status}`);
       const json = await res.json();
-      if (json.ok) setSchoolRequests(json.data ?? []);
-    } catch (e) {
-      console.warn('[developer] fetchSchoolRequests error', e);
+      if (!json.ok) throw new Error('Failed to fetch school requests');
+      setSchoolRequests(json.data ?? []);
+    } catch {
+      console.warn('[developer] fetchSchoolRequests failed');
     } finally {
       setRequestsLoading(false);
     }
@@ -614,16 +612,19 @@ export default function DeveloperScreen() {
 
   const updateRequestStatus = async (id: number, status: string, notes?: string) => {
     try {
-      const base = getApiUrl();
-      const url  = new URL(`/api/school-requests/${id}`, `https://${base}`).toString();
-      await fetch(url, {
+      const url  = makeApiUrl(`/api/school-requests/${id}`);
+      const res = await fetch(url, {
         method: 'PATCH',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status, notes, reviewed_by: 'developer' }),
       });
+      if (!res.ok) throw new Error(`Failed to update school request: ${res.status}`);
+      const json = await res.json();
+      if (!json.ok) throw new Error('Failed to update school request');
       await fetchSchoolRequests();
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    } catch (e) {
+    } catch {
       Alert.alert('خطأ', 'فشل تحديث الحالة');
     }
   };
@@ -632,10 +633,16 @@ export default function DeveloperScreen() {
     Alert.alert('تأكيد', 'حذف الطلب نهائياً؟', [
       { text: 'إلغاء', style: 'cancel' },
       { text: 'حذف', style: 'destructive', onPress: async () => {
-        const base = getApiUrl();
-        const url  = new URL(`/api/school-requests/${id}`, `https://${base}`).toString();
-        await fetch(url, { method: 'DELETE' });
-        await fetchSchoolRequests();
+        try {
+          const url  = makeApiUrl(`/api/school-requests/${id}`);
+          const res = await fetch(url, { method: 'DELETE', credentials: 'include' });
+          if (!res.ok) throw new Error(`Failed to delete school request: ${res.status}`);
+          const json = await res.json();
+          if (!json.ok) throw new Error('Failed to delete school request');
+          await fetchSchoolRequests();
+        } catch {
+          Alert.alert('خطأ', 'فشل حذف الطلب');
+        }
       }},
     ]);
   };
@@ -666,7 +673,6 @@ export default function DeveloperScreen() {
             const initialPassword = `Nuzum@${new Date().getFullYear()}${randomSuffix}`;
 
             // 2. Calculate subscription dates
-            const tierDef = getTierById(req.requested_tier as SubscriptionTier ?? 'trial');
             const startDate = new Date().toISOString().split('T')[0];
             const daysToAdd = req.wants_trial ? 30 : 30;
             const endDate   = new Date(Date.now() + daysToAdd * 24 * 3600 * 1000).toISOString().split('T')[0];
@@ -702,10 +708,10 @@ export default function DeveloperScreen() {
             }
 
             // 6. Persist provisioning data in DB
-            const base = getApiUrl();
-            const url  = new URL(`/api/school-requests/${req.id}`, `https://${base}`).toString();
-            await fetch(url, {
+            const url  = makeApiUrl(`/api/school-requests/${req.id}`);
+            const res = await fetch(url, {
               method: 'PATCH',
+              credentials: 'include',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 status:             'approved',
@@ -717,6 +723,9 @@ export default function DeveloperScreen() {
                 initial_password:   initialPassword,
               }),
             });
+            if (!res.ok) throw new Error(`Failed to save school provisioning: ${res.status}`);
+            const json = await res.json();
+            if (!json.ok) throw new Error('Failed to save school provisioning');
 
             // 7. Refresh requests list
             await fetchSchoolRequests();
@@ -735,7 +744,7 @@ export default function DeveloperScreen() {
             });
             setShowCredsModal(true);
 
-          } catch (e) {
+          } catch {
             setAuthCreating(false);
             Alert.alert('خطأ', 'فشل تفعيل الروضة. تحقق من الاتصال وحاول مجدداً.');
           }

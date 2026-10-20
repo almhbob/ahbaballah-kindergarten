@@ -1,17 +1,16 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Pressable, TextInput,
-  KeyboardAvoidingView, Platform, Alert, Image,
+  KeyboardAvoidingView, Platform, Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
 import { Colors } from '@/constants/colors';
 import { useAppData } from '@/contexts/AppDataContext';
-import { uploadFile } from '@/lib/uploads';
+import { newEnrollmentKey } from '@/lib/enrollment';
 
 type Level = 'براعم' | 'مستوى أول' | 'مستوى ثاني';
 type Gender = 'ذكر' | 'أنثى';
@@ -55,41 +54,14 @@ export default function EnrollmentRequestScreen() {
   const [birthDate, setBirthDate] = useState('');
   const [nationality, setNationality] = useState('');
   const [notes, setNotes] = useState('');
-  const [docs, setDocs] = useState<Record<string, string>>({});
-  const [uploadingDoc, setUploadingDoc] = useState<string | null>(null);
   const [step, setStep] = useState<'form' | 'docs' | 'done'>('form');
   const [loading, setLoading] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [requestKey, setRequestKey] = useState(() => newEnrollmentKey());
+  const submitting = useRef(false);
 
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
   const bottomPadding = Platform.OS === 'web' ? 34 : insets.bottom + 24;
-
-  async function pickDoc(key: string) {
-    try {
-      if (Platform.OS !== 'web') {
-        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-        if (status !== 'granted') {
-          Alert.alert('تنبيه', 'نحتاج إذن الوصول إلى المعرض');
-          return;
-        }
-      }
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
-        quality: 0.7,
-      });
-      if (result.canceled || result.assets.length === 0) return;
-      setUploadingDoc(key);
-      const url = await uploadFile(result.assets[0].uri, {
-        name: `reg_${key}_${Date.now()}.jpg`,
-        mime: 'image/jpeg',
-      });
-      setDocs(prev => ({ ...prev, [key]: url }));
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    } catch (e: any) {
-      Alert.alert('فشل الرفع', e?.message || 'تعذّر رفع المستند، حاول مجدداً');
-    } finally {
-      setUploadingDoc(null);
-    }
-  }
 
   function validateForm(): string | null {
     if (!childName.trim()) return 'أدخل اسم الطفل';
@@ -98,14 +70,14 @@ export default function EnrollmentRequestScreen() {
     return null;
   }
 
-  function submitRequest() {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  async function submitRequest() {
+    if (submitting.current || loading) return;
+    submitting.current = true;
     setLoading(true);
-    const docPayload: Record<string, string> = {};
-    Object.entries(docs).forEach(([k, v]) => { if (v) docPayload[k] = v; });
-    setTimeout(() => {
-      addRegistrationRequest({
-        id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
+    setSubmitError(null);
+    try {
+      await addRegistrationRequest({
+        id: requestKey,
         childName: childName.trim(),
         parentName: parentName.trim(),
         parentPhone: phone.trim(),
@@ -115,13 +87,19 @@ export default function EnrollmentRequestScreen() {
         birthDate: birthDate.trim(),
         nationality: nationality.trim() || undefined,
         notes: notes.trim() || undefined,
-        documents: Object.keys(docPayload).length ? docPayload : undefined,
+        documents: undefined,
         status: 'pending',
         createdAt: new Date().toISOString(),
       });
-      setLoading(false);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setRequestKey(newEnrollmentKey());
       setStep('done');
-    }, 400);
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : 'تعذر إرسال الطلب؛ حاول مرة أخرى');
+    } finally {
+      submitting.current = false;
+      setLoading(false);
+    }
   }
 
   if (step === 'done') {
@@ -161,7 +139,7 @@ export default function EnrollmentRequestScreen() {
               <Ionicons name="arrow-forward" size={22} color="rgba(255,255,255,0.7)" />
             </Pressable>
             <Text style={s.headerTitle}>
-              {step === 'form' ? 'طلب تسجيل طالب جديد' : 'رفع المستندات'}
+              {step === 'form' ? 'طلب تسجيل طالب جديد' : 'المستندات المطلوبة'}
             </Text>
             <View style={{ width: 36 }} />
           </View>
@@ -259,40 +237,25 @@ export default function EnrollmentRequestScreen() {
             </>
           ) : (
             <>
-              <Text style={s.docsHint}>الوثائق المطلوبة (مطلوبة <Text style={{ color: Colors.danger }}>*</Text> )</Text>
-              {DOCS.map(doc => {
-                const uri = docs[doc.key];
-                const isUploading = uploadingDoc === doc.key;
-                return (
-                  <Pressable key={doc.key} style={[s.docItem, isUploading && { opacity: 0.7 }]} onPress={() => !isUploading && pickDoc(doc.key)} disabled={isUploading}>
-                    {uri ? (
-                      <Image source={{ uri }} style={s.docThumb} resizeMode="cover" />
-                    ) : (
-                      <View style={s.docIcon}>
-                        <MaterialCommunityIcons
-                          name={isUploading ? 'cloud-upload-outline' : 'file-upload-outline'}
-                          size={24}
-                          color={'rgba(255,255,255,0.3)'}
-                        />
-                      </View>
-                    )}
-                    <View style={{ flex: 1 }}>
-                      <Text style={s.docLabel}>
-                        {doc.label}
-                        {doc.required && <Text style={{ color: Colors.danger }}> *</Text>}
-                      </Text>
-                      <Text style={s.docSub}>
-                        {isUploading ? 'جاري الرفع...' : uri ? 'تم الرفع ✓' : 'اضغط لاختيار الصورة'}
-                      </Text>
-                    </View>
-                    <Ionicons name={uri ? 'checkmark-circle' : 'cloud-upload-outline'} size={20} color={uri ? Colors.success : 'rgba(255,255,255,0.3)'} />
-                  </Pressable>
-                );
-              })}
+              <Text style={s.docsHint}>المستندات التي ستُطلب عند استكمال التسجيل</Text>
+              {DOCS.map(doc => (
+                <View key={doc.key} style={s.docItem}>
+                  <View style={s.docIcon}>
+                    <MaterialCommunityIcons name="file-document-outline" size={24} color="rgba(255,255,255,0.3)" />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={s.docLabel}>
+                      {doc.label}
+                      {doc.required && <Text style={{ color: Colors.danger }}> *</Text>}
+                    </Text>
+                    <Text style={s.docSub}>{doc.required ? 'مطلوب عند استكمال التسجيل' : 'اختياري'}</Text>
+                  </View>
+                </View>
+              ))}
 
               <View style={s.infoBox}>
                 <Ionicons name="information-circle-outline" size={16} color={Colors.accent} />
-                <Text style={s.infoText}>يمكنك إرسال الطلب الآن وإكمال المستندات لاحقاً عند زيارة الروضة</Text>
+                <Text style={s.infoText}>لا تُرفق المستندات هنا؛ ستضيفها إدارة الروضة بعد مراجعة الطلب وإتمام التسجيل.</Text>
               </View>
 
               <Pressable
@@ -305,6 +268,7 @@ export default function EnrollmentRequestScreen() {
                   <Ionicons name="send" size={16} color="#fff" style={{ marginRight: 6 }} />
                 </LinearGradient>
               </Pressable>
+              {submitError ? <Text style={s.submitError}>{submitError}</Text> : null}
             </>
           )}
         </ScrollView>
@@ -338,9 +302,9 @@ const s = StyleSheet.create({
   nextBtnGrad: { height: 52, borderRadius: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   nextBtnText: { fontSize: 16, fontFamily: 'Inter_700Bold', color: '#fff' },
   docsHint: { fontSize: 13, fontFamily: 'Inter_400Regular', color: 'rgba(255,255,255,0.5)', textAlign: 'right' },
+  submitError: { color: Colors.danger, fontSize: 13, fontFamily: 'Inter_500Medium', textAlign: 'right' },
   docItem: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 12, padding: 14, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
   docIcon: { width: 44, height: 44, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.05)', alignItems: 'center', justifyContent: 'center' },
-  docThumb: { width: 44, height: 44, borderRadius: 10 },
   docLabel: { fontSize: 13, fontFamily: 'Inter_600SemiBold', color: '#fff', textAlign: 'right' },
   docSub: { fontSize: 11, fontFamily: 'Inter_400Regular', color: 'rgba(255,255,255,0.4)', marginTop: 2, textAlign: 'right' },
   infoBox: { flexDirection: 'row', gap: 8, alignItems: 'flex-start', backgroundColor: Colors.accent + '15', borderRadius: 10, padding: 12, borderWidth: 1, borderColor: Colors.accent + '30' },

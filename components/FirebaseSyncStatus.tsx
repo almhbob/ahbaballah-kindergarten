@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Colors } from '@/constants/colors';
-import { isFirebaseReady, initFirebase } from '@/lib/firebase';
+import { isFirebaseReady } from '@/lib/firebase';
 import { fsBulkUploadStudents, fsBulkUploadEmployees } from '@/lib/firestore-service';
 import { useAppData } from '@/contexts/AppDataContext';
 import * as Haptics from 'expo-haptics';

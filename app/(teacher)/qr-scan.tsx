@@ -48,7 +48,7 @@ export default function QRScanScreen() {
         ])
       ).start();
     }
-  }, [scanned]);
+  }, [scanned, scanLineAnim]);
 
   const handleBarCodeScanned = ({ data }: { type: string; data: string }) => {
     if (scanned) return;

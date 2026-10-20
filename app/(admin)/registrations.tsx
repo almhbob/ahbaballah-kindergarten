@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useCallback } from 'react';
 import {
   View, Text, StyleSheet, FlatList, Pressable, Platform,
   Modal, ScrollView, TextInput, Alert, Image, Linking,
@@ -9,6 +9,7 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Colors } from '@/constants/colors';
 import { useAppData, RegistrationRequest, RegistrationStatus } from '@/contexts/AppDataContext';
 import * as Haptics from 'expo-haptics';
+import { useFocusEffect } from 'expo-router';
 
 type Tab = 'pending' | 'approved' | 'rejected';
 
@@ -94,12 +95,16 @@ function DetailModal({
   onApprove,
   onReject,
   onDelete,
+  busy,
+  error,
 }: {
   req: RegistrationRequest;
   onClose: () => void;
-  onApprove: () => void;
-  onReject: (reason: string) => void;
-  onDelete: () => void;
+  onApprove: () => Promise<void>;
+  onReject: (reason: string) => Promise<void>;
+  onDelete: () => Promise<void>;
+  busy: boolean;
+  error: string | null;
 }) {
   const insets = useSafeAreaInsets();
   const [showRejectInput, setShowRejectInput] = useState(false);
@@ -204,13 +209,15 @@ function DetailModal({
                 <>
                   <Pressable
                     style={[detail.actionBtn, { backgroundColor: Colors.success }]}
-                    onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); onApprove(); }}
+                    disabled={busy}
+                    onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); void onApprove(); }}
                   >
                     <Ionicons name="checkmark-circle" size={18} color="#fff" />
                     <Text style={detail.actionBtnText}>قبول الطلب</Text>
                   </Pressable>
                   <Pressable
                     style={[detail.actionBtn, { backgroundColor: Colors.danger }]}
+                    disabled={busy}
                     onPress={() => setShowRejectInput(true)}
                   >
                     <Ionicons name="close-circle" size={18} color="#fff" />
@@ -231,10 +238,12 @@ function DetailModal({
                   />
                   <View style={{ flexDirection: 'row', gap: 10 }}>
                     <Pressable style={[detail.actionBtn, { flex: 1, backgroundColor: Colors.danger }]}
-                      onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); onReject(rejectReason); }}>
+                      disabled={busy}
+                      onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); void onReject(rejectReason); }}>
                       <Text style={detail.actionBtnText}>تأكيد الرفض</Text>
                     </Pressable>
                     <Pressable style={[detail.actionBtn, { backgroundColor: Colors.borderLight }]}
+                      disabled={busy}
                       onPress={() => setShowRejectInput(false)}>
                       <Text style={[detail.actionBtnText, { color: Colors.text }]}>إلغاء</Text>
                     </Pressable>
@@ -244,12 +253,14 @@ function DetailModal({
             </View>
           )}
 
+          {error ? <Text style={[detail.errorText, { marginHorizontal: 16, marginBottom: 8 }]}>{error}</Text> : null}
           <Pressable
             style={detail.deleteBtn}
+            disabled={busy}
             onPress={() => {
               Alert.alert('حذف الطلب', 'هل تريد حذف هذا الطلب نهائياً؟', [
                 { text: 'إلغاء', style: 'cancel' },
-                { text: 'حذف', style: 'destructive', onPress: onDelete },
+                { text: 'حذف', style: 'destructive', onPress: () => { void onDelete(); } },
               ]);
             }}
           >
@@ -289,16 +300,41 @@ const detail = StyleSheet.create({
   rejectInput: { backgroundColor: Colors.surface, borderRadius: 12, padding: 12, fontSize: 13, fontFamily: 'Inter_400Regular', color: Colors.text, minHeight: 80, borderWidth: 1, borderColor: Colors.borderLight, textAlignVertical: 'top' },
   deleteBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, padding: 16, marginHorizontal: 16, marginBottom: 8 },
   deleteBtnText: { fontSize: 13, fontFamily: 'Inter_500Medium', color: Colors.danger },
+  errorText: { fontSize: 13, fontFamily: 'Inter_500Medium', color: Colors.danger, textAlign: 'right' },
 });
 
 export default function RegistrationsScreen() {
   const insets = useSafeAreaInsets();
-  const { registrationRequests, updateRegistrationRequest, removeRegistrationRequest } = useAppData();
+  const {
+    registrationRequests, updateRegistrationRequest, removeRegistrationRequest,
+    refreshRegistrationRequests, registrationError,
+  } = useAppData();
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
   const bottomPadding = Platform.OS === 'web' ? 34 : insets.bottom + 90;
 
   const [tab, setTab] = useState<Tab>('pending');
   const [selected, setSelected] = useState<RegistrationRequest | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [actionBusy, setActionBusy] = useState(false);
+  const [operationError, setOperationError] = useState<string | null>(null);
+  const refreshRef = useRef(refreshRegistrationRequests);
+  refreshRef.current = refreshRegistrationRequests;
+
+  const refreshRequests = useCallback(async () => {
+    setRefreshing(true);
+    setOperationError(null);
+    try {
+      await refreshRef.current();
+    } catch (error) {
+      setOperationError(error instanceof Error ? error.message : 'تعذر تحديث طلبات التسجيل');
+    } finally {
+      setRefreshing(false);
+    }
+  }, []);
+
+  useFocusEffect(useCallback(() => {
+    void refreshRequests();
+  }, [refreshRequests]));
 
   const filtered = useMemo(() =>
     registrationRequests.filter(r => r.status === tab),
@@ -311,16 +347,46 @@ export default function RegistrationsScreen() {
     rejected: registrationRequests.filter(r => r.status === 'rejected').length,
   }), [registrationRequests]);
 
-  const handleApprove = (id: string) => {
-    updateRegistrationRequest(id, { status: 'approved', approvedAt: new Date().toISOString() });
-    setSelected(null);
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  const handleApprove = async (id: string) => {
+    setActionBusy(true);
+    setOperationError(null);
+    try {
+      await updateRegistrationRequest(id, { status: 'approved' });
+      setSelected(null);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (error) {
+      setOperationError(error instanceof Error ? error.message : 'تعذر قبول الطلب');
+    } finally {
+      setActionBusy(false);
+    }
   };
 
-  const handleReject = (id: string, reason: string) => {
-    updateRegistrationRequest(id, { status: 'rejected', rejectionReason: reason || 'لم يُحدد سبب' });
-    setSelected(null);
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+  const handleReject = async (id: string, reason: string) => {
+    setActionBusy(true);
+    setOperationError(null);
+    try {
+      await updateRegistrationRequest(id, { status: 'rejected', rejectionReason: reason || 'لم يُحدد سبب' });
+      setSelected(null);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    } catch (error) {
+      setOperationError(error instanceof Error ? error.message : 'تعذر رفض الطلب');
+    } finally {
+      setActionBusy(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    setActionBusy(true);
+    setOperationError(null);
+    try {
+      await removeRegistrationRequest(id);
+      setSelected(null);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (error) {
+      setOperationError(error instanceof Error ? error.message : 'تعذر حذف الطلب');
+    } finally {
+      setActionBusy(false);
+    }
   };
 
   return (
@@ -328,6 +394,13 @@ export default function RegistrationsScreen() {
       <LinearGradient colors={['#030612', '#050c38', '#0d1463']} style={[sty.header, { paddingTop: topPadding + 12 }]}>
         <Text style={sty.headerTitle}>طلبات التسجيل</Text>
         <Text style={sty.headerSub}>{registrationRequests.length} طلب إجمالي</Text>
+        <Pressable style={sty.refreshButton} onPress={() => { void refreshRequests(); }} disabled={refreshing}>
+          <Ionicons name="refresh" size={16} color="#fff" />
+          <Text style={sty.refreshText}>{refreshing ? 'جاري التحديث...' : 'تحديث الطلبات'}</Text>
+        </Pressable>
+        {(operationError || registrationError) ? (
+          <Text style={sty.errorText}>{operationError || registrationError}</Text>
+        ) : null}
 
         <View style={sty.tabs}>
           {TAB_CONFIG.map(t => (
@@ -372,7 +445,9 @@ export default function RegistrationsScreen() {
           onClose={() => setSelected(null)}
           onApprove={() => handleApprove(selected.id)}
           onReject={(reason) => handleReject(selected.id, reason)}
-          onDelete={() => { removeRegistrationRequest(selected.id); setSelected(null); }}
+          onDelete={() => handleDelete(selected.id)}
+          busy={actionBusy}
+          error={operationError}
         />
       )}
     </View>
@@ -384,6 +459,9 @@ const sty = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingBottom: 16 },
   headerTitle: { fontSize: 20, fontFamily: 'Inter_700Bold', color: '#fff', textAlign: 'right', marginBottom: 2 },
   headerSub: { fontSize: 12, fontFamily: 'Inter_400Regular', color: 'rgba(255,255,255,0.5)', textAlign: 'right', marginBottom: 14 },
+  refreshButton: { alignSelf: 'flex-end', flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 6, paddingHorizontal: 10, marginTop: -8, marginBottom: 8 },
+  refreshText: { fontSize: 12, fontFamily: 'Inter_500Medium', color: '#fff' },
+  errorText: { fontSize: 12, fontFamily: 'Inter_500Medium', color: '#FCA5A5', textAlign: 'right', marginBottom: 10 },
   tabs: { flexDirection: 'row', gap: 8 },
   tabBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, paddingVertical: 8, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', backgroundColor: 'rgba(255,255,255,0.05)' },
   tabText: { fontSize: 11, fontFamily: 'Inter_600SemiBold', color: Colors.textLight },

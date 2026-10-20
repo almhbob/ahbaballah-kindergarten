@@ -2,7 +2,7 @@ import React, { useState, useRef, useCallback } from 'react';
 import {
   View, Text, StyleSheet, FlatList, Pressable,
   Platform, Alert, Dimensions, Modal, ScrollView,
-  ActivityIndicator, TextInput, Switch,
+  ActivityIndicator, TextInput,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';

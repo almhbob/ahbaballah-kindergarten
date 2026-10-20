@@ -1,8 +1,8 @@
 import React, { useRef, useState, useEffect } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, Pressable, Dimensions, Platform,
+  View, Text, StyleSheet, ScrollView, Dimensions,
 } from 'react-native';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/colors';
 import { useAppData, Banner } from '@/contexts/AppDataContext';
 

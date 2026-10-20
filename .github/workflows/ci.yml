@@ -7,6 +7,38 @@ on:
     branches: [main]
 
 jobs:
+  regression-tests:
+    name: Security, dismissal and image regression tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: test_runner
+          POSTGRES_DB: app_test
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U test_runner -d app_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      RUN_PG_TESTS: 'true'
+      TEST_PG_HOST: 127.0.0.1
+      TEST_PG_PORT: '5432'
+      TEST_PG_USER: test_runner
+      TEST_PG_DATABASE: app_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: npm ci --legacy-peer-deps
+      - run: node --test tests/*.test.cjs
+
   typecheck:
     name: TypeScript Check
     runs-on: ubuntu-latest
@@ -17,7 +49,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
 
       - name: Install dependencies
@@ -36,15 +68,14 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
 
       - name: Install dependencies
         run: npm ci --legacy-peer-deps
 
       - name: Run ESLint
-        run: npx eslint . --ext .ts,.tsx --max-warnings 50
-        continue-on-error: true
+        run: npx eslint . --ext .ts,.tsx --max-warnings 0
 
   expo-doctor:
     name: Expo Doctor
@@ -56,7 +87,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
 
       - name: Install dependencies
@@ -64,4 +95,17 @@ jobs:
 
       - name: Run Expo Doctor
         run: npx expo-doctor@latest
-        continue-on-error: true
+  web-build:
+    name: Expo web production bundle
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: npm ci --legacy-peer-deps
+      - run: npx expo export --platform web --output-dir dist
+        env:
+          CI: '1'
+          EXPO_PUBLIC_DOMAIN: localhost:5000

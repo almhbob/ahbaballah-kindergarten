@@ -14,7 +14,6 @@ import HexFrame from '@/components/HexFrame';
 import * as Haptics from 'expo-haptics';
 import FirebaseSyncStatus from '@/components/FirebaseSyncStatus';
 import SubscriptionExpiryBanner from '@/components/SubscriptionExpiryBanner';
-import SchoolBrandHeader from '@/components/SchoolBrandHeader';
 import { useSchoolTheme } from '@/contexts/SchoolThemeContext';
 
 const ROLE_COLORS: Record<string, string> = {
@@ -135,6 +134,8 @@ function QuickAction({ icon, label, color, onPress }: {
 }) {
   return (
     <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
       style={({ pressed }) => [styles.quickAction, { opacity: pressed ? 0.78 : 1 }]}
       onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onPress(); }}
     >
@@ -160,7 +161,7 @@ export default function AdminDashboard() {
   const totalPayroll = employees.reduce((a, e) => a + e.salary, 0).toLocaleString('ar-SA');
 
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
-  const bottomPadding = Platform.OS === 'web' ? 34 : insets.bottom + 90;
+  const bottomPadding = Math.max(insets.bottom, 34) + 90;
 
   return (
     <View style={styles.container}>
@@ -225,6 +226,7 @@ export default function AdminDashboard() {
           <BannerCarousel />
           <Text style={styles.sectionTitle}>الإجراءات السريعة</Text>
           <View style={styles.quickActions}>
+            <QuickAction icon="account-arrow-right" label="انصراف الطلاب" color="#0891B2" onPress={() => router.push('/(admin)/dismissal')} />
             <QuickAction icon="account-group" label="الطلاب" color="#3B82F6" onPress={() => router.push('/(admin)/management')} />
             <QuickAction icon="account-tie" label="المعلمات" color="#8B5CF6" onPress={() => router.push('/(admin)/employees')} />
             <QuickAction icon="cash-multiple" label="الرواتب" color={Colors.success} onPress={() => router.push('/(admin)/finance')} />
@@ -354,7 +356,7 @@ const styles = StyleSheet.create({
   },
   headerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
   headerText: { flex: 1, alignItems: 'flex-end' },
-  schoolName: { fontSize: 17, color: '#FFFFFF', fontFamily: 'Inter_700Bold' },
+  schoolName: { fontSize: 17, color: '#FFFFFF', fontFamily: 'Inter_700Bold', textAlign: 'right', flexShrink: 1 },
   schoolLocation: { fontSize: 11, color: Colors.accent, fontFamily: 'Inter_500Medium', marginBottom: 1 },
   adminTitle: { fontSize: 10, color: 'rgba(255,255,255,0.55)', fontFamily: 'Inter_400Regular', marginBottom: 2 },
   greeting: { fontSize: 12, color: 'rgba(255,255,255,0.6)', fontFamily: 'Inter_400Regular' },
@@ -382,8 +384,8 @@ const styles = StyleSheet.create({
   statCardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 },
   statIconWrap: { width: 36, height: 36, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
   statValue: { fontSize: 26, fontFamily: 'Inter_700Bold', color: Colors.text },
-  statLabel: { fontSize: 12, fontFamily: 'Inter_500Medium', color: Colors.textSecondary },
-  statSub: { fontSize: 10, fontFamily: 'Inter_400Regular', color: Colors.textLight, marginTop: 1 },
+  statLabel: { fontSize: 14, fontFamily: 'Inter_500Medium', color: Colors.textSecondary, textAlign: 'right' },
+  statSub: { fontSize: 12, fontFamily: 'Inter_400Regular', color: Colors.textSecondary, marginTop: 2, textAlign: 'right' },
   body: { padding: 20 },
   sectionTitle: {
     fontSize: 15, fontFamily: 'Inter_700Bold', color: Colors.text,
@@ -394,13 +396,13 @@ const styles = StyleSheet.create({
   quickActions: {
     flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 24,
   },
-  quickAction: { width: '30%', alignItems: 'center', gap: 7 },
+  quickAction: { width: '30%', minHeight: 96, alignItems: 'center', gap: 8, paddingVertical: 4 },
   quickActionIcon: {
     width: 56, height: 56, borderRadius: 18,
     justifyContent: 'center', alignItems: 'center',
     borderWidth: 1,
   },
-  quickActionLabel: { fontSize: 11, fontFamily: 'Inter_500Medium', color: Colors.textSecondary, textAlign: 'center', lineHeight: 15 },
+  quickActionLabel: { fontSize: 13, fontFamily: 'Inter_500Medium', color: Colors.textSecondary, textAlign: 'center', lineHeight: 20 },
   newsCard: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.surface,
     borderRadius: 14, padding: 14, marginBottom: 10,

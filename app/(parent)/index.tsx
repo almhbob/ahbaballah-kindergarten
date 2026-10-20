@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, Pressable, Platform, Image, Alert,
+  View, Text, StyleSheet, ScrollView, Pressable, Platform, Alert,
   Modal, TextInput, KeyboardAvoidingView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -21,7 +21,6 @@ export default function ParentHomeScreen() {
   const { user, logout, apiLogout } = useAuth();
   const { students, messages } = useAppData();
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
-  const bottomPadding = Platform.OS === 'web' ? 34 : insets.bottom + 90;
 
   const child = students.find(s => s.id === user?.studentId);
 

@@ -18,21 +18,6 @@ function hexValid(h: string) {
   return /^#[0-9A-Fa-f]{6}$/.test(h);
 }
 
-function ColorSwatch({ color, label, selected, onPress }: {
-  color: string; label: string; selected?: boolean; onPress: () => void;
-}) {
-  return (
-    <Pressable onPress={onPress} style={[s.swatch, selected && s.swatchSelected]}>
-      <View style={[s.swatchDot, { backgroundColor: color }]} />
-      {selected && (
-        <View style={s.swatchCheck}>
-          <Ionicons name="checkmark" size={10} color="#fff" />
-        </View>
-      )}
-    </Pressable>
-  );
-}
-
 function PreviewCard({ draft }: { draft: SchoolBranding }) {
   return (
     <View style={s.previewWrap}>
@@ -76,7 +61,7 @@ export default function BrandingScreen() {
   const topPad = Platform.OS === 'web' ? 67 : insets.top;
   const botPad = Platform.OS === 'web' ? 34 : insets.bottom + 16;
 
-  const { branding, updateBranding, theme, activeSchoolId } = useSchoolTheme();
+  const { branding, updateBranding, activeSchoolId } = useSchoolTheme();
 
   const [draft, setDraft]             = useState<SchoolBranding>({ ...branding });
   const [saving, setSaving]           = useState(false);
@@ -104,11 +89,15 @@ export default function BrandingScreen() {
       if (result.canceled || !result.assets[0]) return;
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       setUploadingLogo(true);
-      const url = await uploadSchoolLogo(activeSchoolId, result.assets[0].uri);
+      const asset = result.assets[0];
+      const url = await uploadSchoolLogo(activeSchoolId, asset.uri, {
+        name: asset.fileName ?? undefined,
+        mime: asset.mimeType ?? undefined,
+      });
       patch('logoUrl', url);
       Alert.alert('تم الرفع ✓', 'تم رفع الشعار. اضغط حفظ لتطبيقه.');
-    } catch {
-      Alert.alert('خطأ', 'فشل رفع الشعار. تحقق من الاتصال بالإنترنت.');
+    } catch (error: unknown) {
+      Alert.alert('خطأ', error instanceof Error ? error.message : 'فشل رفع الشعار. تحقق من الاتصال بالإنترنت.');
     } finally {
       setUploadingLogo(false);
     }
@@ -129,11 +118,15 @@ export default function BrandingScreen() {
       if (result.canceled || !result.assets[0]) return;
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       setUploadingLogo(true);
-      const url = await uploadSchoolLogo(activeSchoolId, result.assets[0].uri);
+      const asset = result.assets[0];
+      const url = await uploadSchoolLogo(activeSchoolId, asset.uri, {
+        name: asset.fileName ?? undefined,
+        mime: asset.mimeType ?? undefined,
+      });
       patch('logoUrl', url);
       Alert.alert('تم الرفع ✓', 'تم رفع الشعار. اضغط حفظ لتطبيقه.');
-    } catch {
-      Alert.alert('خطأ', 'فشل رفع الشعار.');
+    } catch (error: unknown) {
+      Alert.alert('خطأ', error instanceof Error ? error.message : 'فشل رفع الشعار.');
     } finally {
       setUploadingLogo(false);
     }

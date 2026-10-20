@@ -1,5 +1,5 @@
-import { getApiUrl } from '@/lib/query-client';
-import { getSavedPushToken, registerForPushNotifications } from '@/lib/notifications';
+import { makeApiUrl } from '@/lib/query-client';
+import { registerForPushNotifications } from '@/lib/notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 
@@ -84,9 +84,8 @@ async function callPushApi(endpoint: string, body: object): Promise<boolean> {
     return false;
   }
   try {
-    const apiUrl = getApiUrl();
-    const url = new URL(`/api/push/${endpoint}`, `https://${apiUrl}`);
-    const res = await fetch(url.toString(), {
+    const url = makeApiUrl(`/api/push/${endpoint}`);
+    const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),

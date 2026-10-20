@@ -6,17 +6,25 @@ import fileRouter from "./file-routes";
 import reviewRouter from "./review-routes";
 import stateRouter from "./state-routes";
 import pushRouter from "./push-routes";
-import setupRouter from "./setup-routes";
 import schoolRequestRouter from "./school-request-routes";
+import dismissalRouter from "./dismissal-routes";
+import enrollmentRouter from './enrollment-routes';
+import { requirePlatformAdmin } from "./access-control";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api/auth', authRouter);
   app.use('/api/files', fileRouter);
   app.use('/api/reviews', reviewRouter);
   app.use('/api/state', stateRouter);
-  app.use('/api/push', pushRouter);
-  app.use('/api/setup', setupRouter);
+  // Client-supplied recipient tokens have no verified ownership model yet.
+  app.use('/api/push', requirePlatformAdmin, pushRouter);
+  // Retired: a web endpoint must never write privileged repository secrets.
+  app.use('/api/setup', requirePlatformAdmin, (_req, res) => {
+    res.status(410).json({ ok: false, error: 'أُوقف الإعداد عبر الويب؛ استخدم إعدادات الأسرار الآمنة' });
+  });
   app.use('/api/school-requests', schoolRequestRouter);
+  app.use('/api/dismissal', dismissalRouter);
+  app.use('/api/enrollment-requests', enrollmentRouter);
 
   app.get('/api/health', (_req, res) => {
     res.json({ ok: true, service: 'نظم إدارة رياض الأطفال API', version: '2.0' });

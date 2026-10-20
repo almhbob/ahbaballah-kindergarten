@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Pressable, Platform,
-  Image, Linking, Alert, Animated, Dimensions, Modal, TextInput, KeyboardAvoidingView,
+  Image, Linking, Alert, Animated, Modal, TextInput, KeyboardAvoidingView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -14,8 +14,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import HexFrame from '@/components/HexFrame';
 import * as Haptics from 'expo-haptics';
 import { getApiUrl } from '@/lib/query-client';
-
-const { width: W } = Dimensions.get('window');
+import { newEnrollmentKey } from '@/lib/enrollment';
 
 // ─── CONSTANTS (قابلة للتعديل بسهولة) ────────────────────────────────────────
 
@@ -101,13 +100,15 @@ function StarsRow({ count, size = 13 }: { count: number; size?: number }) {
 function PulsingDot() {
   const scale = useRef(new Animated.Value(1)).current;
   useEffect(() => {
-    Animated.loop(
+    const animation = Animated.loop(
       Animated.sequence([
         Animated.timing(scale, { toValue: 1.6, duration: 900, useNativeDriver: true }),
         Animated.timing(scale, { toValue: 1,   duration: 900, useNativeDriver: true }),
       ])
-    ).start();
-  }, []);
+    );
+    animation.start();
+    return () => animation.stop();
+  }, [scale]);
   return (
     <Animated.View style={{
       width: 8, height: 8, borderRadius: 4,
@@ -157,12 +158,16 @@ const EMPTY_FORM: FormState = {
 };
 
 function RegistrationModal({ visible, onClose, onSubmit }: {
-  visible: boolean; onClose: () => void; onSubmit: (f: FormState) => void;
+  visible: boolean; onClose: () => void; onSubmit: (f: FormState, requestKey: string) => Promise<void>;
 }) {
   const insets = useSafeAreaInsets();
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [step, setStep] = useState<1 | 2>(1);
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [requestKey, setRequestKey] = useState(() => newEnrollmentKey());
+  const submittingRef = useRef(false);
   const set = (k: keyof FormState, v: string) => setForm(prev => ({ ...prev, [k]: v }));
 
   const validateStep1 = () => {
@@ -178,7 +183,16 @@ function RegistrationModal({ visible, onClose, onSubmit }: {
     if (!form.parentRelation)     { Alert.alert('تنبيه', 'الرجاء تحديد صلة القرابة'); return false; }
     return true;
   };
-  const handleClose = () => { setForm(EMPTY_FORM); setStep(1); setSubmitted(false); onClose(); };
+  const handleClose = () => {
+    setForm(EMPTY_FORM);
+    setStep(1);
+    setSubmitted(false);
+    setSubmitting(false);
+    submittingRef.current = false;
+    setSubmitError(null);
+    setRequestKey(newEnrollmentKey());
+    onClose();
+  };
 
   const InputField = ({ label, icon, placeholder, value, onChange, keyboardType = 'default' }: any) => (
     <View style={fm.fieldWrap}>
@@ -339,15 +353,29 @@ function RegistrationModal({ visible, onClose, onSubmit }: {
                   <Text style={fm.backBtnTxt}>السابق</Text>
                 </Pressable>
                 <Pressable style={[fm.nextBtn, { flex: 1 }]}
-                  onPress={() => {
-                    if (!validateStep2()) return;
-                    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                    onSubmit(form); setSubmitted(true);
+                  disabled={submitting}
+                  onPress={async () => {
+                    if (!validateStep2() || submittingRef.current) return;
+                    submittingRef.current = true;
+                    setSubmitting(true);
+                    setSubmitError(null);
+                    try {
+                      await onSubmit(form, requestKey);
+                      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                      setSubmitted(true);
+                      setRequestKey(newEnrollmentKey());
+                    } catch (error) {
+                      setSubmitError(error instanceof Error ? error.message : 'تعذر إرسال الطلب؛ حاول مرة أخرى');
+                    } finally {
+                      submittingRef.current = false;
+                      setSubmitting(false);
+                    }
                   }}>
                   <Ionicons name="send" size={16} color="#fff" />
-                  <Text style={fm.nextBtnTxt}>إرسال الطلب</Text>
+                  <Text style={fm.nextBtnTxt}>{submitting ? 'جاري الإرسال...' : 'إرسال الطلب'}</Text>
                 </Pressable>
               </View>
+              {submitError ? <Text style={fm.submitError}>{submitError}</Text> : null}
             </ScrollView>
           )}
         </View>
@@ -392,6 +420,7 @@ const fm = StyleSheet.create({
   successTitle: { fontSize: 22, fontFamily: 'Inter_700Bold', color: '#fff' },
   successText:  { fontSize: 13, fontFamily: 'Inter_400Regular', color: 'rgba(255,255,255,0.75)', textAlign: 'center', lineHeight: 22 },
   successInfo:  { backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 14, padding: 14, width: '100%', gap: 8 },
+  submitError:  { color: Colors.danger, fontSize: 13, fontFamily: 'Inter_500Medium', textAlign: 'right', marginTop: 10 },
   successRow:   { fontSize: 13, fontFamily: 'Inter_500Medium', color: 'rgba(255,255,255,0.9)', textAlign: 'right' },
   successBtn:   { backgroundColor: Colors.accent, paddingHorizontal: 32, paddingVertical: 14, borderRadius: 22, marginTop: 4 },
   successBtnText: { fontSize: 15, fontFamily: 'Inter_700Bold', color: '#fff' },
@@ -428,19 +457,18 @@ export default function GuestHomeScreen() {
   const phone    = schoolInfo?.phone ?? '';
   const waNumber = phone.replace(/[^0-9]/g, '');
 
-  const handleRegSubmit = (form: FormState) => {
-    const id  = Date.now().toString() + Math.random().toString(36).substr(2, 9);
+  const handleRegSubmit = async (form: FormState, requestKey: string) => {
     const req: RegistrationRequest = {
-      id, createdAt: new Date().toISOString(), status: 'pending',
-      childName: form.childName, birthDate: form.birthDate,
+      id: requestKey, createdAt: new Date().toISOString(), status: 'pending',
+      childName: form.childName.trim(), birthDate: form.birthDate.trim(),
       gender: form.gender as 'ذكر' | 'أنثى',
       requestedLevel: form.requestedLevel as RegistrationRequest['requestedLevel'],
-      parentName: form.parentName, parentPhone: form.parentPhone,
+      parentName: form.parentName.trim(), parentPhone: form.parentPhone.trim(),
       parentRelation: form.parentRelation,
-      parentEmail: form.parentEmail || undefined,
-      notes: form.notes || undefined,
+      parentEmail: form.parentEmail.trim() || undefined,
+      notes: form.notes.trim() || undefined,
     };
-    addRegistrationRequest(req);
+    await addRegistrationRequest(req);
   };
 
   return (

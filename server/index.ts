@@ -1,10 +1,16 @@
 import express from "express";
 import type { Request, Response, NextFunction } from "express";
 import session from "express-session";
+import connectPgSimple from 'connect-pg-simple';
 import { registerRoutes } from "./routes";
 import pool from "./db";
 import * as fs from "fs";
 import * as path from "path";
+import { randomBytes } from "node:crypto";
+import { isAllowedWebOrigin } from './request-security';
+import { productionSchema } from './production-schema';
+import { createAbuseLimiter } from './abuse-limits';
+import { refreshSessionIdentity } from './session-identity';
 
 async function ensureSchema() {
   try {
@@ -80,9 +86,11 @@ async function ensureSchema() {
       ALTER TABLE school_requests ADD COLUMN IF NOT EXISTS approved_school_id TEXT;
       ALTER TABLE school_requests ADD COLUMN IF NOT EXISTS initial_password TEXT;
     `);
+    await pool.query(productionSchema);
     console.log("[db] schema ensured ✓");
   } catch (err: any) {
-    console.error("[db] ensureSchema failed:", err?.message);
+    console.error("[db] Schema initialization failed; server will not accept traffic");
+    throw err;
   }
 }
 
@@ -97,30 +105,13 @@ declare module "http" {
 
 function setupCors(app: express.Application) {
   app.use((req, res, next) => {
-    const origins = new Set<string>();
-
-    if (process.env.REPLIT_DEV_DOMAIN) {
-      origins.add(`https://${process.env.REPLIT_DEV_DOMAIN}`);
-    }
-
-    if (process.env.REPLIT_DOMAINS) {
-      process.env.REPLIT_DOMAINS.split(",").forEach((d: string) => {
-        origins.add(`https://${d.trim()}`);
-      });
-    }
-
     const origin = req.header("origin");
-
-    // Allow localhost origins for Expo web development (any port)
-    const isLocalhost =
-      origin?.startsWith("http://localhost:") ||
-      origin?.startsWith("http://127.0.0.1:");
-
-    if (origin && (origins.has(origin) || isLocalhost)) {
+    res.vary('Origin');
+    if (origin && isAllowedWebOrigin(origin)) {
       res.header("Access-Control-Allow-Origin", origin);
       res.header(
         "Access-Control-Allow-Methods",
-        "GET, POST, PUT, DELETE, OPTIONS",
+        "GET, POST, PUT, PATCH, DELETE, OPTIONS",
       );
       res.header("Access-Control-Allow-Headers", "Content-Type");
       res.header("Access-Control-Allow-Credentials", "true");
@@ -137,6 +128,7 @@ function setupCors(app: express.Application) {
 function setupBodyParsing(app: express.Application) {
   app.use(
     express.json({
+      limit: '2mb',
       verify: (req, _res, buf) => {
         req.rawBody = buf;
       },
@@ -150,29 +142,13 @@ function setupRequestLogging(app: express.Application) {
   app.use((req, res, next) => {
     const start = Date.now();
     const path = req.path;
-    let capturedJsonResponse: Record<string, unknown> | undefined = undefined;
-
-    const originalResJson = res.json;
-    res.json = function (bodyJson, ...args) {
-      capturedJsonResponse = bodyJson;
-      return originalResJson.apply(res, [bodyJson, ...args]);
-    };
-
     res.on("finish", () => {
       if (!path.startsWith("/api")) return;
 
       const duration = Date.now() - start;
 
-      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-      if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
-      }
-
-      if (logLine.length > 80) {
-        logLine = logLine.slice(0, 79) + "…";
-      }
-
-      log(logLine);
+      // Never serialize response bodies: school requests and auth contain private data.
+      log(`${req.method} ${path} ${res.statusCode} in ${duration}ms`);
     });
 
     next();
@@ -312,8 +288,25 @@ function setupErrorHandler(app: express.Application) {
   setupBodyParsing(app);
 
   const isProduction = process.env.NODE_ENV === 'production';
+  const sessionSecret = process.env.SESSION_SECRET;
+  if (isProduction && (!sessionSecret || Buffer.byteLength(sessionSecret, 'utf8') < 32)) {
+    throw new Error('SESSION_SECRET must be configured with at least 32 bytes in production');
+  }
+  if (isProduction && !process.env.DATABASE_URL) throw new Error('DATABASE_URL is required in production');
+  await ensureSchema();
+  const PgSession = connectPgSimple(session);
+  // Express is served behind a single HTTPS reverse proxy in the supported deployment.
+  if (isProduction) app.set('trust proxy', 1);
   app.use(session({
-    secret: process.env.SESSION_SECRET || 'ahbaballah-fallback-secret',
+    name: 'school.sid',
+    store: new PgSession({
+      pool,
+      tableName: 'app_sessions',
+      createTableIfMissing: false,
+      pruneSessionInterval: 900,
+      errorLog: () => console.error('[session] Persistent session store unavailable'),
+    }),
+    secret: sessionSecret || randomBytes(32).toString('hex'),
     resave: false,
     saveUninitialized: false,
     cookie: {
@@ -324,11 +317,28 @@ function setupErrorHandler(app: express.Application) {
     },
   }));
 
+  // Multipart uploads and cookie-authenticated writes also need CSRF protection.
+  // Browser Origin/Fetch-Metadata headers cannot be overridden by page scripts.
+  app.use((req, res, next) => {
+    if (!['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) return next();
+    const origin = req.get('origin');
+    if ((origin && !isAllowedWebOrigin(origin)) ||
+        (!origin && req.get('sec-fetch-site') === 'cross-site')) {
+      return res.status(403).json({ ok: false, error: 'مصدر الطلب غير مسموح' });
+    }
+    return next();
+  });
+
   setupRequestLogging(app);
 
-  configureExpoAndLanding(app);
+  app.use('/api', refreshSessionIdentity);
+  app.use('/api/auth/login', createAbuseLimiter('login', 40, 15 * 60_000));
+  app.use('/api/auth/register', createAbuseLimiter('registration', 10, 60 * 60_000));
+  const publicLimit = createAbuseLimiter('public-submission', 10, 60 * 60_000);
+  app.use(['/api/enrollment-requests', '/api/school-requests', '/api/reviews'], (req, res, next) =>
+    req.method === 'POST' ? publicLimit(req, res, next) : next());
 
-  await ensureSchema();
+  configureExpoAndLanding(app);
 
   const server = await registerRoutes(app);
 
