@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Pressable, TextInput,
   KeyboardAvoidingView, Platform, Alert,
@@ -10,6 +10,7 @@ import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { Colors } from '@/constants/colors';
 import { useAppData } from '@/contexts/AppDataContext';
+import { newEnrollmentKey } from '@/lib/enrollment';
 
 type Level = 'براعم' | 'مستوى أول' | 'مستوى ثاني';
 type Gender = 'ذكر' | 'أنثى';
@@ -55,6 +56,9 @@ export default function EnrollmentRequestScreen() {
   const [notes, setNotes] = useState('');
   const [step, setStep] = useState<'form' | 'docs' | 'done'>('form');
   const [loading, setLoading] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [requestKey, setRequestKey] = useState(() => newEnrollmentKey());
+  const submitting = useRef(false);
 
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
   const bottomPadding = Platform.OS === 'web' ? 34 : insets.bottom + 24;
@@ -66,12 +70,14 @@ export default function EnrollmentRequestScreen() {
     return null;
   }
 
-  function submitRequest() {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  async function submitRequest() {
+    if (submitting.current || loading) return;
+    submitting.current = true;
     setLoading(true);
-    setTimeout(() => {
-      addRegistrationRequest({
-        id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
+    setSubmitError(null);
+    try {
+      await addRegistrationRequest({
+        id: requestKey,
         childName: childName.trim(),
         parentName: parentName.trim(),
         parentPhone: phone.trim(),
@@ -85,9 +91,15 @@ export default function EnrollmentRequestScreen() {
         status: 'pending',
         createdAt: new Date().toISOString(),
       });
-      setLoading(false);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setRequestKey(newEnrollmentKey());
       setStep('done');
-    }, 400);
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : 'تعذر إرسال الطلب؛ حاول مرة أخرى');
+    } finally {
+      submitting.current = false;
+      setLoading(false);
+    }
   }
 
   if (step === 'done') {
@@ -256,6 +268,7 @@ export default function EnrollmentRequestScreen() {
                   <Ionicons name="send" size={16} color="#fff" style={{ marginRight: 6 }} />
                 </LinearGradient>
               </Pressable>
+              {submitError ? <Text style={s.submitError}>{submitError}</Text> : null}
             </>
           )}
         </ScrollView>
@@ -289,6 +302,7 @@ const s = StyleSheet.create({
   nextBtnGrad: { height: 52, borderRadius: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   nextBtnText: { fontSize: 16, fontFamily: 'Inter_700Bold', color: '#fff' },
   docsHint: { fontSize: 13, fontFamily: 'Inter_400Regular', color: 'rgba(255,255,255,0.5)', textAlign: 'right' },
+  submitError: { color: Colors.danger, fontSize: 13, fontFamily: 'Inter_500Medium', textAlign: 'right' },
   docItem: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 12, padding: 14, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
   docIcon: { width: 44, height: 44, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.05)', alignItems: 'center', justifyContent: 'center' },
   docLabel: { fontSize: 13, fontFamily: 'Inter_600SemiBold', color: '#fff', textAlign: 'right' },

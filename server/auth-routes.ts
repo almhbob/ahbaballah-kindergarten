@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import pool from './db';
+import { readSessionIdentity } from './session-identity';
 
 const router = Router();
 
@@ -70,9 +71,22 @@ router.post('/register', async (req: Request, res: Response) => {
     if (!['teacher', 'parent'].includes(role)) {
       return res.status(400).json({ ok: false, error: 'نوع الحساب غير صالح' });
     }
-    if (password.length < 8 || Buffer.byteLength(password, 'utf8') > 72) {
-      return res.status(400).json({ ok: false, error: 'كلمة المرور يجب أن تكون 8 أحرف على الأقل ولا تتجاوز 72 بايت' });
+    if (password.length < 12 || Buffer.byteLength(password, 'utf8') > 72) {
+      return res.status(400).json({ ok: false, error: 'كلمة المرور يجب أن تكون 12 حرفًا على الأقل ولا تتجاوز 72 بايت' });
     }
+    if (!req.session?.user || req.session.user.role !== 'admin') {
+      return res.status(403).json({ ok: false, error: 'إنشاء الحساب وربطه متاح للإدارة فقط؛ اطلب حسابًا من الروضة' });
+    }
+    if (!linked_id || linked_id.length > 100) {
+      return res.status(400).json({ ok: false, error: 'يجب اختيار ملف صالح للموظف أو الطالب' });
+    }
+    const link = await pool.query(
+      `SELECT entry FROM app_state, jsonb_array_elements(
+         CASE WHEN jsonb_typeof(value) = 'array' THEN value ELSE '[]'::jsonb END
+       ) AS entry WHERE key = $1 AND entry->>'id' = $2 LIMIT 1`,
+      [role === 'teacher' ? 'app_employees' : 'app_students', linked_id],
+    );
+    if (!link.rows[0]) return res.status(400).json({ ok: false, error: 'الملف المرتبط غير موجود' });
 
     const credential = role === 'parent' ? phone : email;
     if (!credential) {
@@ -87,21 +101,14 @@ router.post('/register', async (req: Request, res: Response) => {
     const password_hash = await bcrypt.hash(password, 10);
 
     const { rows } = await pool.query(
-      `INSERT INTO users (full_name, email, phone, role, password_hash, linked_id)
-       VALUES ($1, $2, $3, $4, $5, $6)
+      `INSERT INTO users (full_name, email, phone, role, password_hash, linked_id, link_verified)
+       VALUES ($1, $2, $3, $4, $5, $6, TRUE)
        RETURNING id, full_name, email, phone, role, linked_id, created_at`,
       [full_name, email, phone, role, password_hash, linked_id]
     );
     const data = rows[0];
 
-    await establishSession(req, {
-      id: data.id,
-      full_name: data.full_name,
-      email: data.email || '',
-      phone: data.phone || null,
-      role: data.role,
-    });
-
+    // Provisioning a parent/teacher must never replace the administrator's session.
     return res.json({
       ok: true,
       user: { id: data.id, full_name: data.full_name, email: data.email, phone: data.phone, role: data.role, linked_id: data.linked_id },
@@ -121,7 +128,7 @@ router.post('/login', async (req: Request, res: Response) => {
     if (!rawCredential || !password || !role) {
       return res.status(400).json({ ok: false, error: 'بيانات ناقصة' });
     }
-    if (!['admin', 'teacher', 'parent'].includes(role) || Buffer.byteLength(password, 'utf8') > 72) {
+    if (!['admin', 'teacher', 'parent'].includes(role) || password.length < 12 || Buffer.byteLength(password, 'utf8') > 72) {
       return res.status(400).json({ ok: false, error: 'بيانات الدخول غير صالحة' });
     }
 
@@ -142,18 +149,14 @@ router.post('/login', async (req: Request, res: Response) => {
 
     const ok = await bcrypt.compare(password, user.password_hash);
     if (!ok) return res.status(401).json({ ok: false, error: 'بيانات الدخول غير صحيحة' });
+    const identity = await readSessionIdentity(user.id);
+    if (!identity) return res.status(403).json({ ok: false, error: 'الحساب موقوف أو لم تعتمد الإدارة ربطه بملف صالح' });
 
-    await establishSession(req, {
-      id: user.id,
-      full_name: user.full_name,
-      email: user.email || '',
-      phone: user.phone || null,
-      role: user.role,
-    });
+    await establishSession(req, identity);
 
     return res.json({
       ok: true,
-      user: { id: user.id, full_name: user.full_name, email: user.email, phone: user.phone, role: user.role, linked_id: user.linked_id ?? null },
+      user: identity,
     });
   } catch (err: any) {
     console.error('[auth/login]', err);
@@ -164,14 +167,21 @@ router.post('/login', async (req: Request, res: Response) => {
 router.post('/logout', (req: Request, res: Response) => {
   req.session.destroy((err: unknown) => {
     if (err) return res.status(500).json({ ok: false, error: 'تعذّر تسجيل الخروج' });
+    res.clearCookie('school.sid');
     res.clearCookie('connect.sid');
     return res.json({ ok: true });
   });
 });
 
-router.get('/me', (req: Request, res: Response) => {
+router.get('/me', async (req: Request, res: Response) => {
   if (!req.session.user) return res.status(401).json({ ok: false, error: 'غير مسجّل الدخول' });
-  return res.json({ ok: true, user: req.session.user });
+  try {
+    const user = await readSessionIdentity(req.session.user.id);
+    if (!user) return res.status(401).json({ ok: false, error: 'الجلسة أو ربط الحساب غير صالح' });
+    return res.json({ ok: true, user });
+  } catch {
+    return res.status(503).json({ ok: false, error: 'تعذر التحقق من الجلسة' });
+  }
 });
 
 export default router;

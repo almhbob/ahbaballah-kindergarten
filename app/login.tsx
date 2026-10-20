@@ -9,7 +9,6 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { useAuth, UserRole, AuthUser } from '@/contexts/AuthContext';
-import { useAppData } from '@/contexts/AppDataContext';
 import { useSchoolTheme } from '@/contexts/SchoolThemeContext';
 import { Colors } from '@/constants/colors';
 import HexFrame from '@/components/HexFrame';
@@ -299,7 +298,6 @@ function HexDecor({ size, x, y, opacity }: { size: number; x: number; y: number;
 export default function LoginScreen() {
   const insets = useSafeAreaInsets();
   const { login, apiLogin, isBiometricEnabled, enableBiometric, getBiometricUser } = useAuth();
-  const { students, employees, appSettings } = useAppData();
   const { branding } = useSchoolTheme();
 
   const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
@@ -321,7 +319,7 @@ export default function LoginScreen() {
       }
     };
     checkBiometric();
-  }, [isBiometricEnabled]);
+  }, [isBiometricEnabled, getBiometricUser]);
 
   const handleBiometricLogin = async () => {
     try {
@@ -372,83 +370,36 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     if (!selectedRole) { Alert.alert('تنبيه', 'الرجاء اختيار نوع الحساب'); return; }
-    const trimCred = credential.trim().toLowerCase();
-    const trimPass = password.trim();
-    if (!trimCred || !trimPass) { Alert.alert('تنبيه', 'الرجاء إدخال بيانات الدخول كاملة'); return; }
+    if (!credential.trim() || password.length === 0) { Alert.alert('تنبيه', 'الرجاء إدخال بيانات الدخول كاملة'); return; }
 
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setIsLoading(true);
-    await new Promise(r => setTimeout(r, 600));
-
-    let authUser = null;
-
-    if (selectedRole === 'admin') {
-      const adminPass = appSettings?.adminPassword || '1234';
-      if ((trimCred === 'admin' || trimCred === 'administrator') && trimPass === adminPass) {
-        authUser = { id: 'admin_1', name: 'أ. سلوى أحمد داموس', role: 'admin' as UserRole };
+    try {
+      const apiResult = await apiLogin(selectedRole, credential.trim(), password);
+      if (!apiResult.ok || !apiResult.user) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        Alert.alert('خطأ في تسجيل الدخول', apiResult.error ?? 'تعذّر التحقق من الحساب على الخادم');
+        return;
       }
-    } else if (selectedRole === 'teacher') {
-      const emp = employees.find(e => e.email && e.email.toLowerCase() === trimCred);
-      if (emp && (emp.password || '1234') === trimPass) {
-        if (emp.disabled) {
-          setIsLoading(false);
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-          Alert.alert('الحساب موقوف', 'تم إيقاف هذا الحساب من قِبل الإدارة. يرجى التواصل مع الإدارة.');
-          return;
-        }
-        authUser = {
-          id: emp.id,
-          name: emp.name,
-          role: 'teacher' as UserRole,
-          teacherClass: emp.level,
-        };
-      }
-    } else if (selectedRole === 'parent') {
-      const rawCred = credential.trim();
-      const stu = students.find(s => s.parentPhone && s.parentPhone.replace(/\s/g, '') === rawCred.replace(/\s/g, ''));
-      if (stu && (stu.parentPassword || '1234') === trimPass) {
-        if (stu.parentDisabled) {
-          setIsLoading(false);
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-          Alert.alert('الحساب موقوف', 'تم إيقاف هذا الحساب من قِبل الإدارة. يرجى التواصل مع الإدارة.');
-          return;
-        }
-        authUser = {
-          id: `parent_${stu.id}`,
-          name: stu.parentName,
-          role: 'parent' as UserRole,
-          studentId: stu.id,
-        };
-      }
-    }
-
-    setIsLoading(false);
-
-    if (!authUser) {
+      const authUser: AuthUser = {
+        id: String(apiResult.user.id),
+        name: apiResult.user.full_name,
+        role: apiResult.user.role,
+        ...(apiResult.user.role === 'parent' && apiResult.user.linked_id ? { studentId: apiResult.user.linked_id } : {}),
+        ...(apiResult.user.role === 'teacher' && apiResult.user.teacher_class ? { teacherClass: apiResult.user.teacher_class } : {}),
+      };
+      await login(authUser);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      offerBiometricEnable(authUser);
+      if (authUser.role === 'admin') router.replace('/(admin)');
+      else if (authUser.role === 'teacher') router.replace('/(teacher)');
+      else router.replace('/(parent)');
+    } catch {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      Alert.alert(
-        'خطأ في تسجيل الدخول',
-        selectedRole === 'teacher'
-          ? 'البريد الإلكتروني أو كلمة المرور غير صحيحة'
-          : selectedRole === 'parent'
-            ? 'رقم الهاتف غير مسجّل أو كلمة المرور خاطئة'
-            : 'اسم المستخدم أو كلمة المرور غير صحيحة',
-      );
-      return;
+      Alert.alert('خطأ في تسجيل الدخول', 'تعذّر التحقق من الحساب على الخادم');
+    } finally {
+      setIsLoading(false);
     }
-
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    // Establish the server session before publishing the local login. The data
-    // provider reloads after the user changes and now requires that session.
-    const apiResult = await apiLogin(selectedRole, credential.trim(), password.trim());
-    await login(authUser);
-    if (!apiResult.ok && selectedRole === 'admin') {
-      Alert.alert('دخول محلي فقط', 'لم تُنشأ جلسة الخادم. المزامنة الإدارية غير متاحة حتى تسجيل الدخول بحساب الخادم الصحيح.');
-    }
-    offerBiometricEnable(authUser);
-    if (selectedRole === 'admin') router.replace('/(admin)');
-    else if (selectedRole === 'teacher') router.replace('/(teacher)');
-    else router.replace('/(parent)');
   };
 
   return (
@@ -649,19 +600,6 @@ export default function LoginScreen() {
               لا تملك حساباً؟{'  '}
               <Text style={s.signupLinkBold}>إنشاء حساب جديد</Text>
             </Text>
-          </Pressable>
-
-          {/* ── Guest Access ── */}
-          <Pressable
-            style={({ pressed }) => [s.guestBtn, { opacity: pressed ? 0.8 : 1 }]}
-            onPress={async () => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              await login({ id: 'guest', name: 'زائر', role: 'guest' });
-              router.replace('/(guest)' as any);
-            }}
-          >
-            <Ionicons name="eye-outline" size={15} color="rgba(255,255,255,0.45)" />
-            <Text style={s.guestBtnTxt}>تصفح كضيف</Text>
           </Pressable>
 
           <AboutCard />

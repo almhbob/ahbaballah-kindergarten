@@ -1,5 +1,9 @@
 # Image hardening and production release decision
 
+**Latest staged migration/verification status:** see
+[`PRODUCTION_MIGRATION.md`](./PRODUCTION_MIGRATION.md). Historical counts and
+open-code issues below describe the image-only checkpoint, not the newer draft.
+
 ## Decision: NO-GO for production
 
 This is an implemented **draft**, not a deployment or production certification.

@@ -11,7 +11,7 @@ import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { Colors } from '@/constants/colors';
 import { useAuth } from '@/contexts/AuthContext';
-import { useAppData, Message } from '@/contexts/AppDataContext';
+import { useAppData } from '@/contexts/AppDataContext';
 
 const TEACHER_COLOR = '#1A6B5C';
 
@@ -20,14 +20,13 @@ function genId() { return Date.now().toString() + Math.random().toString(36).sub
 export default function TeacherMessagesScreen() {
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
-  const { students, messages, sendMessage, employees } = useAppData();
+  const { students, messages, sendMessage } = useAppData();
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
   const bottomPadding = Platform.OS === 'web' ? 34 : insets.bottom + 50;
 
   const [activeParentId, setActiveParentId] = useState<string | null>(null);
   const [text, setText] = useState('');
 
-  const myEmployee = employees.find(e => e.id === user?.id);
   const teacherClass = (user as any)?.teacherClass as string | undefined;
   const myStudents = teacherClass
     ? students.filter(s => s.level === teacherClass)

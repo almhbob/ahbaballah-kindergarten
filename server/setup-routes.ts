@@ -1,5 +1,5 @@
 import { Router } from "express";
-import sodium from "libsodium-wrappers";
+import sodium, { ready, from_base64, from_string, to_base64, base64_variants } from "libsodium-wrappers";
 
 const router = Router();
 
@@ -18,11 +18,11 @@ async function addGithubSecret(secretValue: string): Promise<{ ok: boolean; mess
     const { key, key_id } = (await pubKeyRes.json()) as { key: string; key_id: string };
 
     // Encrypt directly in-process (no child process needed)
-    await sodium.ready;
-    const pub = sodium.from_base64(key, sodium.base64_variants.ORIGINAL);
-    const msg = sodium.from_string(secretValue);
+    await ready;
+    const pub = from_base64(key, base64_variants.ORIGINAL);
+    const msg = from_string(secretValue);
     const enc = sodium.crypto_box_seal(msg, pub);
-    const encrypted = sodium.to_base64(enc, sodium.base64_variants.ORIGINAL);
+    const encrypted = to_base64(enc, base64_variants.ORIGINAL);
 
     const putRes = await fetch(
       `https://api.github.com/repos/${GITHUB_REPO}/actions/secrets/${SECRET_NAME}`,

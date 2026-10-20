@@ -4,7 +4,7 @@ import {
   TextInput, Modal, Platform, Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/colors';
 import { useAppData, Student, AssessmentResult } from '@/contexts/AppDataContext';
 import HexFrame from '@/components/HexFrame';

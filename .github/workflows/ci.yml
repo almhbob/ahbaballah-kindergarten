@@ -10,6 +10,26 @@ jobs:
   regression-tests:
     name: Security, dismissal and image regression tests
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: test_runner
+          POSTGRES_DB: app_test
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U test_runner -d app_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      RUN_PG_TESTS: 'true'
+      TEST_PG_HOST: 127.0.0.1
+      TEST_PG_PORT: '5432'
+      TEST_PG_USER: test_runner
+      TEST_PG_DATABASE: app_test
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -55,7 +75,7 @@ jobs:
         run: npm ci --legacy-peer-deps
 
       - name: Run ESLint
-        run: npx eslint . --ext .ts,.tsx --max-warnings 50
+        run: npx eslint . --ext .ts,.tsx --max-warnings 0
 
   expo-doctor:
     name: Expo Doctor

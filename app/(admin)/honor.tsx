@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/colors';
 import { useAppData, buildHonorBoard, HonorEntry, ParentHonorEntry } from '@/contexts/AppDataContext';
 import HexFrame from '@/components/HexFrame';
@@ -37,7 +37,7 @@ function Sparkle({ delay, x, y, size, color }: {
     );
     loop.start();
     return () => loop.stop();
-  }, []);
+  }, [anim, delay]);
 
   const opacity = anim.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0, 1, 0] });
   const scale  = anim.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0.2, 1.4, 0.4] });
@@ -68,7 +68,7 @@ function GlowRing({ color, size }: { color: string; size: number }) {
     );
     loop.start();
     return () => loop.stop();
-  }, []);
+  }, [pulse]);
 
   return (
     <Animated.View
@@ -100,7 +100,7 @@ function AnimatedScore({ target, color }: { target: number; color: string }) {
       useNativeDriver: false,
     }).start();
     return () => anim.removeListener(listener);
-  }, [target]);
+  }, [anim, target]);
 
   return (
     <Text style={[scoreCounterStyles.score, { color }]}>{display}</Text>
@@ -126,7 +126,7 @@ function PodiumColumn({
       Animated.timing(slideAnim, { toValue: 0, duration: 500, delay: pos * 120, easing: Easing.out(Easing.back(1.5)), useNativeDriver: true }),
       Animated.timing(fadeAnim, { toValue: 1, duration: 400, delay: pos * 120, useNativeDriver: true }),
     ]).start();
-  }, []);
+  }, [fadeAnim, pos, slideAnim]);
 
   const getName = () => isParent
     ? (entry as ParentHonorEntry).parentName
@@ -224,7 +224,7 @@ function AnimatedRow({ children, index }: { children: React.ReactNode; index: nu
       Animated.timing(slideAnim, { toValue: 0, duration: 350, delay: index * 60, easing: Easing.out(Easing.quad), useNativeDriver: true }),
       Animated.timing(fadeAnim,  { toValue: 1, duration: 300, delay: index * 60, useNativeDriver: true }),
     ]).start();
-  }, []);
+  }, [fadeAnim, index, slideAnim]);
 
   return (
     <Animated.View style={{ opacity: fadeAnim, transform: [{ translateX: slideAnim }] }}>
@@ -329,7 +329,7 @@ function ScoreTrack({ value, color }: { value: number; color: string }) {
   const widthAnim = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     Animated.timing(widthAnim, { toValue: value, duration: 900, easing: Easing.out(Easing.cubic), useNativeDriver: false }).start();
-  }, [value]);
+  }, [value, widthAnim]);
   const width = widthAnim.interpolate({ inputRange: [0, 100], outputRange: ['0%', '100%'] });
   return (
     <View style={trackStyles.track}>
@@ -373,7 +373,7 @@ function CongratsBanner({ name, score, color }: { name: string; score: number; c
       Animated.spring(scaleAnim, { toValue: 1, friction: 5, tension: 80, useNativeDriver: true }),
       Animated.timing(fadeAnim, { toValue: 1, duration: 400, useNativeDriver: true }),
     ]).start();
-  }, [name]);
+  }, [fadeAnim, name, scaleAnim]);
 
   const firstName = name.split(' ')[0];
 
@@ -429,7 +429,7 @@ function TrophyShimmer() {
     );
     loop.start();
     return () => loop.stop();
-  }, []);
+  }, [rotate]);
 
   const rotateDeg = rotate.interpolate({ inputRange: [0, 1], outputRange: ['-10deg', '10deg'] });
   const scale = rotate.interpolate({ inputRange: [0, 0.5, 1], outputRange: [1, 1.12, 1] });

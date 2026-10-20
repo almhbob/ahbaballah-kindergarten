@@ -1,18 +1,17 @@
-import React, { createContext, useContext, useState, useEffect, useMemo, useRef, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getApiUrl } from '@/lib/query-client';
 import { useAuth } from '@/contexts/AuthContext';
-import { initFirebase, isFirebaseReady } from '@/lib/firebase';
+import { initFirebase } from '@/lib/firebase';
+import { submitEnrollment, listEnrollments, changeEnrollment, deleteEnrollment } from '@/lib/enrollment';
 import {
   fsUpsertStudent, fsDeleteStudent, fsListenStudents,
   fsUpsertEmployee, fsDeleteEmployee, fsListenEmployees,
   fsSendMessage, fsListenMessages,
   fsAddNews, fsDeleteNews, fsListenNews,
-  fsAddInbox, fsUpdateInbox, fsListenInbox,
-  fsAddRegistrationRequest, fsUpdateRegistrationRequest, fsDeleteRegistrationRequest, fsListenRegistrationRequests,
+  fsUpdateInbox, fsListenInbox,
   fsAddSchoolEvent, fsUpdateSchoolEvent, fsDeleteSchoolEvent, fsListenSchoolEvents,
   fsAddGalleryPhoto, fsDeleteGalleryPhoto, fsListenGalleryPhotos,
-  fsBulkUploadStudents, fsBulkUploadEmployees,
 } from '@/lib/firestore-service';
 
 export interface AssessmentResult {
@@ -541,9 +540,11 @@ interface AppDataContextValue {
   saveYearlySnapshot: (snapshot: YearlySnapshot) => void;
   removeYearlySnapshot: (year: string) => void;
   registrationRequests: RegistrationRequest[];
-  addRegistrationRequest: (r: RegistrationRequest) => void;
-  updateRegistrationRequest: (id: string, data: Partial<RegistrationRequest>) => void;
-  removeRegistrationRequest: (id: string) => void;
+  addRegistrationRequest: (r: RegistrationRequest) => Promise<{ id: string; createdAt: string }>;
+  updateRegistrationRequest: (id: string, data: Partial<RegistrationRequest>) => Promise<void>;
+  removeRegistrationRequest: (id: string) => Promise<void>;
+  refreshRegistrationRequests: () => Promise<void>;
+  registrationError: string | null;
   resetAllData: () => void;
   appSettings: AppSettings;
   updateAppSettings: (data: Partial<AppSettings>) => void;
@@ -667,12 +668,13 @@ const DEMO_MESSAGES: Message[] = [
 
 export function AppDataProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
-  const [students, setStudents] = useState<Student[]>(DEMO_STUDENTS);
-  const [employees, setEmployees] = useState<Employee[]>(DEMO_EMPLOYEES);
+  const demo = process.env.NODE_ENV === 'development' && user?.role === 'admin';
+  const [students, setStudents] = useState<Student[]>(demo ? DEMO_STUDENTS : []);
+  const [employees, setEmployees] = useState<Employee[]>(demo ? DEMO_EMPLOYEES : []);
   const [news, setNews] = useState<NewsItem[]>(DEMO_NEWS);
-  const [inbox, setInbox] = useState<InboxMessage[]>(DEMO_INBOX);
-  const [messages, setMessages] = useState<Message[]>(DEMO_MESSAGES);
-  const [meetings, setMeetings] = useState<Meeting[]>(DEMO_MEETINGS);
+  const [inbox, setInbox] = useState<InboxMessage[]>(demo ? DEMO_INBOX : []);
+  const [messages, setMessages] = useState<Message[]>(demo ? DEMO_MESSAGES : []);
+  const [meetings, setMeetings] = useState<Meeting[]>(demo ? DEMO_MEETINGS : []);
   const [schedule, setSchedule] = useState<SchedulePeriod[]>(DEFAULT_SCHEDULE);
   const [welcomeMessage, setWelcomeMessageState] = useState<string>(DEFAULT_WELCOME_MSG);
   const [schoolInfo, setSchoolInfoState] = useState<SchoolInfo>(DEFAULT_SCHOOL_INFO);
@@ -680,11 +682,29 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const [annualPlan, setAnnualPlan] = useState<AnnualPlanEvent[]>(DEFAULT_ANNUAL_PLAN);
   const [graduationTasks, setGraduationTasks] = useState<GraduationTask[]>(DEFAULT_GRADUATION_TASKS);
   const [certificates, setCertificates] = useState<Certificate[]>([]);
-  const [transportRoutes, setTransportRoutes] = useState<TransportRoute[]>(DEMO_TRANSPORT_ROUTES);
+  const [transportRoutes, setTransportRoutes] = useState<TransportRoute[]>(demo ? DEMO_TRANSPORT_ROUTES : []);
   const [transportSubscriptions, setTransportSubscriptions] = useState<TransportSubscription[]>([]);
   const [banners, setBanners] = useState<Banner[]>([]);
-  const [yearlySnapshots, setYearlySnapshots] = useState<YearlySnapshot[]>(DEMO_YEARLY_SNAPSHOTS);
+  const [yearlySnapshots, setYearlySnapshots] = useState<YearlySnapshot[]>(demo ? DEMO_YEARLY_SNAPSHOTS : []);
   const [registrationRequests, setRegistrationRequests] = useState<RegistrationRequest[]>([]);
+  const [registrationError, setRegistrationError] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    setRegistrationRequests([]);
+    setRegistrationError(null);
+    if (user?.role !== 'admin') return;
+    const refresh = async () => {
+      try {
+        const requests = await listEnrollments();
+        if (!cancelled) { setRegistrationRequests(requests); setRegistrationError(null); }
+      } catch (error) {
+        if (!cancelled) setRegistrationError(error instanceof Error ? error.message : 'تعذر جلب طلبات التسجيل');
+      }
+    };
+    void refresh();
+    const timer = setInterval(() => { void refresh(); }, 30_000);
+    return () => { cancelled = true; clearInterval(timer); };
+  }, [user?.id, user?.role]);
   const [appSettings, setAppSettingsState] = useState<AppSettings>(DEFAULT_APP_SETTINGS);
   const [schoolEvents, setSchoolEvents] = useState<SchoolEvent[]>(DEMO_SCHOOL_EVENTS);
   const [galleryPhotos, setGalleryPhotos] = useState<GalleryPhoto[]>([]);
@@ -703,13 +723,24 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   };
 
   const saveState = (key: string, value: any) => {
+    if (user?.role !== 'admin') return;
     const str = typeof value === 'string' ? value : JSON.stringify(value);
     AsyncStorage.setItem(key, str);
     cloudSync(key, value);
   };
 
   useEffect(() => {
+    let cancelled = false;
+    const stop = () => { cancelled = true; };
     const load = async () => {
+      // Never restore another account's whole-school private cache for a guest,
+      // parent or teacher. Scoped role data needs its own verified API migration.
+      if (user?.role !== 'admin') {
+        setStudents([]); setEmployees([]); setInbox([]); setMessages([]);
+        setMeetings([]); setCertificates([]); setTransportSubscriptions([]);
+        setYearlySnapshots([]); setGalleryPhotos([]);
+        return;
+      }
       let cloud: Record<string, any> = {};
       try {
         const url = new URL('/api/state', getApiUrl()).toString();
@@ -719,8 +750,10 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       } catch {}
 
       const get = async (key: string) => {
+        if (cancelled) return null;
         if (cloud[key] !== undefined) return cloud[key];
         const local = await AsyncStorage.getItem(key);
+        if (cancelled) return null;
         return local ? JSON.parse(local) : null;
       };
 
@@ -734,6 +767,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       const savedWelcome = await get('app_welcome_msg');
       const savedSchoolInfo = await get('app_school_info');
       const savedHonorWeights = await get('app_honor_weights');
+      if (cancelled) return;
       if (savedStudents) setStudents((savedStudents as Student[]).map(s => ({ ...s, assessments: s.assessments ?? [], parentPhone: s.parentPhone ?? '', parentPassword: s.parentPassword ?? '1234' })));
       if (savedEmployees) setEmployees((savedEmployees as Employee[]).map(e => ({ ...e, email: e.email ?? '', password: e.password ?? '1234' })));
       if (savedNews) setNews(savedNews);
@@ -751,11 +785,13 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       const savedAnnualPlan = await get('app_annual_plan');
       const savedGradTasks  = await get('app_grad_tasks');
       const savedCerts      = await get('app_certificates');
+      if (cancelled) return;
       if (savedAnnualPlan) setAnnualPlan(savedAnnualPlan);
       if (savedGradTasks)  setGraduationTasks(savedGradTasks);
       if (savedCerts)      setCertificates(savedCerts);
       const savedRoutes = await get('app_transport_routes');
       const savedSubs   = await get('app_transport_subs');
+      if (cancelled) return;
       if (savedRoutes) setTransportRoutes(savedRoutes);
       if (savedSubs)   setTransportSubscriptions(savedSubs);
       const savedBanners = await get('app_banners');
@@ -764,14 +800,14 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       if (savedSnapshots) setYearlySnapshots(savedSnapshots);
       const savedAppSettings = await get('app_settings');
       if (savedAppSettings) setAppSettingsState({ ...DEFAULT_APP_SETTINGS, ...savedAppSettings });
-      const savedRegs = await get('app_registration_requests');
-      if (savedRegs) setRegistrationRequests(savedRegs);
       const savedEvents = await get('app_school_events');
       const savedPhotos = await get('app_gallery_photos');
+      if (cancelled) return;
       if (savedEvents) setSchoolEvents(savedEvents);
       if (savedPhotos) setGalleryPhotos(savedPhotos);
     };
-    load();
+    void load();
+    return stop;
   }, [user?.id, user?.role]);
 
   // ─── Firebase real-time listeners ─────────────────────────────────────────
@@ -812,10 +848,6 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
 
     unsubs.push(fsListenNews(data => {
       if (data.length > 0) setNews(data);
-    }));
-
-    unsubs.push(fsListenRegistrationRequests(data => {
-      setRegistrationRequests(data);
     }));
 
     unsubs.push(fsListenSchoolEvents(data => {
@@ -1259,29 +1291,22 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  const addRegistrationRequest = (r: RegistrationRequest) => {
-    setRegistrationRequests(prev => {
-      const updated = [r, ...prev];
-      saveState('app_registration_requests', updated);
-      fsAddRegistrationRequest(r).catch(() => {});
-      return updated;
-    });
+  const refreshRegistrationRequests = async () => {
+    if (user?.role !== 'admin') throw new Error('طلبات التسجيل متاحة للإدارة فقط');
+    const requests = await listEnrollments();
+    setRegistrationRequests(requests);
+    setRegistrationError(null);
   };
-  const updateRegistrationRequest = (id: string, data: Partial<RegistrationRequest>) => {
-    setRegistrationRequests(prev => {
-      const updated = prev.map(r => r.id === id ? { ...r, ...data } : r);
-      saveState('app_registration_requests', updated);
-      fsUpdateRegistrationRequest(id, data).catch(() => {});
-      return updated;
-    });
+  const addRegistrationRequest = async (r: RegistrationRequest) => submitEnrollment(r);
+  const updateRegistrationRequest = async (id: string, data: Partial<RegistrationRequest>) => {
+    if (user?.role !== 'admin' || !data.status) throw new Error('تعديل طلبات التسجيل متاح للإدارة فقط');
+    const saved = await changeEnrollment(id, data.status, data.rejectionReason);
+    setRegistrationRequests(prev => prev.map(r => r.id === id ? saved : r));
   };
-  const removeRegistrationRequest = (id: string) => {
-    setRegistrationRequests(prev => {
-      const updated = prev.filter(r => r.id !== id);
-      saveState('app_registration_requests', updated);
-      fsDeleteRegistrationRequest(id).catch(() => {});
-      return updated;
-    });
+  const removeRegistrationRequest = async (id: string) => {
+    if (user?.role !== 'admin') throw new Error('حذف طلبات التسجيل متاح للإدارة فقط');
+    await deleteEnrollment(id);
+    setRegistrationRequests(prev => prev.filter(r => r.id !== id));
   };
 
   const addGraduationYear = (year: string) => {
@@ -1298,10 +1323,14 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  const value = useMemo(() => ({
-    students, employees, news, inbox, messages, meetings, schedule,
+  const value: AppDataContextValue = {
+    students: user?.role === 'admin' ? students : [],
+    employees: user?.role === 'admin' ? employees : [],
+    news, inbox: user?.role === 'admin' ? inbox : [],
+    messages: user?.role === 'admin' ? messages : [],
+    meetings: user?.role === 'admin' ? meetings : [], schedule,
     welcomeMessage, schoolInfo, honorWeights,
-    annualPlan, graduationTasks, certificates,
+    annualPlan, graduationTasks, certificates: user?.role === 'admin' ? certificates : [],
     setWelcomeMessage, setSchoolInfo, setHonorWeights, resetAllData,
     updateStudent, addStudent, removeStudent,
     addNews, removeNews, replyInbox, markInboxRead, sendMessage,
@@ -1311,15 +1340,20 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     addAnnualEvent, removeAnnualEvent,
     addGraduationTask, updateGraduationTask, removeGraduationTask, addGraduationYear,
     addCertificate, updateCertificate, removeCertificate,
-    transportRoutes, transportSubscriptions,
+    transportRoutes: user?.role === 'admin' ? transportRoutes : [],
+    transportSubscriptions: user?.role === 'admin' ? transportSubscriptions : [],
     addTransportRoute, updateTransportRoute, removeTransportRoute, setTransportSubscription,
     banners, addBanner, updateBanner, removeBanner,
-    yearlySnapshots, saveYearlySnapshot, removeYearlySnapshot,
-    registrationRequests, addRegistrationRequest, updateRegistrationRequest, removeRegistrationRequest,
-    appSettings, updateAppSettings,
+    yearlySnapshots: user?.role === 'admin' ? yearlySnapshots : [], saveYearlySnapshot, removeYearlySnapshot,
+    registrationRequests: user?.role === 'admin' ? registrationRequests : [],
+    addRegistrationRequest, updateRegistrationRequest, removeRegistrationRequest,
+    refreshRegistrationRequests, registrationError,
+    appSettings: user?.role === 'admin' ? appSettings : {
+      ...appSettings, adminPassword: '', developerPassword: '', defaultTeacherPassword: '', defaultParentPassword: '',
+    }, updateAppSettings,
     schoolEvents, addSchoolEvent, updateSchoolEvent, removeSchoolEvent,
-    galleryPhotos, addGalleryPhoto, removeGalleryPhoto,
-  }), [students, employees, news, inbox, messages, meetings, schedule, welcomeMessage, schoolInfo, honorWeights, annualPlan, graduationTasks, certificates, transportRoutes, transportSubscriptions, banners, yearlySnapshots, registrationRequests, appSettings, schoolEvents, galleryPhotos]);
+    galleryPhotos: user?.role === 'admin' ? galleryPhotos : [], addGalleryPhoto, removeGalleryPhoto,
+  };
 
   return <AppDataContext.Provider value={value}>{children}</AppDataContext.Provider>;
 }

@@ -57,7 +57,6 @@ function BarChart({ snapshots, metric }: { snapshots: YearlySnapshot[]; metric: 
   const H = 160;
   const PADDING_L = 32;
   const PADDING_B = 30;
-  const years = snapshots.map(s => s.year);
   const groups = LEVELS;
   const totalW = groups.length * (snapshots.length * (BAR_W + GAP) + GROUP_GAP);
   const svgW = Math.max(totalW + PADDING_L + 10, 300);

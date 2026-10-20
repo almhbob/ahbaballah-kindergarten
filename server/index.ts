@@ -1,12 +1,16 @@
 import express from "express";
 import type { Request, Response, NextFunction } from "express";
 import session from "express-session";
+import connectPgSimple from 'connect-pg-simple';
 import { registerRoutes } from "./routes";
 import pool from "./db";
 import * as fs from "fs";
 import * as path from "path";
 import { randomBytes } from "node:crypto";
 import { isAllowedWebOrigin } from './request-security';
+import { productionSchema } from './production-schema';
+import { createAbuseLimiter } from './abuse-limits';
+import { refreshSessionIdentity } from './session-identity';
 
 async function ensureSchema() {
   try {
@@ -82,9 +86,11 @@ async function ensureSchema() {
       ALTER TABLE school_requests ADD COLUMN IF NOT EXISTS approved_school_id TEXT;
       ALTER TABLE school_requests ADD COLUMN IF NOT EXISTS initial_password TEXT;
     `);
+    await pool.query(productionSchema);
     console.log("[db] schema ensured ✓");
   } catch (err: any) {
-    console.error("[db] ensureSchema failed:", err?.message);
+    console.error("[db] Schema initialization failed; server will not accept traffic");
+    throw err;
   }
 }
 
@@ -122,6 +128,7 @@ function setupCors(app: express.Application) {
 function setupBodyParsing(app: express.Application) {
   app.use(
     express.json({
+      limit: '2mb',
       verify: (req, _res, buf) => {
         req.rawBody = buf;
       },
@@ -285,9 +292,20 @@ function setupErrorHandler(app: express.Application) {
   if (isProduction && (!sessionSecret || Buffer.byteLength(sessionSecret, 'utf8') < 32)) {
     throw new Error('SESSION_SECRET must be configured with at least 32 bytes in production');
   }
+  if (isProduction && !process.env.DATABASE_URL) throw new Error('DATABASE_URL is required in production');
+  await ensureSchema();
+  const PgSession = connectPgSimple(session);
   // Express is served behind a single HTTPS reverse proxy in the supported deployment.
   if (isProduction) app.set('trust proxy', 1);
   app.use(session({
+    name: 'school.sid',
+    store: new PgSession({
+      pool,
+      tableName: 'app_sessions',
+      createTableIfMissing: false,
+      pruneSessionInterval: 900,
+      errorLog: () => console.error('[session] Persistent session store unavailable'),
+    }),
     secret: sessionSecret || randomBytes(32).toString('hex'),
     resave: false,
     saveUninitialized: false,
@@ -313,9 +331,14 @@ function setupErrorHandler(app: express.Application) {
 
   setupRequestLogging(app);
 
-  configureExpoAndLanding(app);
+  app.use('/api', refreshSessionIdentity);
+  app.use('/api/auth/login', createAbuseLimiter('login', 40, 15 * 60_000));
+  app.use('/api/auth/register', createAbuseLimiter('registration', 10, 60 * 60_000));
+  const publicLimit = createAbuseLimiter('public-submission', 10, 60 * 60_000);
+  app.use(['/api/enrollment-requests', '/api/school-requests', '/api/reviews'], (req, res, next) =>
+    req.method === 'POST' ? publicLimit(req, res, next) : next());
 
-  await ensureSchema();
+  configureExpoAndLanding(app);
 
   const server = await registerRoutes(app);
 

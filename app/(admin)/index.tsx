@@ -14,7 +14,6 @@ import HexFrame from '@/components/HexFrame';
 import * as Haptics from 'expo-haptics';
 import FirebaseSyncStatus from '@/components/FirebaseSyncStatus';
 import SubscriptionExpiryBanner from '@/components/SubscriptionExpiryBanner';
-import SchoolBrandHeader from '@/components/SchoolBrandHeader';
 import { useSchoolTheme } from '@/contexts/SchoolThemeContext';
 
 const ROLE_COLORS: Record<string, string> = {

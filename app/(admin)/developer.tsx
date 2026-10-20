@@ -133,7 +133,7 @@ function PasswordGate({ correctPassword, onUnlock }: { correctPassword: string; 
   const [pass,    setPass]    = useState('');
   const [show,    setShow]    = useState(false);
   const [error,   setError]   = useState(false);
-  const [shaking, setShaking] = useState(false);
+  const [, setShaking] = useState(false);
   const shakeAnim = useRef(new Animated.Value(0)).current;
 
   const shake = () => {
@@ -159,8 +159,6 @@ function PasswordGate({ correctPassword, onUnlock }: { correctPassword: string; 
       setTimeout(() => setError(false), 2500);
     }
   };
-
-  const dots = Array.from({ length: Math.min(pass.length, correctPassword.length) });
 
   return (
     <View style={pg.root}>
@@ -398,7 +396,6 @@ function RenewalModal({ visible, school, onClose, onRenew }: {
 }) {
   const insets = useSafeAreaInsets();
   const topPad = Platform.OS === 'web' ? 67 : insets.top;
-  const botPad = Platform.OS === 'web' ? 34 : insets.bottom;
   const [selectedTier, setSelectedTier] = useState<SubscriptionTier>('basic');
   const [months, setMonths]             = useState(1);
   const [saving, setSaving]             = useState(false);
@@ -409,8 +406,7 @@ function RenewalModal({ visible, school, onClose, onRenew }: {
 
   if (!school) return null;
 
-  const tierDef   = getTierById(selectedTier);
-  const totalSAR  = tierDef.price * months;
+  const totalSAR  = getTierById(selectedTier).price * months;
   const newExpiry = new Date(Date.now() + months * 30 * 24 * 3600 * 1000)
     .toISOString().split('T')[0];
 
@@ -606,7 +602,7 @@ export default function DeveloperScreen() {
       const json = await res.json();
       if (!json.ok) throw new Error('Failed to fetch school requests');
       setSchoolRequests(json.data ?? []);
-    } catch (e) {
+    } catch {
       console.warn('[developer] fetchSchoolRequests error', e);
     } finally {
       setRequestsLoading(false);
@@ -627,7 +623,7 @@ export default function DeveloperScreen() {
       if (!json.ok) throw new Error('Failed to update school request');
       await fetchSchoolRequests();
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    } catch (e) {
+    } catch {
       Alert.alert('خطأ', 'فشل تحديث الحالة');
     }
   };
@@ -676,7 +672,6 @@ export default function DeveloperScreen() {
             const initialPassword = `Nuzum@${new Date().getFullYear()}${randomSuffix}`;
 
             // 2. Calculate subscription dates
-            const tierDef = getTierById(req.requested_tier as SubscriptionTier ?? 'trial');
             const startDate = new Date().toISOString().split('T')[0];
             const daysToAdd = req.wants_trial ? 30 : 30;
             const endDate   = new Date(Date.now() + daysToAdd * 24 * 3600 * 1000).toISOString().split('T')[0];
@@ -748,7 +743,7 @@ export default function DeveloperScreen() {
             });
             setShowCredsModal(true);
 
-          } catch (e) {
+          } catch {
             setAuthCreating(false);
             Alert.alert('خطأ', 'فشل تفعيل الروضة. تحقق من الاتصال وحاول مجدداً.');
           }

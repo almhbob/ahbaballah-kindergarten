@@ -163,12 +163,17 @@ test('state database failures do not leak exception details', async () => {
 function authHarness({ env = {}, rows = [], compare = true } = {}) {
   const harness = routerHarness();
   const queries = [];
+  const database = { query: async (sql, params) => { queries.push({ sql, params }); return { rows }; } };
+  const identity = loadTS('server/session-identity.ts', {
+    './db': { __esModule: true, default: database },
+  });
   const auth = loadTS('server/auth-routes.ts', {
+    './session-identity': identity,
     express: harness.express,
     bcryptjs: { __esModule: true, default: { hash: async () => 'test-hash', compare: async () => compare } },
     './db': {
       __esModule: true,
-      default: { query: async (sql, params) => { queries.push({ sql, params }); return { rows }; } },
+      default: database,
     },
   }, { process: { env } });
   return { ...harness, auth, queries };

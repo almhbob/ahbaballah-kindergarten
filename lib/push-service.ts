@@ -1,5 +1,5 @@
 import { makeApiUrl } from '@/lib/query-client';
-import { getSavedPushToken, registerForPushNotifications } from '@/lib/notifications';
+import { registerForPushNotifications } from '@/lib/notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 

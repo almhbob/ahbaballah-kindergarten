@@ -6,7 +6,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 import { Colors } from '@/constants/colors';
-import { useAppData, NewsItem } from '@/contexts/AppDataContext';
+import { useAppData } from '@/contexts/AppDataContext';
 import * as Haptics from 'expo-haptics';
 
 const TYPE_CONFIG = {

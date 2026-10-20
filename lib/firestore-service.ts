@@ -2,7 +2,7 @@ import {
   collection, doc, setDoc, getDoc, getDocs,
   onSnapshot, deleteDoc, query, orderBy, limit,
   serverTimestamp, Unsubscribe, DocumentData,
-  writeBatch, where, updateDoc,
+  writeBatch, updateDoc,
 } from 'firebase/firestore';
 import { getDb, isFirebaseReady } from './firebase';
 import { getActiveSchoolId } from './active-school';
@@ -18,6 +18,9 @@ function docRef(path: string, id: string) {
 }
 
 function guard(): boolean {
+  // Do not resume a second, unverified identity/data authority by accident.
+  // Re-enable only after server-issued Firebase identity and scoped rules pass QA.
+  if (process.env.EXPO_PUBLIC_FIREBASE_SYNC_ENABLED !== 'true') return false;
   if (!isFirebaseReady()) { console.warn('[Firestore] Firebase not ready — skipping sync'); return false; }
   return true;
 }

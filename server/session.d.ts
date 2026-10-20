@@ -8,6 +8,9 @@ declare module 'express-session' {
       email: string;
       phone: string | null;
       role: 'admin' | 'teacher' | 'parent';
+      linked_id?: string | null;
+      teacher_class?: string | null;
+      disabled?: boolean;
     };
   }
 }

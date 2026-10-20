@@ -12,7 +12,6 @@ import { Colors } from '@/constants/colors';
 import { useAppData, Banner, BannerType } from '@/contexts/AppDataContext';
 
 const AD_COLOR = '#B45309';
-const AD_LIGHT = '#FEF3C7';
 
 const TYPE_META: Record<BannerType, { label: string; icon: string; color: string; bg: string }> = {
   offer:  { label: 'عرض تجاري',   icon: 'tag',           color: Colors.success,  bg: '#ECFDF5' },

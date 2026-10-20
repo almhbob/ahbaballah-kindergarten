@@ -8,6 +8,7 @@ import stateRouter from "./state-routes";
 import pushRouter from "./push-routes";
 import schoolRequestRouter from "./school-request-routes";
 import dismissalRouter from "./dismissal-routes";
+import enrollmentRouter from './enrollment-routes';
 import { requirePlatformAdmin } from "./access-control";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -23,6 +24,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   app.use('/api/school-requests', schoolRequestRouter);
   app.use('/api/dismissal', dismissalRouter);
+  app.use('/api/enrollment-requests', enrollmentRouter);
 
   app.get('/api/health', (_req, res) => {
     res.json({ ok: true, service: 'نظم إدارة رياض الأطفال API', version: '2.0' });

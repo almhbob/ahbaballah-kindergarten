@@ -14,7 +14,7 @@ router.get('/', async (_req: Request, res: Response) => {
       result[row.key] = row.value;
     }
     return res.json({ ok: true, data: result });
-  } catch (err: any) {
+  } catch {
     return res.status(500).json({ ok: false, error: 'تعذّر قراءة بيانات النظام' });
   }
 });
@@ -33,7 +33,7 @@ router.put('/:key', async (req: Request, res: Response) => {
       [key, JSON.stringify(value)]
     );
     return res.json({ ok: true });
-  } catch (err: any) {
+  } catch {
     return res.status(500).json({ ok: false, error: 'تعذّر حفظ بيانات النظام' });
   }
 });
@@ -43,7 +43,7 @@ router.delete('/:key', async (req: Request, res: Response) => {
     const { key } = req.params;
     await pool.query('DELETE FROM app_state WHERE key = $1', [key]);
     return res.json({ ok: true });
-  } catch (err: any) {
+  } catch {
     return res.status(500).json({ ok: false, error: 'تعذّر حذف بيانات النظام' });
   }
 });

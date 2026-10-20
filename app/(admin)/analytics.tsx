@@ -97,10 +97,6 @@ export default function AnalyticsScreen() {
 
   const upcomingEvents = schoolEvents.filter(e => e.date >= new Date().toISOString().split('T')[0]).length;
 
-  const behaviorColors: Record<string, string> = {
-    'ممتاز': Colors.success, 'جيد': '#3B82F6', 'مقبول': Colors.warning, 'يحتاج متابعة': Colors.danger,
-  };
-
   const hwDist = useMemo(() => {
     const map: Record<string, number> = {};
     students.forEach(s => { map[s.homework] = (map[s.homework] ?? 0) + 1; });

@@ -334,7 +334,7 @@ export default function ExportScreen() {
         await Print.printAsync({ html, useMarkupFormatter: true });
       }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    } catch (e) {
+    } catch {
       Alert.alert('خطأ', 'تعذّر فتح نافذة الطباعة');
     } finally {
       setIsPrinting(false);

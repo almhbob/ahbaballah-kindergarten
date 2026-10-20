@@ -158,7 +158,7 @@ export default function ResourcesScreen() {
   ]);
 
   const [filterSubject, setFilterSubject] = useState('الكل');
-  const [filterLevel, setFilterLevel]     = useState('جميع المستويات');
+  const [filterLevel]                     = useState('جميع المستويات');
   const [filterType, setFilterType]       = useState<Resource['type'] | 'all'>('all');
   const [search, setSearch]               = useState('');
   const [showModal, setShowModal]         = useState(false);

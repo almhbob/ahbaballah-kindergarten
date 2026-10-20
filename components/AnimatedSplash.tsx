@@ -1,14 +1,14 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
   View, Text, StyleSheet, Animated, Dimensions, Easing, Platform, Image,
 } from 'react-native';
-import Svg, { Polygon, Circle, Defs, RadialGradient, Stop, LinearGradient as SvgLinearGradient } from 'react-native-svg';
-import { Colors } from '@/constants/colors';
+import Svg, { Polygon, Defs, RadialGradient, Stop, LinearGradient as SvgLinearGradient } from 'react-native-svg';
 import * as Haptics from 'expo-haptics';
 
 const { width: W, height: H } = Dimensions.get('window');
 const ACCENT = '#C9952A';
 const ACCENT2 = '#F0B93A';
+const EASE = Easing.out(Easing.cubic);
 
 function hexPoints(cx: number, cy: number, r: number): string {
   const pts: string[] = [];
@@ -41,6 +41,11 @@ interface Props {
 }
 
 export default function AnimatedSplash({ onDone }: Props) {
+  const onDoneRef = useRef(onDone);
+  useEffect(() => {
+    onDoneRef.current = onDone;
+  }, [onDone]);
+
   const bgOpacity    = useRef(new Animated.Value(0)).current;
   const gridOpacity  = useRef(new Animated.Value(0)).current;
   const gridScale    = useRef(new Animated.Value(1.12)).current;
@@ -58,41 +63,39 @@ export default function AnimatedSplash({ onDone }: Props) {
   const tag3O        = useRef(new Animated.Value(0)).current;
   const exitOpacity  = useRef(new Animated.Value(1)).current;
 
-  const ease = Easing.out(Easing.cubic);
-
   useEffect(() => {
     const seq = Animated.sequence([
       // 1. Background fades in
       Animated.parallel([
         Animated.timing(bgOpacity,   { toValue: 1, duration: 400, useNativeDriver: true }),
-        Animated.timing(gridOpacity, { toValue: 1, duration: 600, useNativeDriver: true, easing: ease }),
-        Animated.timing(gridScale,   { toValue: 1, duration: 900, useNativeDriver: true, easing: ease }),
+        Animated.timing(gridOpacity, { toValue: 1, duration: 600, useNativeDriver: true, easing: EASE }),
+        Animated.timing(gridScale,   { toValue: 1, duration: 900, useNativeDriver: true, easing: EASE }),
       ]),
       // 2. Logo pops in
       Animated.parallel([
         Animated.spring(logoScale,   { toValue: 1, tension: 180, friction: 9, useNativeDriver: true }),
         Animated.timing(logoOpacity, { toValue: 1, duration: 350, useNativeDriver: true }),
-        Animated.timing(glowRadius,  { toValue: 1, duration: 700, useNativeDriver: true, easing: ease }),
+        Animated.timing(glowRadius,  { toValue: 1, duration: 700, useNativeDriver: true, easing: EASE }),
       ]),
       // 3. Shimmer sweep
       Animated.timing(shimmer, { toValue: W * 1.5, duration: 900, useNativeDriver: true, easing: Easing.inOut(Easing.quad) }),
       // 4. Title slides in
       Animated.parallel([
-        Animated.timing(titleY,       { toValue: 0, duration: 450, useNativeDriver: true, easing: ease }),
+        Animated.timing(titleY,       { toValue: 0, duration: 450, useNativeDriver: true, easing: EASE }),
         Animated.timing(titleOpacity, { toValue: 1, duration: 350, useNativeDriver: true }),
       ]),
       // 5. Taglines staggered
       Animated.stagger(120, [
         Animated.parallel([
-          Animated.timing(tag1X, { toValue: 0, duration: 380, useNativeDriver: true, easing: ease }),
+          Animated.timing(tag1X, { toValue: 0, duration: 380, useNativeDriver: true, easing: EASE }),
           Animated.timing(tag1O, { toValue: 1, duration: 300, useNativeDriver: true }),
         ]),
         Animated.parallel([
-          Animated.timing(tag2X, { toValue: 0, duration: 380, useNativeDriver: true, easing: ease }),
+          Animated.timing(tag2X, { toValue: 0, duration: 380, useNativeDriver: true, easing: EASE }),
           Animated.timing(tag2O, { toValue: 1, duration: 300, useNativeDriver: true }),
         ]),
         Animated.parallel([
-          Animated.timing(tag3X, { toValue: 0, duration: 380, useNativeDriver: true, easing: ease }),
+          Animated.timing(tag3X, { toValue: 0, duration: 380, useNativeDriver: true, easing: EASE }),
           Animated.timing(tag3O, { toValue: 1, duration: 300, useNativeDriver: true }),
         ]),
       ]),
@@ -102,7 +105,7 @@ export default function AnimatedSplash({ onDone }: Props) {
       Animated.timing(exitOpacity, { toValue: 0, duration: 500, useNativeDriver: true, easing: Easing.in(Easing.quad) }),
     ]);
 
-    seq.start(({ finished }) => { if (finished) onDone(); });
+    seq.start(({ finished }) => { if (finished) onDoneRef.current(); });
 
     if (Platform.OS !== 'web') {
       setTimeout(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light), 350);
@@ -110,7 +113,11 @@ export default function AnimatedSplash({ onDone }: Props) {
     }
 
     return () => seq.stop();
-  }, []);
+  }, [
+    bgOpacity, gridOpacity, gridScale, logoScale, logoOpacity, glowRadius,
+    shimmer, titleY, titleOpacity, tag1X, tag1O, tag2X, tag2O, tag3X, tag3O,
+    exitOpacity,
+  ]);
 
   const glowSize = glowRadius.interpolate({ inputRange: [0, 1], outputRange: [80, 140] });
 

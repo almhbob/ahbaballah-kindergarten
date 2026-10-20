@@ -9,7 +9,6 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useAppData } from '@/contexts/AppDataContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { Colors } from '@/constants/colors';
 import HexFrame from '@/components/HexFrame';
 import * as Haptics from 'expo-haptics';
 
@@ -22,8 +21,8 @@ const ROLES: { id: RegRole; label: string; icon: string; color: string; grad: re
 
 export default function RegisterScreen() {
   const insets = useSafeAreaInsets();
-  const { apiRegister } = useAuth();
-  const { students, updateStudent, employees, updateEmployee } = useAppData();
+  const { apiRegister, user } = useAuth();
+  const { students, employees } = useAppData();
 
   const [role, setRole] = useState<RegRole>('parent');
   const [credential, setCredential] = useState('');
@@ -34,19 +33,22 @@ export default function RegisterScreen() {
   const [step, setStep] = useState<'form' | 'done'>('form');
   const [isLoading, setIsLoading] = useState(false);
 
-  const activeRole = ROLES.find(r => r.id === role)!;
 
   const handleSubmit = async () => {
+    if (user?.role !== 'admin') {
+      Alert.alert('حساب معتمد من الروضة', 'إنشاء الحساب وربطه بملف الطالب أو الموظف متاح للإدارة فقط. تواصل مع الروضة للحصول على حسابك.');
+      return;
+    }
     const cred = credential.trim();
-    const pass = password.trim();
-    const conf = confirm.trim();
+    const pass = password;
+    const conf = confirm;
 
     if (!cred) {
       Alert.alert('تنبيه', role === 'parent' ? 'أدخل رقم الهاتف' : 'أدخل البريد الإلكتروني');
       return;
     }
-    if (pass.length < 4) {
-      Alert.alert('تنبيه', 'كلمة المرور يجب أن تكون 4 أحرف على الأقل');
+    if (pass.length < 12) {
+      Alert.alert('تنبيه', 'كلمة المرور يجب أن تكون 12 حرفًا على الأقل');
       return;
     }
     if (pass !== conf) {
@@ -66,7 +68,6 @@ export default function RegisterScreen() {
         Alert.alert('غير مسجّل', 'رقم الهاتف غير موجود في النظام\nيرجى التواصل مع الإدارة لتسجيل بياناتك');
         return;
       }
-      updateStudent(stu.id, { parentPassword: pass });
       const apiRes = await apiRegister({
         full_name: stu.parentName,
         phone: cred.replace(/\s/g, ''),
@@ -74,8 +75,10 @@ export default function RegisterScreen() {
         password: pass,
         linked_id: stu.id,
       }).catch(() => ({ ok: false, error: 'خطأ في الاتصال' }));
-      if (!apiRes.ok && apiRes.error !== 'هذا الحساب مسجّل مسبقاً، سجّل الدخول مباشرة') {
-        console.warn('[register] API sync failed:', apiRes.error);
+      if (!apiRes.ok) {
+        setIsLoading(false);
+        Alert.alert('لم يُنشأ الحساب', apiRes.error || 'لم يؤكد الخادم إنشاء الحساب');
+        return;
       }
     } else {
       const emp = employees.find(e => e.email && e.email.toLowerCase() === cred.toLowerCase());
@@ -85,7 +88,6 @@ export default function RegisterScreen() {
         Alert.alert('غير مسجّل', 'البريد الإلكتروني غير موجود في النظام\nيرجى التواصل مع الإدارة لإضافة حسابك');
         return;
       }
-      updateEmployee(emp.id, { password: pass });
       const apiRes = await apiRegister({
         full_name: emp.name,
         email: cred.toLowerCase(),
@@ -93,8 +95,10 @@ export default function RegisterScreen() {
         password: pass,
         linked_id: emp.id,
       }).catch(() => ({ ok: false, error: 'خطأ في الاتصال' }));
-      if (!apiRes.ok && apiRes.error !== 'هذا الحساب مسجّل مسبقاً، سجّل الدخول مباشرة') {
-        console.warn('[register] API sync failed:', apiRes.error);
+      if (!apiRes.ok) {
+        setIsLoading(false);
+        Alert.alert('لم يُنشأ الحساب', apiRes.error || 'لم يؤكد الخادم إنشاء الحساب');
+        return;
       }
     }
 

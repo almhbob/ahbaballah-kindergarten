@@ -6,7 +6,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { Colors, Shadows } from '@/constants/colors';
+import { Colors } from '@/constants/colors';
 import { useAppData, InboxMessage } from '@/contexts/AppDataContext';
 import * as Haptics from 'expo-haptics';
 
