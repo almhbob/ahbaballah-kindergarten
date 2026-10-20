@@ -47,7 +47,6 @@ export default function FinanceScreen() {
     const total = LEVEL_FEES[s.level] ?? 10000;
     const remaining = total - (s.paidFees ?? 0);
     setPayAmount(remaining > 0 ? String(remaining) : '');
-    setPayNote('');
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   }
 

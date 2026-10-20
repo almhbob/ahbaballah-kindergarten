@@ -9,7 +9,7 @@ export class PostgresLimitStore implements Store {
   localKeys = false;
   private windowMs = 60_000;
   private nextCleanup = 0;
-  constructor(private prefix: string, private database: Database = pool) {}
+  constructor(readonly prefix: string, private database: Database = pool) {}
   init(options: Options) { this.windowMs = options.windowMs; }
   private key(value: string) {
     return this.prefix + ':' + createHash('sha256').update(value).digest('hex');

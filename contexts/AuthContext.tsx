@@ -210,7 +210,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await AsyncStorage.removeItem(AUTH_USER_KEY);
     setUser(authUser);
     await recordLogin(authUser.role);
-    registerAndSaveToken(authUser.id, authUser.role, authUser.studentId).catch(() => {});
+    if (authUser.role !== 'guest') {
+      registerAndSaveToken(authUser.id, authUser.role, authUser.studentId).catch(() => {});
+    }
   };
 
   const clearLocalAuth = async () => {

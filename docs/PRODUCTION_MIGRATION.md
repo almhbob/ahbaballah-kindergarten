@@ -50,6 +50,10 @@ in the earlier image report. Image-specific safeguards in that report still appl
 - The eleven Expo SDK 54 patch-version mismatches were aligned in the manifest
   and lock. Existing lint warnings were repaired without rule suppression;
   the CI threshold is now **zero warnings**, not 50.
+- Replaced the inherited Android workflow's invalid, unindented Python/YAML
+  blocks. Android builds are now manual-only, require explicit staging approval
+  and a healthy stable HTTPS API, and do not submit/publish an application.
+  Signed artifact URLs are not echoed. No EAS build was started here.
 
 ### Verification evidence and limits
 
@@ -68,6 +72,9 @@ in the earlier image report. Image-specific safeguards in that report still appl
 - A full local TypeScript run exceeded this conversation environment's 1.6 GiB
   memory limit. GitHub CI must verify TypeScript and the web bundle on the exact
   published commit; do not present the local timeout as a passing typecheck.
+- The first GitHub pass caught new TypeScript regressions (missing UI bindings,
+  role narrowing and a store interface visibility mismatch). They were corrected
+  instead of suppressing the typecheck. Exact correction-head CI is required.
 - CI now provisions a disposable PostgreSQL 17 service and enables the real
   database tests. The service's test-only trust authentication is NOT a
   production database configuration.

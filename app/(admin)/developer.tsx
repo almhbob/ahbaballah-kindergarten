@@ -406,7 +406,8 @@ function RenewalModal({ visible, school, onClose, onRenew }: {
 
   if (!school) return null;
 
-  const totalSAR  = getTierById(selectedTier).price * months;
+  const tierDef = getTierById(selectedTier);
+  const totalSAR  = tierDef.price * months;
   const newExpiry = new Date(Date.now() + months * 30 * 24 * 3600 * 1000)
     .toISOString().split('T')[0];
 
@@ -603,7 +604,7 @@ export default function DeveloperScreen() {
       if (!json.ok) throw new Error('Failed to fetch school requests');
       setSchoolRequests(json.data ?? []);
     } catch {
-      console.warn('[developer] fetchSchoolRequests error', e);
+      console.warn('[developer] fetchSchoolRequests failed');
     } finally {
       setRequestsLoading(false);
     }
