@@ -2,7 +2,7 @@
 export function allowedWebOrigins(env: NodeJS.ProcessEnv = process.env): Set<string> {
   const candidates = [
     ...(env.PUBLIC_WEB_ORIGINS || '').split(','),
-    ...(env.REPLIT_DOMAINS || '').split(',').filter(Boolean).map(host => `https://${host.trim()}`),
+    ...(env.REPLIT_DOMAINS || '').split(',').filter(Boolean).map((host: string) => `https://${host.trim()}`),
     ...(env.REPLIT_DEV_DOMAIN ? [`https://${env.REPLIT_DEV_DOMAIN}`] : []),
   ];
   const origins = new Set<string>();

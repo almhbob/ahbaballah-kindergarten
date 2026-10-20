@@ -51,7 +51,7 @@ of a green focused test suite.
 
 ## Local verification completed
 
-- **58 tests pass**: existing hardening/dismissal tests plus browser-origin,
+- **59 tests pass locally**: existing hardening/dismissal tests plus browser-origin,
   API caller, upload-client and actual HTTP image-route tests.
 - Image-route tests use real Express, Multer, sharp and temporary disk storage.
   PostgreSQL and session identities are simulated; these are not live
@@ -74,6 +74,19 @@ of a green focused test suite.
   deployed backend configuration.
 - No production records, secret values, cloud rules, volumes or runtime
   configuration were changed. No deployment, merge or native build was performed.
+
+### CI cross-environment corrections
+
+The first image commit exposed a new implicit-any TypeScript diagnostic and
+eight upload-test failures under the locked Multer 2.1.1. The local tool
+environment had Multer 2.4.0 and newer Express/types, so its initial passing
+results did not reproduce the lock. After installing the locked Multer/Express
+and Node type versions locally, the upload failures reproduced: Busboy reached
+the multipart part-count limit on the single valid file. The limit is now two
+parts while files remain strictly one and fields zero; a regression confirms
+extra files/fields still fail. The new TypeScript callback is explicitly typed.
+CI must verify this correction's exact commit; earlier green local counts are
+not evidence of a clean locked installation.
 
 ## Required storage/browser setup (not applied here)
 

@@ -134,6 +134,21 @@ test('10 MiB upload limit returns 413 without writing files', async t => {
   assert.equal((await f.upload(Buffer.alloc(10 * 1024 * 1024 + 1))).status, 413);
   assert.equal(f.state.rows.length, 0);
 });
+test('multipart accepts exactly one image and rejects a second file or extra field', async t => {
+  const f = await fixture(t);
+  for (const extraFile of [true, false]) {
+    const form = new FormData();
+    form.append('file', new Blob([await png()], { type: 'image/png' }), 'first.png');
+    if (extraFile) form.append('file', new Blob([await png()], { type: 'image/png' }), 'second.png');
+    else form.append('purpose', 'branding');
+    const response = await fetch(f.origin + '/api/files/upload', {
+      method: 'POST', body: form, headers: { 'x-test-role': 'admin' },
+    });
+    assert.equal(response.status, 400);
+  }
+  assert.equal(f.state.rows.length, 0);
+  assert.equal((await f.upload(await png())).status, 201, 'valid single-part uploads remain supported');
+});
 test('compressed image over 20M pixels is rejected before full decoding', async t => {
   const f = await fixture(t);
   const bomb = await sharp({ create: { width: 5000, height: 4001, channels: 3, background: 'white' } }).png().toBuffer();

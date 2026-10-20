@@ -49,7 +49,9 @@ export function createFileRouter(database: Database = pool, options: FileOptions
   const origins = new Set(options.allowedOrigins ?? allowedWebOrigins());
   const upload = multer({
     storage: multer.memoryStorage(),
-    limits: { fileSize: MAX_BYTES, files: 1, fields: 0, parts: 1 },
+    // Busboy emits partsLimit on reaching the threshold, including the first
+    // valid file in Multer 2.1.x. files:1/fields:0 still reject extra payloads.
+    limits: { fileSize: MAX_BYTES, files: 1, fields: 0, parts: 2 },
     fileFilter: (_req, file, cb) => {
       if (!MIME_TYPES.has(file.mimetype)) return cb(new Error('UNSUPPORTED_IMAGE'));
       return cb(null, true);
