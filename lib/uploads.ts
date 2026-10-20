@@ -1,5 +1,6 @@
 import { Platform, Alert } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { fetch as expoFetch } from 'expo/fetch';
 import { makeApiUrl, getApiOrigin } from '@/lib/query-client';
 
 export type UploadedFile = {
@@ -36,13 +37,55 @@ function fileNameFromUri(uri: string, fallback = 'file'): string {
 
 async function dataUrlToBlob(dataUrl: string): Promise<Blob> {
   const res = await fetch(dataUrl);
+  if (!res.ok) throw new Error(`تعذر قراءة الصورة المحددة (HTTP ${res.status})`);
   return await res.blob();
 }
 
-export async function uploadFile(uri: string, opts?: { name?: string; mime?: string }): Promise<string> {
+function responseError(json: any, status: number): string {
+  if (typeof json?.error === 'string' && json.error.trim()) return json.error;
+  return `فشل رفع الملف (HTTP ${status})`;
+}
+
+function resolveServeUrl(rawUrl: unknown): string {
+  if (typeof rawUrl !== 'string' || !rawUrl.trim()) {
+    throw new Error('استجابة الخادم لا تحتوي على رابط صالح للملف');
+  }
+
+  const origin = new URL(getApiOrigin());
+  let resolved: URL;
+  try {
+    if (rawUrl.startsWith('//') || rawUrl.startsWith('\\')) {
+      throw new Error('رابط الملف غير مسموح');
+    }
+    if (/^https?:\/\//i.test(rawUrl)) {
+      resolved = new URL(rawUrl);
+    } else {
+      if (!rawUrl.startsWith('/')) throw new Error('مسار الملف غير مسموح');
+      resolved = new URL(rawUrl, origin);
+    }
+  } catch {
+    throw new Error('استجابة الخادم تحتوي على رابط ملف غير صالح');
+  }
+
+  if (
+    resolved.origin !== origin.origin ||
+    !/^\/api\/files\/serve\/[^/]+\/[^/]+\/[^/]+$/.test(resolved.pathname)
+  ) {
+    throw new Error('رابط الملف غير آمن أو لا ينتمي إلى خادم التطبيق');
+  }
+  return resolved.toString();
+}
+
+export async function uploadFile(
+  uri: string,
+  opts?: { name?: string; mime?: string; purpose?: 'branding' },
+): Promise<string> {
   if (!uri) throw new Error('لا يوجد ملف للرفع');
 
-  const endpoint = makeApiUrl('/api/files/upload');
+  const route = opts?.purpose
+    ? `/api/files/upload?purpose=${encodeURIComponent(opts.purpose)}`
+    : '/api/files/upload';
+  const endpoint = makeApiUrl(route);
 
   const form = new FormData();
 
@@ -50,37 +93,49 @@ export async function uploadFile(uri: string, opts?: { name?: string; mime?: str
     let blob: Blob;
     if (uri.startsWith('data:')) {
       blob = await dataUrlToBlob(uri);
-    } else if (uri.startsWith('blob:') || uri.startsWith('http')) {
+    } else if (/^(blob:|https?:\/\/)/i.test(uri)) {
       const r = await fetch(uri);
+      if (!r.ok) throw new Error(`تعذر قراءة الصورة المحددة (HTTP ${r.status})`);
       blob = await r.blob();
     } else {
-      return uri;
+      throw new Error('صيغة رابط الصورة غير مدعومة على هذا الجهاز');
     }
-    const name = opts?.name || `upload_${Date.now()}.${(blob.type.split('/')[1] || 'bin').split(';')[0]}`;
+    if (!blob || typeof blob.size !== 'number' || blob.size === 0) {
+      throw new Error('الصورة المحددة فارغة أو تعذر قراءتها');
+    }
+    const extension = (blob.type.split('/')[1] || 'bin').split(';')[0];
+    const name = opts?.name || `upload_${Date.now()}.${extension}`;
     form.append('file', blob, name);
   } else {
-    const name = opts?.name || fileNameFromUri(uri, `upload_${Date.now()}.jpg`);
+    if (!/^(file|content|ph|assets-library|asset-library):\/\//i.test(uri)) {
+      throw new Error('صيغة رابط الصورة المحلية غير مدعومة على هذا الجهاز');
+    }
+    const name = opts?.name || fileNameFromUri(uri, `upload_${Date.now()}`);
     const type = opts?.mime || guessMime(uri);
     // @ts-expect-error RN FormData accepts this object shape
     form.append('file', { uri, name, type });
   }
 
-  const res = await fetch(endpoint, {
+  const res = await expoFetch(endpoint, {
     method: 'POST',
     body: form,
     credentials: 'include',
   });
 
   let json: any;
-  try { json = await res.json(); } catch { json = null; }
-
-  if (!res.ok || !json?.ok) {
-    throw new Error(json?.error || `فشل رفع الملف (HTTP ${res.status})`);
+  try {
+    const body = await res.text();
+    try { json = JSON.parse(body); } catch { json = null; }
+  } catch {
+    json = null;
   }
 
-  const file: UploadedFile = json.file;
-  if (file.public_url.startsWith('http')) return file.public_url;
-  return new URL(file.public_url, getApiOrigin()).toString();
+  if (!res.ok || !json?.ok) {
+    throw new Error(responseError(json, res.status));
+  }
+
+  const file: UploadedFile | undefined = json.file;
+  return resolveServeUrl(file?.public_url);
 }
 
 export async function uploadMany(uris: string[]): Promise<string[]> {

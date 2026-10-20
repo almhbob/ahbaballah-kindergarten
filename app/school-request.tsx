@@ -9,7 +9,6 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { getApiUrl } from '@/lib/query-client';
-import { pickAndUploadImage } from '@/lib/uploads';
 import { SUBSCRIPTION_TIERS, TIER_ORDER } from '@/lib/subscription-tiers';
 
 // ─── Color presets ─────────────────────────────────────────────────────────────
@@ -173,20 +172,6 @@ function Step2({ data, set }: { data: FormData; set: (d: Partial<FormData>) => v
 
 // ─── Step 3 — Branding ──────────────────────────────────────────────────────────
 function Step3({ data, set }: { data: FormData; set: (d: Partial<FormData>) => void }) {
-  const [uploading, setUploading] = useState(false);
-
-  const handleLogoUpload = async () => {
-    setUploading(true);
-    try {
-      const result = await pickAndUploadImage('school-request-logo');
-      if (result?.publicUrl) set({ logo_url: result.publicUrl });
-    } catch (err) {
-      Alert.alert('خطأ', 'فشل رفع الصورة، حاول مرة أخرى');
-    } finally {
-      setUploading(false);
-    }
-  };
-
   return (
     <View style={s.stepBody}>
       <View style={s.stepHeader}>
@@ -197,29 +182,14 @@ function Step3({ data, set }: { data: FormData; set: (d: Partial<FormData>) => v
         </View>
       </View>
 
-      {/* Logo Upload */}
+      {/* Logo is added by the school administrator after review and registration. */}
       <Label text="شعار الروضة" />
-      <Pressable onPress={handleLogoUpload} style={s.logoUpload} disabled={uploading}>
-        {data.logo_url ? (
-          <Image source={{ uri: data.logo_url }} style={s.logoPreview} resizeMode="contain" />
-        ) : (
-          <View style={s.logoPlaceholder}>
-            {uploading
-              ? <ActivityIndicator color="#c9952a" />
-              : <>
-                  <MaterialCommunityIcons name="image-plus" size={32} color="rgba(201,149,42,0.60)" />
-                  <Text style={s.logoPlaceholderTxt}>اضغط لرفع الشعار</Text>
-                  <Text style={s.logoPlaceholderSub}>PNG أو JPG — يظهر عند تسجيل الدخول</Text>
-                </>
-            }
-          </View>
-        )}
-        {data.logo_url && (
-          <Pressable onPress={() => set({ logo_url: '' })} style={s.logoRemove}>
-            <Ionicons name="close-circle" size={22} color="#ef4444" />
-          </Pressable>
-        )}
-      </Pressable>
+      <View style={s.infoBox}>
+        <Ionicons name="information-circle-outline" size={18} color="#60a5fa" />
+        <Text style={s.infoBoxTxt}>
+          اترك الشعار الآن؛ ستضيفه إدارة الروضة بعد مراجعة الطلب وإتمام التسجيل.
+        </Text>
+      </View>
 
       {/* Color Presets */}
       <Label text="نظام الألوان" />
@@ -411,7 +381,7 @@ function SuccessScreen({ schoolName }: { schoolName: string }) {
       Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: true, tension: 60, friction: 7 }),
       Animated.timing(opacAnim, { toValue: 1, duration: 400, useNativeDriver: true }),
     ]).start();
-  }, []);
+  }, [opacAnim, scaleAnim]);
 
   return (
     <View style={{ flex: 1, backgroundColor: '#030612', justifyContent: 'center', alignItems: 'center', padding: 32, paddingBottom: botPad + 32 }}>
@@ -506,17 +476,17 @@ export default function SchoolRequestScreen() {
     setSubmitting(true);
     try {
       const apiBase = getApiUrl();
-      const url = new URL('/api/school-requests', `https://${apiBase}`).toString();
+      const url = new URL('/api/school-requests', apiBase).toString();
       const res  = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
       const json = await res.json();
-      if (!json.ok) { Alert.alert('خطأ', json.error ?? 'فشل الإرسال'); return; }
+      if (!res.ok || !json.ok) { Alert.alert('خطأ', json.error ?? 'فشل الإرسال'); return; }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setDone(true);
-    } catch (err) {
+    } catch {
       Alert.alert('خطأ', 'تعذّر الاتصال بالخادم، تحقق من الإنترنت وأعد المحاولة');
     } finally {
       setSubmitting(false);
@@ -643,17 +613,6 @@ const s = StyleSheet.create({
   chipActive:    { backgroundColor: 'rgba(201,149,42,0.18)', borderColor: 'rgba(201,149,42,0.50)' },
   chipTxt:       { fontSize: 12, fontFamily: 'Inter_500Medium', color: 'rgba(255,255,255,0.55)' },
   chipTxtActive: { color: '#c9952a', fontFamily: 'Inter_700Bold' },
-
-  logoUpload: {
-    height: 130, borderRadius: 18, borderWidth: 2, borderStyle: 'dashed',
-    borderColor: 'rgba(201,149,42,0.40)', justifyContent: 'center', alignItems: 'center',
-    backgroundColor: 'rgba(201,149,42,0.04)', marginBottom: 18, overflow: 'hidden',
-  },
-  logoPreview:      { width: '100%', height: '100%' },
-  logoPlaceholder:  { alignItems: 'center', gap: 8 },
-  logoPlaceholderTxt: { fontSize: 13, fontFamily: 'Inter_600SemiBold', color: 'rgba(201,149,42,0.60)' },
-  logoPlaceholderSub: { fontSize: 10, fontFamily: 'Inter_400Regular', color: 'rgba(255,255,255,0.25)' },
-  logoRemove: { position: 'absolute', top: 8, left: 8 },
 
   colorGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 18 },
   colorCard: {

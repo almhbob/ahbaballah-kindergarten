@@ -59,6 +59,35 @@ function routerHarness() {
 }
 
 const { resolveApiOrigin } = loadTS('lib/api-origin.ts');
+const { allowedWebOrigins, isAllowedWebOrigin } = loadTS('server/request-security.ts');
+test('production CORS accepts exact configured HTTPS origins, never arbitrary localhost', () => {
+  const env = { NODE_ENV: 'production', PUBLIC_WEB_ORIGINS: 'https://school.example,http://localhost:8081', REPLIT_DOMAINS: 'api.example' };
+  assert.equal(isAllowedWebOrigin('https://school.example', env), true);
+  assert.equal(isAllowedWebOrigin('https://api.example', env), true);
+  assert.equal(isAllowedWebOrigin('http://localhost:8081', env), false);
+  assert.equal(isAllowedWebOrigin('https://school.example.attacker.test', env), false);
+});
+test('malformed origins, URL paths and credentials never enter the browser allowlist', () => {
+  const env = { NODE_ENV: 'production', PUBLIC_WEB_ORIGINS: 'https://school.example/path,https://user:pass@school.example,null,https://valid.example/' };
+  assert.equal(allowedWebOrigins(env).size, 0);
+  assert.equal(isAllowedWebOrigin('null', env), false);
+});
+test('development loopback support does not accept lookalike hostnames', () => {
+  const env = { NODE_ENV: 'development' };
+  assert.equal(isAllowedWebOrigin('http://localhost:8081', env), true);
+  assert.equal(isAllowedWebOrigin('http://127.0.0.1:5000', env), true);
+  assert.equal(isAllowedWebOrigin('http://localhost.attacker.test:8081', env), false);
+  assert.equal(isAllowedWebOrigin('http://localhost:8081/path', env), false);
+});
+test('browser-write origin guard is installed and CI no longer masks lint or doctor failures', () => {
+  const server = fs.readFileSync(path.join(root, 'server/index.ts'), 'utf8');
+  assert.match(server, /\['POST', 'PUT', 'PATCH', 'DELETE'\]/);
+  assert.match(server, /req\.get\('sec-fetch-site'\) === 'cross-site'/);
+  assert.ok(server.indexOf("app.use(session(") < server.indexOf('// Multipart uploads'));
+  const workflow = fs.readFileSync(path.join(root, '.github/workflows/ci.yml'), 'utf8');
+  assert.doesNotMatch(workflow, /continue-on-error:\s*true/);
+  assert.match(workflow, /expo export --platform web/);
+});
 test('API origin supports bare domains, full HTTPS URLs, trailing slash and loopback ports', () => {
   for (const [input, expected] of [
     ['school.example', 'https://school.example'],

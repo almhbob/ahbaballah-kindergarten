@@ -6,6 +6,7 @@ import pool from "./db";
 import * as fs from "fs";
 import * as path from "path";
 import { randomBytes } from "node:crypto";
+import { isAllowedWebOrigin } from './request-security';
 
 async function ensureSchema() {
   try {
@@ -98,30 +99,13 @@ declare module "http" {
 
 function setupCors(app: express.Application) {
   app.use((req, res, next) => {
-    const origins = new Set<string>();
-
-    if (process.env.REPLIT_DEV_DOMAIN) {
-      origins.add(`https://${process.env.REPLIT_DEV_DOMAIN}`);
-    }
-
-    if (process.env.REPLIT_DOMAINS) {
-      process.env.REPLIT_DOMAINS.split(",").forEach((d: string) => {
-        origins.add(`https://${d.trim()}`);
-      });
-    }
-
     const origin = req.header("origin");
-
-    // Allow localhost origins for Expo web development (any port)
-    const isLocalhost =
-      origin?.startsWith("http://localhost:") ||
-      origin?.startsWith("http://127.0.0.1:");
-
-    if (origin && (origins.has(origin) || isLocalhost)) {
+    res.vary('Origin');
+    if (origin && isAllowedWebOrigin(origin)) {
       res.header("Access-Control-Allow-Origin", origin);
       res.header(
         "Access-Control-Allow-Methods",
-        "GET, POST, PUT, DELETE, OPTIONS",
+        "GET, POST, PUT, PATCH, DELETE, OPTIONS",
       );
       res.header("Access-Control-Allow-Headers", "Content-Type");
       res.header("Access-Control-Allow-Credentials", "true");
@@ -314,6 +298,18 @@ function setupErrorHandler(app: express.Application) {
       maxAge: 1000 * 60 * 60 * 24 * 7,
     },
   }));
+
+  // Multipart uploads and cookie-authenticated writes also need CSRF protection.
+  // Browser Origin/Fetch-Metadata headers cannot be overridden by page scripts.
+  app.use((req, res, next) => {
+    if (!['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) return next();
+    const origin = req.get('origin');
+    if ((origin && !isAllowedWebOrigin(origin)) ||
+        (!origin && req.get('sec-fetch-site') === 'cross-site')) {
+      return res.status(403).json({ ok: false, error: 'مصدر الطلب غير مسموح' });
+    }
+    return next();
+  });
 
   setupRequestLogging(app);
 

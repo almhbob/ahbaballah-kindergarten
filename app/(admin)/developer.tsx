@@ -15,7 +15,7 @@ import * as Haptics from 'expo-haptics';
 import * as Clipboard from 'expo-clipboard';
 import { SUBSCRIPTION_TIERS, TIER_ORDER, getTierById, checkCapacity, capacityColor, SubscriptionTier } from '@/lib/subscription-tiers';
 import { createSchoolAdminAccount } from '@/lib/school-auth';
-import { getApiUrl } from '@/lib/query-client';
+import { makeApiUrl } from '@/lib/query-client';
 
 function genId() {
   return Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
@@ -600,11 +600,12 @@ export default function DeveloperScreen() {
   const fetchSchoolRequests = async () => {
     setRequestsLoading(true);
     try {
-      const base = getApiUrl();
-      const url  = new URL('/api/school-requests', `https://${base}`).toString();
-      const res  = await fetch(url);
+      const url  = makeApiUrl('/api/school-requests');
+      const res  = await fetch(url, { credentials: 'include' });
+      if (!res.ok) throw new Error(`Failed to fetch school requests: ${res.status}`);
       const json = await res.json();
-      if (json.ok) setSchoolRequests(json.data ?? []);
+      if (!json.ok) throw new Error('Failed to fetch school requests');
+      setSchoolRequests(json.data ?? []);
     } catch (e) {
       console.warn('[developer] fetchSchoolRequests error', e);
     } finally {
@@ -614,13 +615,16 @@ export default function DeveloperScreen() {
 
   const updateRequestStatus = async (id: number, status: string, notes?: string) => {
     try {
-      const base = getApiUrl();
-      const url  = new URL(`/api/school-requests/${id}`, `https://${base}`).toString();
-      await fetch(url, {
+      const url  = makeApiUrl(`/api/school-requests/${id}`);
+      const res = await fetch(url, {
         method: 'PATCH',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status, notes, reviewed_by: 'developer' }),
       });
+      if (!res.ok) throw new Error(`Failed to update school request: ${res.status}`);
+      const json = await res.json();
+      if (!json.ok) throw new Error('Failed to update school request');
       await fetchSchoolRequests();
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (e) {
@@ -632,10 +636,16 @@ export default function DeveloperScreen() {
     Alert.alert('تأكيد', 'حذف الطلب نهائياً؟', [
       { text: 'إلغاء', style: 'cancel' },
       { text: 'حذف', style: 'destructive', onPress: async () => {
-        const base = getApiUrl();
-        const url  = new URL(`/api/school-requests/${id}`, `https://${base}`).toString();
-        await fetch(url, { method: 'DELETE' });
-        await fetchSchoolRequests();
+        try {
+          const url  = makeApiUrl(`/api/school-requests/${id}`);
+          const res = await fetch(url, { method: 'DELETE', credentials: 'include' });
+          if (!res.ok) throw new Error(`Failed to delete school request: ${res.status}`);
+          const json = await res.json();
+          if (!json.ok) throw new Error('Failed to delete school request');
+          await fetchSchoolRequests();
+        } catch {
+          Alert.alert('خطأ', 'فشل حذف الطلب');
+        }
       }},
     ]);
   };
@@ -702,10 +712,10 @@ export default function DeveloperScreen() {
             }
 
             // 6. Persist provisioning data in DB
-            const base = getApiUrl();
-            const url  = new URL(`/api/school-requests/${req.id}`, `https://${base}`).toString();
-            await fetch(url, {
+            const url  = makeApiUrl(`/api/school-requests/${req.id}`);
+            const res = await fetch(url, {
               method: 'PATCH',
+              credentials: 'include',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 status:             'approved',
@@ -717,6 +727,9 @@ export default function DeveloperScreen() {
                 initial_password:   initialPassword,
               }),
             });
+            if (!res.ok) throw new Error(`Failed to save school provisioning: ${res.status}`);
+            const json = await res.json();
+            if (!json.ok) throw new Error('Failed to save school provisioning');
 
             // 7. Refresh requests list
             await fetchSchoolRequests();

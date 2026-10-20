@@ -1,5 +1,10 @@
 # Student dismissal and specialist QA
 
+Latest image-security implementation and the current **NO-GO** production
+decision are recorded in [IMAGE_UPLOADS_AND_RELEASE.md](IMAGE_UPLOADS_AND_RELEASE.md).
+The counts and masked-CI descriptions below are historical evidence for earlier
+revisions; the new CI configuration no longer tolerates lint/Doctor failures.
+
 ## Implemented, not deployed
 
 Arabic RTL admin screen at `/(admin)/dismissal`, accessible from the dashboard.

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, Image, StyleSheet, Pressable,
-  ActivityIndicator, Platform, Alert,
+  ActivityIndicator, Alert,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -82,9 +82,11 @@ interface Props {
 export default function SchoolBrandHeader({ editable = false, compact = false, schoolName }: Props) {
   const { branding, theme, updateBranding } = useSchoolTheme();
   const [uploading, setUploading] = useState(false);
+  const [failedLogoUrl, setFailedLogoUrl] = useState<string | null>(null);
 
   const name = schoolName || branding.name || 'الروضة';
   const logoUrl = branding.logoUrl;
+  const showLogo = !!logoUrl && failedLogoUrl !== logoUrl;
   const accent = theme.accent;
   const primary = theme.primary;
 
@@ -105,7 +107,12 @@ export default function SchoolBrandHeader({ editable = false, compact = false, s
       if (res.canceled || !res.assets?.[0]) return;
       setUploading(true);
       const uri = res.assets[0].uri;
-      const publicUrl = await uploadFile(uri, { name: 'school-logo.jpg', mime: 'image/jpeg' });
+      const asset = res.assets[0];
+      const publicUrl = await uploadFile(uri, {
+        name: asset.fileName ?? undefined,
+        mime: asset.mimeType ?? undefined,
+        purpose: 'branding',
+      });
       await updateBranding({ ...branding, logoUrl: publicUrl });
     } catch (err: any) {
       Alert.alert('فشل الرفع', err?.message || 'يرجى المحاولة مجدداً');
@@ -118,8 +125,13 @@ export default function SchoolBrandHeader({ editable = false, compact = false, s
     return (
       <View style={[s.compact, { borderBottomColor: `${primary}22` }]}>
         <Pressable onPress={handleLogoPress} disabled={!editable}>
-          {logoUrl ? (
-            <Image source={{ uri: logoUrl }} style={s.compactLogo} resizeMode="contain" />
+          {showLogo ? (
+            <Image
+              source={{ uri: logoUrl! }}
+              style={s.compactLogo}
+              resizeMode="contain"
+              onError={() => setFailedLogoUrl(logoUrl!)}
+            />
           ) : (
             <View style={[s.compactLogoPlaceholder, { borderColor: accent }]}>
               <MaterialCommunityIcons name="school" size={18} color={accent} />
@@ -152,7 +164,7 @@ export default function SchoolBrandHeader({ editable = false, compact = false, s
       {/* School branding slot */}
       <Pressable onPress={handleLogoPress} disabled={!editable} style={s.left}>
         <SchoolLogoSlot
-          logoUrl={logoUrl}
+          logoUrl={showLogo ? logoUrl : undefined}
           schoolName={name}
           accentColor={accent}
           editable={editable}
@@ -179,10 +191,16 @@ export default function SchoolBrandHeader({ editable = false, compact = false, s
 
 export function BrandHeaderBar({ title }: { title?: string }) {
   const { branding, theme } = useSchoolTheme();
+  const [failedLogoUrl, setFailedLogoUrl] = useState<string | null>(null);
   return (
     <View style={[s.headerBar, { backgroundColor: branding.darkGrad1, borderBottomColor: `${theme.accent}30` }]}>
-      {branding.logoUrl ? (
-        <Image source={{ uri: branding.logoUrl }} style={s.headerBarLogo} resizeMode="contain" />
+      {branding.logoUrl && failedLogoUrl !== branding.logoUrl ? (
+        <Image
+          source={{ uri: branding.logoUrl }}
+          style={s.headerBarLogo}
+          resizeMode="contain"
+          onError={() => setFailedLogoUrl(branding.logoUrl!)}
+        />
       ) : (
         <View style={[s.headerBarLogoPlaceholder, { borderColor: theme.accent }]}>
           <MaterialCommunityIcons name="school" size={16} color={theme.accent} />
