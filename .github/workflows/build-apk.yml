@@ -16,7 +16,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
 
       - name: Install dependencies
@@ -30,53 +30,27 @@ jobs:
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN2 }}
         run: |
-          set -e
+          set -euo pipefail
           echo "=== EAS Authentication Check ==="
-          eas whoami || { echo "AUTH FAILED - token invalid"; exit 1; }
-          echo "=== Starting EAS Build ==="
-          BUILD_JSON=$(eas build \
-            --platform android \
-            --profile apk \
-            --non-interactive \
-            --wait \
-            --json 2>&1)
-          echo "$BUILD_JSON"
-          APK_URL=$(echo "$BUILD_JSON" | python3 -c "
-import sys, json
-data = sys.stdin.read()
-try:
-    builds = json.loads(data)
-    if isinstance(builds, list) and builds:
-        url = builds[0].get('artifacts', {}).get('buildUrl', '')
-        if url: print(url)
-    elif isinstance(builds, dict):
-        url = builds.get('artifacts', {}).get('buildUrl', '')
-        if url: print(url)
-except Exception as e:
-    sys.stderr.write(str(e)+'\n')
-" 2>/dev/null || true)
-          if [ -n "$APK_URL" ]; then
-            echo "APK_URL=$APK_URL" >> $GITHUB_OUTPUT
-            echo "=== APK URL: $APK_URL ==="
-          else
-            echo "=== Trying eas build:list fallback ==="
-            sleep 5
-            LIST_JSON=$(eas build:list --platform android --limit 1 --json --non-interactive 2>/dev/null || echo "[]")
-            APK_URL=$(echo "$LIST_JSON" | python3 -c "
-import sys, json
-builds = json.loads(sys.stdin.read())
-if builds:
-    url = builds[0].get('artifacts', {}).get('buildUrl', '')
-    if url: print(url)
-" 2>/dev/null || true)
-            if [ -n "$APK_URL" ]; then
-              echo "APK_URL=$APK_URL" >> $GITHUB_OUTPUT
-              echo "=== APK URL (fallback): $APK_URL ==="
-            else
-              echo "ERROR: Could not get APK URL"
-              exit 1
-            fi
+          if ! eas whoami; then
+            echo "::error::EXPO_TOKEN2 is invalid or expired. Create a new token at https://expo.dev/settings/access-tokens and update the EXPO_TOKEN2 repository secret."
+            exit 1
           fi
+          echo "=== Starting EAS Build ==="
+          # JSON goes to stdout only; logs go to stderr so the JSON stays parseable.
+          eas build --platform android --profile apk --non-interactive --wait --json > build.json
+          APK_URL=$(jq -r 'if type == "array" then .[0] else . end | .artifacts.buildUrl // empty' build.json)
+          if [ -z "$APK_URL" ]; then
+            echo "=== Trying eas build:list fallback ==="
+            eas build:list --platform android --limit 1 --json --non-interactive > list.json || echo "[]" > list.json
+            APK_URL=$(jq -r '.[0].artifacts.buildUrl // empty' list.json)
+          fi
+          if [ -z "$APK_URL" ]; then
+            echo "::error::Could not get the APK URL from EAS"
+            exit 1
+          fi
+          echo "APK_URL=$APK_URL" >> "$GITHUB_OUTPUT"
+          echo "=== APK URL: $APK_URL ==="
 
       - name: Download APK
         run: |
