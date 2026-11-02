@@ -11,7 +11,6 @@ PROJECT_ID="ahbabullah-e85a6"
 SA_NAME="google-play-publisher"
 SA_EMAIL="${SA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com"
 KEY_FILE="/tmp/google-play-key-$$.json"
-SERVER_URL="https://2be55d0a-6bcf-41e3-b926-62f595b1feef-00-37br86ji98cvi.sisko.replit.dev/api/setup/google-play-key"
 
 echo ""
 echo "╔══════════════════════════════════════════════════════╗"
@@ -46,11 +45,10 @@ else
 fi
 
 echo ""
-echo "⚡ [4/5] منح صلاحيات IAM..."
-gcloud projects add-iam-policy-binding "$PROJECT_ID" \
-  --member="serviceAccount:$SA_EMAIL" \
-  --role="roles/firebase.admin" --quiet 2>/dev/null || true
-echo "     ✅ صلاحيات مُضافة"
+echo "⚡ [4/5] الصلاحيات..."
+# Least privilege: publishing needs NO Google Cloud IAM role. Access is granted
+# only inside Google Play Console (Release Manager) — see the last step below.
+echo "     ✅ لا حاجة لصلاحيات Cloud إضافية"
 
 echo ""
 echo "⚡ [5/5] إنشاء JSON Key وإرساله تلقائياً..."
@@ -58,29 +56,22 @@ rm -f "$KEY_FILE"
 gcloud iam service-accounts keys create "$KEY_FILE" \
   --iam-account="$SA_EMAIL" --project="$PROJECT_ID" --quiet
 
-KEY_CONTENT=$(cat "$KEY_FILE")
-RESPONSE=$(curl -s -X POST "$SERVER_URL" \
-  -H "Content-Type: application/json" \
-  -d "{\"key\": $(python3 -c "import json,sys; print(json.dumps(open('$KEY_FILE').read()))")}" 2>/dev/null)
-
+# The key is NEVER sent to the app server. Upload it straight to GitHub Secrets
+# with the GitHub CLI (available in Cloud Shell), then delete the local copy.
+if command -v gh &>/dev/null && gh auth status &>/dev/null; then
+  gh secret set GOOGLE_PLAY_SERVICE_ACCOUNT_KEY --repo almhbob/ahbaballah-kindergarten < "$KEY_FILE"
+  echo "     ✅ GOOGLE_PLAY_SERVICE_ACCOUNT_KEY أُضيف إلى GitHub Secrets"
+else
+  echo "     ⚠️  GitHub CLI غير مسجّل الدخول. شغّل: gh auth login"
+  echo "     ثم: gh secret set GOOGLE_PLAY_SERVICE_ACCOUNT_KEY --repo almhbob/ahbaballah-kindergarten < $KEY_FILE"
+  echo "     (احذف الملف بعدها: rm -f $KEY_FILE)"
+  exit 1
+fi
 rm -f "$KEY_FILE"
 
-if echo "$RESPONSE" | grep -q '"ok":true'; then
-  echo "     ✅ GOOGLE_PLAY_SERVICE_ACCOUNT_KEY أُضيف إلى GitHub Secrets!"
-  echo ""
-  echo "╔══════════════════════════════════════════════════════╗"
-  echo "║              ✅ اكتمل الإعداد بنجاح!                ║"
-  echo "╚══════════════════════════════════════════════════════╝"
-  echo ""
-  echo "الخطوة الأخيرة (في Google Play Console):"
-  echo "1. افتح: https://play.google.com/console/developers/api-access"
-  echo "2. ابحث عن: $SA_EMAIL"
-  echo "3. اضغط 'Grant access' ثم 'Release Manager'"
-  echo ""
-  echo "لبدء أول بناء تلقائي:"
-  echo "https://github.com/almhbob/ahbaballah-kindergarten/actions/workflows/build-android.yml"
-else
-  echo "     ⚠️  فشل الإرسال التلقائي — افتح الصفحة لإضافته يدوياً:"
-  echo "     https://2be55d0a-6bcf-41e3-b926-62f595b1feef-00-37br86ji98cvi.sisko.replit.dev/api/setup/page"
-fi
+echo ""
+echo "الخطوة الأخيرة (في Google Play Console):"
+echo "1. افتح: https://play.google.com/console/developers/api-access"
+echo "2. ابحث عن: $SA_EMAIL"
+echo "3. اضغط 'Grant access' ثم 'Release Manager'"
 echo ""

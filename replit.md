@@ -11,30 +11,38 @@
 - **Auth**: Dual-layer — local AppDataContext + backend PostgreSQL users table
 
 ## User Roles & Login
-| Role | Login field | Default password |
-|------|-------------|-----------------|
-| Admin (أدمن) | username: `admin` | `1234` |
-| Teacher (معلمة) | email (e.g. `noura@ahbaballah.edu`) | `1234` |
-| Parent (ولي أمر) | phone (e.g. `+249912345678`) | `1234` |
+| Role | Login field | Password |
+|------|-------------|----------|
+| Admin (أدمن) | username: `admin` (or Firebase school login) | set at first login — see docs/SECURITY.md |
+| Teacher (معلمة) | email | temporary password issued by the admin, changed at first login |
+| Parent (ولي أمر) | phone | temporary password issued by the admin, changed at first login |
 | Guest (ضيف) | No login needed | — |
 
-Admin password can be changed from Settings → Developer panel → Admin password.
+All credentials are verified **on the server only** and stored as bcrypt hashes.
+See [docs/SECURITY.md](docs/SECURITY.md) for the security model and deployment checklist.
 
 ## API Routes
-- `POST /api/auth/register` — create teacher/parent account
-- `POST /api/auth/login` — authenticate
-- `GET/PUT /api/state/:key` — cloud state sync (19 keys)
-- `GET/POST /api/reviews` — parent reviews
-- `GET/PATCH/DELETE /api/reviews/:id` — review management
-- `POST /api/files/upload` — file uploads
-- `GET /api/health` — health check
-- `GET/POST /api/school-requests` — school join requests
-- `PATCH/DELETE /api/school-requests/:id` — manage requests (status, provisioning, subscription dates)
+All routes require a bearer token (`Authorization: Bearer <token>`) unless marked public.
+- `POST /api/auth/login` (public, rate-limited) — returns a signed token
+- `POST /api/auth/activate` (public, rate-limited) — first-time activation with the school's temporary password
+- `POST /api/auth/change-password`, `GET /api/auth/me`
+- `POST /api/auth/firebase-login` — exchanges a Firebase ID token (school admin) for a token
+- `POST /api/auth/developer-unlock` (admin) → short-lived developer token; `POST /api/auth/developer-password` (developer)
+- `POST /api/auth/reset-password` (admin) — issue a temporary password for a teacher/parent
+- `GET /api/state` — role-filtered school state (public keys only when anonymous)
+- `PUT /api/state/:key` — role-checked writes; `DELETE /api/state/:key` (admin)
+- `POST /api/state/registration-request` (public, rate-limited) — enrolment form
+- `GET /api/reviews` (public), `POST /api/reviews` (rate-limited), `GET /api/reviews/all`, `PATCH /api/reviews/:id/approve`, `DELETE /api/reviews/:id` (admin)
+- `POST /api/files/upload` (signed in)
+- `POST /api/school-requests` (public, rate-limited); `GET/PATCH/DELETE /api/school-requests` (developer)
+- `POST /api/push/*` (admin/teacher)
+- `GET /api/health`
 
 ## Database Tables
 - `users` — auth accounts (admin, teacher, parent)
 - `reviews` — parent reviews (approved auto)
-- `app_state` — cloud-synced app state (JSON key-value)
+- `school_state` — per-school app state (JSON key-value, no passwords)
+- `credentials` — bcrypt password hashes (admin, teachers, parents, defaults, developer)
 - `school_requests` — school registration requests (full provisioning: status, subscription_start/end, approved_school_id, initial_password)
 
 ## School Registration & Provisioning Flow
@@ -150,8 +158,8 @@ Admin password can be changed from Settings → Developer panel → Admin passwo
 
 ## Important Notes
 - School email: Ahbaballah2026@hotmail.com
-- Default admin password: 1234 (configurable via developer panel)
+- Admin must set a strong password at first login (see docs/SECURITY.md)
 - Firebase project: ahbabullah-e85a6
-- All AsyncStorage saves also sync to PostgreSQL cloud via /api/state
+- All AsyncStorage saves also sync to PostgreSQL (per school, role-checked) via /api/state
 - Frontend ENOENT error on Metro watcher: transient, restart frontend workflow resolves it
 - expo-notifications registered for push on admin login
