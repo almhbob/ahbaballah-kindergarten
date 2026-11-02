@@ -1,6 +1,10 @@
 import { Router } from 'express';
+import { requireRole, rateLimit } from './security';
 
 const router = Router();
+
+// Every push endpoint requires a logged-in staff member and is rate limited.
+router.use(requireRole('admin', 'teacher'), rateLimit('push', 120, 60 * 1000));
 
 interface PushMessage {
   to: string | string[];
@@ -104,7 +108,7 @@ router.post('/send', async (req, res) => {
   }
 });
 
-router.post('/broadcast', async (req, res) => {
+router.post('/broadcast', requireRole('admin'), async (req, res) => {
   try {
     const { tokens, title, body, data, audience } = req.body as {
       tokens: string[];
@@ -171,7 +175,7 @@ router.post('/attendance-alert', async (req, res) => {
   }
 });
 
-router.post('/payment-reminder', async (req, res) => {
+router.post('/payment-reminder', requireRole('admin'), async (req, res) => {
   try {
     const { parentToken, studentName, remaining, totalFees } = req.body as {
       parentToken: string;
