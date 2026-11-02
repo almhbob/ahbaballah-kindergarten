@@ -9,7 +9,6 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { useAuth, UserRole, AuthUser } from '@/contexts/AuthContext';
-import { useAppData } from '@/contexts/AppDataContext';
 import { useSchoolTheme } from '@/contexts/SchoolThemeContext';
 import { Colors } from '@/constants/colors';
 import HexFrame from '@/components/HexFrame';
@@ -298,8 +297,7 @@ function HexDecor({ size, x, y, opacity }: { size: number; x: number; y: number;
 
 export default function LoginScreen() {
   const insets = useSafeAreaInsets();
-  const { login, apiLogin, isBiometricEnabled, enableBiometric, getBiometricUser } = useAuth();
-  const { students, employees, appSettings } = useAppData();
+  const { login, signIn, biometricSignIn, isBiometricEnabled, enableBiometric, getBiometricUser } = useAuth();
   const { branding } = useSchoolTheme();
 
   const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
@@ -332,10 +330,16 @@ export default function LoginScreen() {
         disableDeviceFallback: false,
       });
       if (result.success && biometricUser) {
+        const r = await biometricSignIn();
+        if (!r.ok || !r.user) {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+          setBiometricUser(null);
+          Alert.alert('تسجيل الدخول بالبصمة', r.error ?? 'تعذّر تسجيل الدخول بالبصمة');
+          return;
+        }
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        await login(biometricUser);
-        if (biometricUser.role === 'admin') router.replace('/(admin)');
-        else if (biometricUser.role === 'teacher') router.replace('/(teacher)');
+        if (r.user.role === 'admin') router.replace('/(admin)');
+        else if (r.user.role === 'teacher') router.replace('/(teacher)');
         else router.replace('/(parent)');
       }
     } catch {
@@ -378,68 +382,23 @@ export default function LoginScreen() {
 
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setIsLoading(true);
-    await new Promise(r => setTimeout(r, 600));
 
-    let authUser = null;
-
-    if (selectedRole === 'admin') {
-      const adminPass = appSettings?.adminPassword || '1234';
-      if ((trimCred === 'admin' || trimCred === 'administrator') && trimPass === adminPass) {
-        authUser = { id: 'admin_1', name: 'أ. سلوى أحمد داموس', role: 'admin' as UserRole };
-      }
-    } else if (selectedRole === 'teacher') {
-      const emp = employees.find(e => e.email && e.email.toLowerCase() === trimCred);
-      if (emp && (emp.password || '1234') === trimPass) {
-        if (emp.disabled) {
-          setIsLoading(false);
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-          Alert.alert('الحساب موقوف', 'تم إيقاف هذا الحساب من قِبل الإدارة. يرجى التواصل مع الإدارة.');
-          return;
-        }
-        authUser = {
-          id: emp.id,
-          name: emp.name,
-          role: 'teacher' as UserRole,
-          teacherClass: emp.level,
-        };
-      }
-    } else if (selectedRole === 'parent') {
-      const rawCred = credential.trim();
-      const stu = students.find(s => s.parentPhone && s.parentPhone.replace(/\s/g, '') === rawCred.replace(/\s/g, ''));
-      if (stu && (stu.parentPassword || '1234') === trimPass) {
-        if (stu.parentDisabled) {
-          setIsLoading(false);
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-          Alert.alert('الحساب موقوف', 'تم إيقاف هذا الحساب من قِبل الإدارة. يرجى التواصل مع الإدارة.');
-          return;
-        }
-        authUser = {
-          id: `parent_${stu.id}`,
-          name: stu.parentName,
-          role: 'parent' as UserRole,
-          studentId: stu.id,
-        };
-      }
-    }
-
+    // Credentials are verified by the server only — nothing is checked on the device.
+    const result = await signIn(selectedRole as Exclude<UserRole, 'guest'>, credential.trim(), trimPass);
     setIsLoading(false);
 
-    if (!authUser) {
+    if (!result.ok || !result.user) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      Alert.alert(
-        'خطأ في تسجيل الدخول',
-        selectedRole === 'teacher'
-          ? 'البريد الإلكتروني أو كلمة المرور غير صحيحة'
-          : selectedRole === 'parent'
-            ? 'رقم الهاتف غير مسجّل أو كلمة المرور خاطئة'
-            : 'اسم المستخدم أو كلمة المرور غير صحيحة',
-      );
+      Alert.alert('خطأ في تسجيل الدخول', result.error ?? 'بيانات الدخول غير صحيحة');
       return;
     }
 
+    const authUser = result.user;
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    await login(authUser);
-    apiLogin(selectedRole, credential.trim(), password.trim()).catch(() => {});
+    if (result.mustChangePassword) {
+      router.replace('/change-password');
+      return;
+    }
     offerBiometricEnable(authUser);
     if (selectedRole === 'admin') router.replace('/(admin)');
     else if (selectedRole === 'teacher') router.replace('/(teacher)');

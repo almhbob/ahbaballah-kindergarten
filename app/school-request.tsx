@@ -8,7 +8,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import { getApiUrl } from '@/lib/query-client';
+import { apiFetch } from '@/lib/api';
 import { pickAndUploadImage } from '@/lib/uploads';
 import { SUBSCRIPTION_TIERS, TIER_ORDER } from '@/lib/subscription-tiers';
 
@@ -505,13 +505,7 @@ export default function SchoolRequestScreen() {
   const handleSubmit = async () => {
     setSubmitting(true);
     try {
-      const apiBase = getApiUrl();
-      const url = new URL('/api/school-requests', `https://${apiBase}`).toString();
-      const res  = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
+      const res  = await apiFetch('/api/school-requests', { method: 'POST', json: data });
       const json = await res.json();
       if (!json.ok) { Alert.alert('خطأ', json.error ?? 'فشل الإرسال'); return; }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);

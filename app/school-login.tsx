@@ -11,13 +11,14 @@ import { Colors } from '@/constants/colors';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSchoolTheme } from '@/contexts/SchoolThemeContext';
 import { schoolAdminSignIn } from '@/lib/school-auth';
+import { getFirebaseAuth } from '@/lib/firebase';
 
 export default function SchoolLoginScreen() {
   const insets  = useSafeAreaInsets();
   const topPad  = Platform.OS === 'web' ? 67 : insets.top;
   const botPad  = Platform.OS === 'web' ? 34 : insets.bottom;
 
-  const { login } = useAuth();
+  const { signInWithFirebase } = useAuth();
   const { switchSchool } = useSchoolTheme();
 
   const [email,    setEmail]    = useState('');
@@ -34,19 +35,23 @@ export default function SchoolLoginScreen() {
     setLoading(true);
     setError('');
     const result = await schoolAdminSignIn(email.trim().toLowerCase(), password);
-    setLoading(false);
     if (!result.ok) {
+      setLoading(false);
       setError(result.error ?? 'خطأ في تسجيل الدخول');
       return;
     }
     if (result.schoolId) {
       await switchSchool(result.schoolId);
     }
-    await login({
-      id:   result.schoolId ?? 'school-admin',
-      name: result.displayName ?? 'مدير الروضة',
-      role: 'admin',
-    });
+    // Exchange the Firebase session for a server-verified API session.
+    let idToken = '';
+    try { idToken = (await getFirebaseAuth().currentUser?.getIdToken()) ?? ''; } catch {}
+    const session = idToken ? await signInWithFirebase(idToken) : { ok: false, error: 'تعذّر إنشاء الجلسة' };
+    setLoading(false);
+    if (!session.ok) {
+      setError(session.error ?? 'تعذّر تسجيل الدخول إلى الخادم');
+      return;
+    }
     router.replace('/(admin)');
   };
 

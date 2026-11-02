@@ -1,6 +1,7 @@
 import { Platform, Alert } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { makeApiUrl, getApiOrigin } from '@/lib/query-client';
+import { getAuthToken } from '@/lib/api';
 
 export type UploadedFile = {
   id: number;
@@ -65,10 +66,11 @@ export async function uploadFile(uri: string, opts?: { name?: string; mime?: str
     form.append('file', { uri, name, type });
   }
 
+  const token = getAuthToken();
   const res = await fetch(endpoint, {
     method: 'POST',
     body: form,
-    credentials: 'include',
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
   });
 
   let json: any;

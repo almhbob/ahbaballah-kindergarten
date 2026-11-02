@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useState, useEffect, useMemo, useRef, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useRef, useCallback, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getApiUrl } from '@/lib/query-client';
+import { apiFetch, getAuthToken, onAuthTokenChange, isApiConfigured } from '@/lib/api';
+import { getActiveSchoolId } from '@/lib/active-school';
 import { initFirebase, isFirebaseReady } from '@/lib/firebase';
 import {
   fsUpsertStudent, fsDeleteStudent, fsListenStudents,
@@ -44,6 +45,7 @@ export interface Student {
   parentName: string;
   parentPhone: string;
   parentRelation?: string;
+  /** Write-only: set by an admin to issue a temporary password. Never returned by the server. */
   parentPassword?: string;
   parentDisabled?: boolean;
   attendance: number;
@@ -81,7 +83,8 @@ export interface Employee {
   daysAbsent: number;
   phone: string;
   email: string;
-  password: string;
+  /** Write-only: set by an admin to issue a temporary password. Never returned by the server. */
+  password?: string;
   disabled?: boolean;
   attendanceRecords?: AttendanceRecord[];
   warnings?: EmployeeWarning[];
@@ -107,10 +110,11 @@ export interface AppSettings {
   onlineRegistrationEnabled: boolean;
   bannerAutoplay: boolean;
   maintenanceMode: boolean;
-  adminPassword: string;
-  developerPassword: string;
-  defaultTeacherPassword: string;
-  defaultParentPassword: string;
+  /** Write-only secrets: hashed on the server, never stored or returned. */
+  adminPassword?: string;
+  developerPassword?: string;
+  defaultTeacherPassword?: string;
+  defaultParentPassword?: string;
   academicYear: string;
   developerName: string;
   developerPhone: string;
@@ -126,10 +130,6 @@ export const DEFAULT_APP_SETTINGS: AppSettings = {
   onlineRegistrationEnabled: true,
   bannerAutoplay: true,
   maintenanceMode: false,
-  adminPassword: '1234',
-  developerPassword: 'dev@2026',
-  defaultTeacherPassword: '1234',
-  defaultParentPassword: '1234',
   academicYear: '2025-2026',
   developerName: 'Ali Alnassar',
   developerPhone: '+966500000000',
@@ -544,6 +544,10 @@ interface AppDataContextValue {
   updateRegistrationRequest: (id: string, data: Partial<RegistrationRequest>) => void;
   removeRegistrationRequest: (id: string) => void;
   resetAllData: () => void;
+  /** Re-fetches the school's data from the server (called automatically on sign-in). */
+  reloadFromServer: () => Promise<void>;
+  /** Saves password settings directly to the server (they are never kept on the device). */
+  saveSecuritySettings: (data: Partial<Pick<AppSettings, typeof SECRET_SETTING_FIELDS[number]>>) => Promise<{ ok: boolean; error?: string }>;
   appSettings: AppSettings;
   updateAppSettings: (data: Partial<AppSettings>) => void;
   schoolEvents: SchoolEvent[];
@@ -585,6 +589,36 @@ const DEFAULT_WELCOME_MSG =
 — إدارة نظم إدارة رياض الأطفال`;
 
 const AppDataContext = createContext<AppDataContextValue | null>(null);
+
+const SECRET_SETTING_FIELDS = ['adminPassword', 'developerPassword', 'defaultTeacherPassword', 'defaultParentPassword'] as const;
+const ALL_STATE_KEYS = [
+  'app_students', 'app_employees', 'app_news', 'app_inbox',
+  'app_messages', 'app_meetings', 'app_schedule',
+  'app_welcome_msg', 'app_school_info', 'app_honor_weights',
+  'app_annual_plan', 'app_grad_tasks', 'app_certificates',
+  'app_transport_routes', 'app_transport_subs',
+  'app_banners', 'app_yearly_snapshots', 'app_settings', 'app_registration_requests',
+  'app_school_events', 'app_gallery_photos',
+];
+const PUBLIC_STATE_KEYS = new Set([
+  'app_news', 'app_banners', 'app_school_info', 'app_welcome_msg', 'app_school_events', 'app_gallery_photos', 'app_settings',
+]);
+
+/** Removes write-only secrets before anything is cached on the device. */
+function stripSecrets(key: string, value: any): any {
+  if (key === 'app_employees' && Array.isArray(value)) {
+    return value.map(({ password: _p, ...e }: any) => e);
+  }
+  if (key === 'app_students' && Array.isArray(value)) {
+    return value.map(({ parentPassword: _p, ...st }: any) => st);
+  }
+  if (key === 'app_settings' && value && typeof value === 'object') {
+    const v = { ...value };
+    SECRET_SETTING_FIELDS.forEach(f => delete v[f]);
+    return v;
+  }
+  return value;
+}
 
 const DEMO_STUDENTS: Student[] = [
   {
@@ -640,11 +674,11 @@ const DEMO_STUDENTS: Student[] = [
 ];
 
 const DEMO_EMPLOYEES: Employee[] = [
-  { id: 'e1', name: 'نورة أحمد السبيعي', role: 'معلمة مستوى ثاني', level: 'مستوى ثاني', salary: 6500, daysPresent: 22, daysAbsent: 0, phone: '0501234567', email: 'noura@ahbaballah.edu', password: '1234' },
-  { id: 'e2', name: 'هيا محمد الدوسري',  role: 'معلمة مستوى أول',  level: 'مستوى أول',  salary: 6000, daysPresent: 20, daysAbsent: 2, phone: '0507654321', email: 'haya@ahbaballah.edu',  password: '1234' },
-  { id: 'e3', name: 'منى خالد العتيبي',  role: 'معلمة براعم',       level: 'براعم',      salary: 5800, daysPresent: 21, daysAbsent: 1, phone: '0509876543', email: 'mona@ahbaballah.edu',  password: '1234' },
-  { id: 'e4', name: 'رنا سعد المالكي',   role: 'مساعدة معلمة',                          salary: 4500, daysPresent: 22, daysAbsent: 0, phone: '0503456789', email: 'rana@ahbaballah.edu',  password: '1234' },
-  { id: 'e5', name: 'فاطمة علي الشهري',  role: 'مستقبلة',                               salary: 4000, daysPresent: 19, daysAbsent: 3, phone: '0505432198', email: 'fatima@ahbaballah.edu', password: '1234' },
+  { id: 'e1', name: 'نورة أحمد السبيعي', role: 'معلمة مستوى ثاني', level: 'مستوى ثاني', salary: 6500, daysPresent: 22, daysAbsent: 0, phone: '0501234567', email: 'noura@ahbaballah.edu' },
+  { id: 'e2', name: 'هيا محمد الدوسري',  role: 'معلمة مستوى أول',  level: 'مستوى أول',  salary: 6000, daysPresent: 20, daysAbsent: 2, phone: '0507654321', email: 'haya@ahbaballah.edu' },
+  { id: 'e3', name: 'منى خالد العتيبي',  role: 'معلمة براعم',       level: 'براعم',      salary: 5800, daysPresent: 21, daysAbsent: 1, phone: '0509876543', email: 'mona@ahbaballah.edu' },
+  { id: 'e4', name: 'رنا سعد المالكي',   role: 'مساعدة معلمة',                          salary: 4500, daysPresent: 22, daysAbsent: 0, phone: '0503456789', email: 'rana@ahbaballah.edu' },
+  { id: 'e5', name: 'فاطمة علي الشهري',  role: 'مستقبلة',                               salary: 4000, daysPresent: 19, daysAbsent: 3, phone: '0505432198', email: 'fatima@ahbaballah.edu' },
 ];
 
 const DEMO_NEWS: NewsItem[] = [
@@ -687,38 +721,63 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const [schoolEvents, setSchoolEvents] = useState<SchoolEvent[]>(DEMO_SCHOOL_EVENTS);
   const [galleryPhotos, setGalleryPhotos] = useState<GalleryPhoto[]>([]);
   const welcomeRef = useRef<string>(DEFAULT_WELCOME_MSG);
+  /** True when the server confirmed the current session is a school admin. */
+  const isAdminSessionRef = useRef(false);
 
   const cloudSync = (key: string, value: any) => {
-    try {
-      const url = new URL(`/api/state/${key}`, getApiUrl()).toString();
-      fetch(url, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ value }),
-      }).catch(() => {});
-    } catch {}
+    // Only signed-in users can write; the server enforces what each role may change.
+    if (!getAuthToken() || !isApiConfigured()) return;
+    apiFetch(`/api/state/${key}`, { method: 'PUT', json: { value } })
+      .then(async res => {
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          console.warn(`[AppData] sync ${key} rejected:`, res.status, (body as any)?.error);
+        }
+      })
+      .catch(() => {});
   };
 
   const saveState = (key: string, value: any) => {
-    const str = typeof value === 'string' ? value : JSON.stringify(value);
-    AsyncStorage.setItem(key, str);
+    const clean = stripSecrets(key, value);
+    const str = typeof clean === 'string' ? clean : JSON.stringify(clean);
+    AsyncStorage.setItem(key, str).catch(() => {});
     cloudSync(key, value);
   };
 
-  useEffect(() => {
-    const load = async () => {
+  const loadAll = useCallback(async () => {
       let cloud: Record<string, any> = {};
+      let cloudOk = false;
+      const signedIn = !!getAuthToken();
+      if (!signedIn) isAdminSessionRef.current = false;
       try {
-        const url = new URL('/api/state', getApiUrl()).toString();
-        const res = await fetch(url);
-        const json = await res.json();
-        if (json.ok) cloud = json.data ?? {};
+        if (isApiConfigured()) {
+          const res = await apiFetch(`/api/state?school=${encodeURIComponent(getActiveSchoolId())}`);
+          const json = await res.json();
+          if (json.ok) {
+            cloud = json.data ?? {};
+            cloudOk = true;
+            isAdminSessionRef.current = json.role === 'admin';
+            // Data a non-admin may not see must not linger in memory from a previous session.
+            if (json.role !== 'admin') {
+              setInbox([]);
+              setRegistrationRequests([]);
+              setYearlySnapshots([]);
+            }
+          }
+        }
       } catch {}
 
       const get = async (key: string) => {
         if (cloud[key] !== undefined) return cloud[key];
+        // Signed-in non-admin users must only see what the server returned for them,
+        // and signed-out users only public data.
+        if (cloudOk && (!signedIn ? !PUBLIC_STATE_KEYS.has(key) : !isAdminSessionRef.current)) return null;
         const local = await AsyncStorage.getItem(key);
-        return local ? JSON.parse(local) : null;
+        if (!local) return null;
+        const parsed = JSON.parse(local);
+        // Admin bootstrap: data that so far only lived on this device is uploaded once.
+        if (cloudOk && signedIn && isAdminSessionRef.current) cloudSync(key, parsed);
+        return parsed;
       };
 
       const savedStudents = await get('app_students');
@@ -731,8 +790,8 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       const savedWelcome = await get('app_welcome_msg');
       const savedSchoolInfo = await get('app_school_info');
       const savedHonorWeights = await get('app_honor_weights');
-      if (savedStudents) setStudents((savedStudents as Student[]).map(s => ({ ...s, assessments: s.assessments ?? [], parentPhone: s.parentPhone ?? '', parentPassword: s.parentPassword ?? '1234' })));
-      if (savedEmployees) setEmployees((savedEmployees as Employee[]).map(e => ({ ...e, email: e.email ?? '', password: e.password ?? '1234' })));
+      if (savedStudents) setStudents((stripSecrets('app_students', savedStudents) as Student[]).map(s => ({ ...s, assessments: s.assessments ?? [], parentPhone: s.parentPhone ?? '' })));
+      if (savedEmployees) setEmployees((stripSecrets('app_employees', savedEmployees) as Employee[]).map(e => ({ ...e, email: e.email ?? '' })));
       if (savedNews) setNews(savedNews);
       if (savedInbox) setInbox(savedInbox);
       if (savedMessages) setMessages(savedMessages);
@@ -760,16 +819,34 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       const savedSnapshots = await get('app_yearly_snapshots');
       if (savedSnapshots) setYearlySnapshots(savedSnapshots);
       const savedAppSettings = await get('app_settings');
-      if (savedAppSettings) setAppSettingsState({ ...DEFAULT_APP_SETTINGS, ...savedAppSettings });
+      if (savedAppSettings) setAppSettingsState({ ...DEFAULT_APP_SETTINGS, ...stripSecrets('app_settings', savedAppSettings) });
       const savedRegs = await get('app_registration_requests');
       if (savedRegs) setRegistrationRequests(savedRegs);
       const savedEvents = await get('app_school_events');
       const savedPhotos = await get('app_gallery_photos');
       if (savedEvents) setSchoolEvents(savedEvents);
       if (savedPhotos) setGalleryPhotos(savedPhotos);
-    };
-    load();
   }, []);
+
+  // Load on start, and again whenever the user signs in or out.
+  useEffect(() => {
+    loadAll();
+    return onAuthTokenChange(token => {
+      if (!token) {
+        // Signed out: wipe private data from memory.
+        setStudents([]); setEmployees([]); setMessages([]); setInbox([]);
+        setRegistrationRequests([]); setCertificates([]); setTransportSubscriptions([]);
+        setYearlySnapshots([]); setMeetings([]);
+        // Teacher/parent devices also drop their cache. An admin device keeps it: before this
+        // update the school's data only lived there, and it may not have finished uploading.
+        if (!isAdminSessionRef.current) AsyncStorage.multiRemove([
+          'app_students', 'app_employees', 'app_messages', 'app_inbox', 'app_registration_requests',
+          'app_certificates', 'app_transport_subs', 'app_yearly_snapshots', 'app_meetings',
+        ]).catch(() => {});
+      }
+      loadAll();
+    });
+  }, [loadAll]);
 
   // ─── Firebase real-time listeners ─────────────────────────────────────────
   useEffect(() => {
@@ -784,7 +861,6 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
           ...s,
           assessments: s.assessments ?? [],
           parentPhone: s.parentPhone ?? '',
-          parentPassword: s.parentPassword ?? '1234',
         })));
       } else if (!firstLoad.students) {
         firstLoad.students = true;
@@ -796,7 +872,6 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         setEmployees(data.map(e => ({
           ...e,
           email: e.email ?? '',
-          password: e.password ?? '1234',
         })));
       } else if (!firstLoad.employees) {
         firstLoad.employees = true;
@@ -896,10 +971,29 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
 
   const updateAppSettings = (data: Partial<AppSettings>) => {
     setAppSettingsState(prev => {
-      const updated = { ...prev, ...data };
+      const updated = stripSecrets('app_settings', { ...prev, ...data });
       saveState('app_settings', updated);
       return updated;
     });
+  };
+
+  const saveSecuritySettings = async (data: Partial<Pick<AppSettings, typeof SECRET_SETTING_FIELDS[number]>>) => {
+    const secrets: Record<string, string> = {};
+    for (const f of SECRET_SETTING_FIELDS) {
+      const v = data[f]?.trim();
+      if (v) secrets[f] = v;
+    }
+    if (Object.keys(secrets).length === 0) return { ok: true };
+    try {
+      const res = await apiFetch('/api/state/app_settings', {
+        method: 'PUT',
+        json: { value: { ...stripSecrets('app_settings', appSettings), ...secrets } },
+      });
+      const body = await res.json().catch(() => ({}));
+      return res.ok ? { ok: true } : { ok: false, error: (body as any)?.error ?? 'تعذّر الحفظ' };
+    } catch {
+      return { ok: false, error: 'تعذّر الاتصال بالخادم' };
+    }
   };
 
   const addSchoolEvent = (e: SchoolEvent) => {
@@ -962,20 +1056,10 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     setTransportSubscriptions([]);
     setSchoolEvents(DEMO_SCHOOL_EVENTS);
     setGalleryPhotos([]);
-    const keysToReset = [
-      'app_students', 'app_employees', 'app_news', 'app_inbox',
-      'app_messages', 'app_meetings', 'app_schedule',
-      'app_welcome_msg', 'app_school_info', 'app_honor_weights',
-      'app_annual_plan', 'app_grad_tasks', 'app_certificates',
-      'app_transport_routes', 'app_transport_subs',
-      'app_banners', 'app_yearly_snapshots', 'app_settings', 'app_registration_requests',
-      'app_school_events', 'app_gallery_photos',
-    ];
+    const keysToReset = ALL_STATE_KEYS;
     AsyncStorage.multiRemove(keysToReset);
     keysToReset.forEach(key => {
-      try {
-        fetch(new URL('/api/state/' + key, getApiUrl()).toString(), { method: 'DELETE' }).catch(() => {});
-      } catch {}
+      if (getAuthToken()) apiFetch('/api/state/' + key, { method: 'DELETE' }).catch(() => {});
     });
   };
 
@@ -1257,6 +1341,14 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   };
 
   const addRegistrationRequest = (r: RegistrationRequest) => {
+    if (!isAdminSessionRef.current) {
+      // Guests / parents submit through the public endpoint; they never write the whole list.
+      apiFetch(`/api/state/registration-request?school=${encodeURIComponent(getActiveSchoolId())}`, {
+        method: 'POST', json: { request: r },
+      }).catch(() => {});
+      setRegistrationRequests(prev => [r, ...prev]);
+      return;
+    }
     setRegistrationRequests(prev => {
       const updated = [r, ...prev];
       saveState('app_registration_requests', updated);
@@ -1299,7 +1391,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     students, employees, news, inbox, messages, meetings, schedule,
     welcomeMessage, schoolInfo, honorWeights,
     annualPlan, graduationTasks, certificates,
-    setWelcomeMessage, setSchoolInfo, setHonorWeights, resetAllData,
+    setWelcomeMessage, setSchoolInfo, setHonorWeights, resetAllData, reloadFromServer: loadAll, saveSecuritySettings,
     updateStudent, addStudent, removeStudent,
     addNews, removeNews, replyInbox, markInboxRead, sendMessage,
     addEmployee, removeEmployee, updateEmployee,
