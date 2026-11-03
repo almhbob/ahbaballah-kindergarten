@@ -6,7 +6,7 @@ import { useState } from 'react';
 import AnimatedSplash from '@/components/AnimatedSplash';
 
 export default function Index() {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, mustChangePassword } = useAuth();
   const [splashDone, setSplashDone] = useState(false);
 
   if (!splashDone) {
@@ -22,6 +22,8 @@ export default function Index() {
   }
 
   if (!user) return <Redirect href="/platform" />;
+
+  if (mustChangePassword && user.role !== 'guest') return <Redirect href="/change-password" />;
 
   if (user.role === 'admin')   return <Redirect href="/(admin)" />;
   if (user.role === 'teacher') return <Redirect href="/(teacher)" />;

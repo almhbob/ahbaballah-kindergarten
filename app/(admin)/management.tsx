@@ -5,6 +5,8 @@ import {
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { uploadFile } from '@/lib/uploads';
+import { apiJson } from '@/lib/api';
+import * as Clipboard from 'expo-clipboard';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -200,7 +202,7 @@ export default function ManagementScreen() {
           if (editingEmployee) {
             updateEmployee(editingEmployee.id, data);
           } else {
-            addEmployee({ id: genId(), daysPresent: 22, daysAbsent: 0, email: '', password: '1234', ...data } as Employee);
+            addEmployee({ id: genId(), daysPresent: 22, daysAbsent: 0, email: '', ...data } as Employee);
           }
           setShowAddTeacher(false);
           setEditingEmployee(null);
@@ -460,17 +462,20 @@ function AddEmployeeModal({ visible, editing, onClose, onSave }: {
     if (editing) {
       setName(editing.name); setRole(editing.role);
       setLevel(editing.level ?? ''); setPhone(editing.phone);
-      setEmail(editing.email ?? ''); setPassword(editing.password ?? '1234');
+      setEmail(editing.email ?? ''); setPassword('');
       setSalary(String(editing.salary));
     } else {
       setName(''); setRole('معلمة'); setLevel(''); setPhone('');
-      setEmail(''); setPassword('1234'); setSalary('');
+      setEmail(''); setPassword(''); setSalary('');
     }
   }, [editing, visible]);
 
   const handleSave = () => {
     if (!name.trim()) { Alert.alert('تنبيه', 'الرجاء إدخال الاسم'); return; }
-    onSave({ name: name.trim(), role, level: level || undefined, phone: phone.trim(), email: email.trim().toLowerCase(), password: password || '1234', salary: Number(salary) || 0 });
+    const pw = password.trim();
+    if (pw && pw.length < 6) { Alert.alert('تنبيه', 'كلمة المرور المؤقتة يجب أن تكون 6 أحرف على الأقل'); return; }
+    // Passwords are write-only: sent once to the server (hashed there) and never read back.
+    onSave({ name: name.trim(), role, level: level || undefined, phone: phone.trim(), email: email.trim().toLowerCase(), ...(pw ? { password: pw } : {}), salary: Number(salary) || 0 });
   };
 
   return (
@@ -514,8 +519,11 @@ function AddEmployeeModal({ visible, editing, onClose, onSave }: {
           <Text style={styles.fieldLabel}>البريد الإلكتروني (لتسجيل الدخول)</Text>
           <TextInput style={styles.fieldInput} value={email} onChangeText={setEmail} placeholder="example@ahbaballah.edu" placeholderTextColor={Colors.textLight} keyboardType="email-address" autoCapitalize="none" textAlign="right" />
 
-          <Text style={styles.fieldLabel}>كلمة المرور</Text>
-          <TextInput style={styles.fieldInput} value={password} onChangeText={setPassword} placeholder="1234" placeholderTextColor={Colors.textLight} textAlign="right" />
+          <Text style={styles.fieldLabel}>{editing ? 'إعادة تعيين كلمة المرور (اختياري)' : 'كلمة مرور مؤقتة (اختياري)'}</Text>
+          <TextInput style={styles.fieldInput} value={password} onChangeText={setPassword} placeholder={editing ? 'اتركه فارغاً للإبقاء على كلمة المرور الحالية' : 'اتركه فارغاً لاستخدام كلمة المرور الافتراضية للروضة'} placeholderTextColor={Colors.textLight} textAlign="right" secureTextEntry autoCapitalize="none" />
+          <Text style={{ fontSize: 11, color: Colors.textLight, textAlign: 'right', marginTop: 4 }}>
+            ستُطالب المعلمة بتغييرها عند أول دخول. لا يمكن عرض كلمات المرور بعد حفظها.
+          </Text>
 
           <Text style={styles.fieldLabel}>الراتب (ج.س)</Text>
           <TextInput style={styles.fieldInput} value={salary} onChangeText={setSalary} placeholder="0" placeholderTextColor={Colors.textLight} keyboardType="numeric" textAlign="right" />
@@ -1122,16 +1130,42 @@ function StudentProfileSheet({ student, onClose }: { student: Student | null; on
 
                     <Pressable
                       style={[pStyles.accountActionBtn,
+                        { backgroundColor: '#EFF6FF', borderColor: '#3B82F6', marginTop: 8 }]}
+                      onPress={() => {
+                        Alert.alert('إعادة تعيين كلمة المرور', `سيتم إنشاء كلمة مرور مؤقتة جديدة لولي أمر ${student.name}، وسيُطلب منه تغييرها عند أول دخول.`, [
+                          { text: 'إلغاء', style: 'cancel' },
+                          { text: 'إنشاء', onPress: async () => {
+                            const r = await apiJson<{ tempPassword?: string }>('/api/auth/reset-password', {
+                              method: 'POST', json: { role: 'parent', refId: student.id },
+                            });
+                            if (!r.ok || !r.tempPassword) { Alert.alert('خطأ', r.error ?? 'تعذّرت إعادة التعيين'); return; }
+                            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                            Alert.alert('كلمة المرور المؤقتة', `${r.tempPassword}\n\nسلّمها لولي الأمر بشكل خاص. لن تظهر مرة أخرى.`, [
+                              { text: 'نسخ', onPress: () => Clipboard.setStringAsync(r.tempPassword!).catch(() => {}) },
+                              { text: 'تم' },
+                            ]);
+                          }},
+                        ]);
+                      }}
+                    >
+                      <Ionicons name="key-outline" size={16} color="#3B82F6" />
+                      <Text style={[pStyles.accountActionTxt, { color: '#3B82F6' }]}>إعادة تعيين كلمة المرور</Text>
+                    </Pressable>
+
+                    <Pressable
+                      style={[pStyles.accountActionBtn,
                         { backgroundColor: '#FFF7ED', borderColor: '#F59E0B', marginTop: 8 }]}
                       onPress={() => {
                         Alert.alert('حذف بيانات الحساب', `سيتم حذف رقم هاتف ولي أمر ${student.name} وبياناته بالكامل. لن يتمكن من الدخول مجدداً حتى يُعاد تسجيله.`, [
                           { text: 'إلغاء', style: 'cancel' },
                           { text: 'حذف البيانات', style: 'destructive',
                             onPress: () => {
+                              apiJson('/api/auth/reset-password', {
+                                method: 'POST', json: { role: 'parent', refId: student.id, revoke: true },
+                              }).catch(() => {});
                               updateStudent(student.id, {
                                 parentPhone: '',
                                 parentName: student.parentName,
-                                parentPassword: '',
                                 parentDisabled: false,
                               });
                               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
@@ -1588,7 +1622,7 @@ function TeacherProfileSheet({ teacher: teacherProp, onClose }: { teacher: Emplo
                 <View style={pStyles.emptyTab}>
                   <Ionicons name="calendar-outline" size={48} color={Colors.textLight} />
                   <Text style={pStyles.emptyTabTxt}>لم يُسجَّل أي سجل حضور بعد</Text>
-                  <Text style={pStyles.emptyTabSub}>اضغط على "تسجيل حضور اليوم" للبدء</Text>
+                  <Text style={pStyles.emptyTabSub}>اضغط على «تسجيل حضور اليوم» للبدء</Text>
                 </View>
               )}
             </>

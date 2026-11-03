@@ -1,8 +1,10 @@
 import express from "express";
 import type { Request, Response, NextFunction } from "express";
-import session from "express-session";
 import { registerRoutes } from "./routes";
 import pool from "./db";
+import { authenticate, securityHeaders } from "./security";
+import { ensureCredentialSchema } from "./credentials";
+import { ensureStateSchema } from "./state-store";
 import * as fs from "fs";
 import * as path from "path";
 
@@ -79,10 +81,15 @@ async function ensureSchema() {
       ALTER TABLE school_requests ADD COLUMN IF NOT EXISTS subscription_end TEXT;
       ALTER TABLE school_requests ADD COLUMN IF NOT EXISTS approved_school_id TEXT;
       ALTER TABLE school_requests ADD COLUMN IF NOT EXISTS initial_password TEXT;
+      ALTER TABLE files ALTER COLUMN user_id TYPE TEXT USING user_id::text;
+      ALTER TABLE reviews ADD COLUMN IF NOT EXISTS school_id TEXT NOT NULL DEFAULT 'ahbabullah';
     `);
+    await ensureCredentialSchema();
+    await ensureStateSchema();
     console.log("[db] schema ensured ✓");
   } catch (err: any) {
     console.error("[db] ensureSchema failed:", err?.message);
+    throw err;
   }
 }
 
@@ -111,19 +118,23 @@ function setupCors(app: express.Application) {
 
     const origin = req.header("origin");
 
-    // Allow localhost origins for Expo web development (any port)
+    // Allow localhost origins for Expo web development (any port) — never in production.
     const isLocalhost =
-      origin?.startsWith("http://localhost:") ||
-      origin?.startsWith("http://127.0.0.1:");
+      process.env.NODE_ENV !== "production" &&
+      (origin?.startsWith("http://localhost:") ||
+        origin?.startsWith("http://127.0.0.1:"));
+
+    (process.env.CORS_ORIGINS || "").split(",").map((o: string) => o.trim()).filter(Boolean)
+      .forEach((o: string) => origins.add(o));
 
     if (origin && (origins.has(origin) || isLocalhost)) {
       res.header("Access-Control-Allow-Origin", origin);
       res.header(
         "Access-Control-Allow-Methods",
-        "GET, POST, PUT, DELETE, OPTIONS",
+        "GET, POST, PUT, PATCH, DELETE, OPTIONS",
       );
-      res.header("Access-Control-Allow-Headers", "Content-Type");
-      res.header("Access-Control-Allow-Credentials", "true");
+      res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+      res.header("Vary", "Origin");
     }
 
     if (req.method === "OPTIONS") {
@@ -137,42 +148,29 @@ function setupCors(app: express.Application) {
 function setupBodyParsing(app: express.Application) {
   app.use(
     express.json({
+      // School state (students with photos) can be large.
+      limit: "15mb",
       verify: (req, _res, buf) => {
         req.rawBody = buf;
       },
     }),
   );
 
-  app.use(express.urlencoded({ extended: false }));
+  app.use(express.urlencoded({ extended: false, limit: "1mb" }));
 }
 
 function setupRequestLogging(app: express.Application) {
   app.use((req, res, next) => {
     const start = Date.now();
     const path = req.path;
-    let capturedJsonResponse: Record<string, unknown> | undefined = undefined;
-
-    const originalResJson = res.json;
-    res.json = function (bodyJson, ...args) {
-      capturedJsonResponse = bodyJson;
-      return originalResJson.apply(res, [bodyJson, ...args]);
-    };
 
     res.on("finish", () => {
       if (!path.startsWith("/api")) return;
 
       const duration = Date.now() - start;
 
-      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-      if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
-      }
-
-      if (logLine.length > 80) {
-        logLine = logLine.slice(0, 79) + "…";
-      }
-
-      log(logLine);
+      // Response bodies are never logged: they can contain tokens and personal data.
+      log(`${req.method} ${path} ${res.statusCode} in ${duration}ms`);
     });
 
     next();
@@ -295,7 +293,8 @@ function setupErrorHandler(app: express.Application) {
     };
 
     const status = error.status || error.statusCode || 500;
-    const message = error.message || "Internal Server Error";
+    // Only expose messages for client errors; hide internals for 5xx.
+    const message = status < 500 ? error.message || "Bad Request" : "خطأ داخلي في الخادم";
 
     console.error("Internal Server Error:", err);
 
@@ -308,21 +307,14 @@ function setupErrorHandler(app: express.Application) {
 }
 
 (async () => {
+  // Behind Replit / cloud proxies: needed for correct client IPs (rate limiting).
+  app.set("trust proxy", 1);
+  app.disable("x-powered-by");
+
+  app.use(securityHeaders);
   setupCors(app);
   setupBodyParsing(app);
-
-  const isProduction = process.env.NODE_ENV === 'production';
-  app.use(session({
-    secret: process.env.SESSION_SECRET || 'ahbaballah-fallback-secret',
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      httpOnly: true,
-      secure: isProduction,
-      sameSite: isProduction ? 'none' : 'lax',
-      maxAge: 1000 * 60 * 60 * 24 * 7,
-    },
-  }));
+  app.use(authenticate);
 
   setupRequestLogging(app);
 

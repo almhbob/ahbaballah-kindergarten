@@ -28,6 +28,7 @@ function RootLayoutNav() {
       <Stack.Screen name="login" />
       <Stack.Screen name="school-login" />
       <Stack.Screen name="register" />
+      <Stack.Screen name="change-password" options={{ gestureEnabled: false }} />
       <Stack.Screen name="school-request" />
       <Stack.Screen name="(admin)" />
       <Stack.Screen name="(teacher)" />

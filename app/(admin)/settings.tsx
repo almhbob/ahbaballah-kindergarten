@@ -49,7 +49,6 @@ export default function SettingsScreen() {
   const [showSchoolModal, setShowSchoolModal] = useState(false);
   const [showHonorModal, setShowHonorModal] = useState(false);
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
-  const [showPasswords, setShowPasswords] = useState(false);
 
   const [draftInfo, setDraftInfo] = useState<SchoolInfo>(schoolInfo);
   const [draftWeights, setDraftWeights] = useState<HonorWeights>(honorWeights);
@@ -248,41 +247,6 @@ export default function SettingsScreen() {
               </View>
             </React.Fragment>
           ))}
-        </View>
-
-        <SectionHeader title="حسابات الدخول التجريبية" />
-        <View style={styles.section}>
-          {[
-            { role: 'الإدارة',   credLabel: 'مستخدم',  user: 'admin',                   pass: '1234', color: '#3B82F6', icon: 'shield-check' },
-            { role: 'معلمة',    credLabel: 'إيميل',   user: 'noura@ahbaballah.edu',     pass: '1234', color: Colors.teacher, icon: 'school' },
-            { role: 'ولي أمر',  credLabel: 'هاتف',    user: '+249912345678',            pass: '1234', color: Colors.parent, icon: 'account-heart' },
-          ].map((acc, i) => (
-            <React.Fragment key={acc.role}>
-              {i > 0 && <View style={styles.rowDivider} />}
-              <View style={styles.accountRow}>
-                <View style={styles.accountBadge}>
-                  <Text style={[styles.accountRole, { color: acc.color }]}>{acc.role}</Text>
-                  <Text style={styles.accountCreds}>{acc.credLabel}: {acc.user}</Text>
-                  <Text style={[styles.accountCreds, { color: Colors.textLight }]}>
-                    كلمة المرور: {showPasswords ? acc.pass : '••••'}
-                  </Text>
-                </View>
-                <View style={[styles.settingIconBox, { backgroundColor: acc.color + '18' }]}>
-                  <MaterialCommunityIcons name={acc.icon as any} size={20} color={acc.color} />
-                </View>
-              </View>
-            </React.Fragment>
-          ))}
-          <View style={styles.rowDivider} />
-          <Pressable
-            style={[styles.settingRow, { justifyContent: 'center' }]}
-            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowPasswords(p => !p); }}
-          >
-            <Ionicons name={showPasswords ? 'eye-off-outline' : 'eye-outline'} size={16} color={Colors.textLight} />
-            <Text style={[styles.settingValue, { marginTop: 0 }]}>
-              {showPasswords ? 'إخفاء كلمات المرور' : 'إظهار كلمات المرور'}
-            </Text>
-          </Pressable>
         </View>
 
         <SectionHeader title="قانوني" />

@@ -15,7 +15,7 @@ import * as Haptics from 'expo-haptics';
 import * as Clipboard from 'expo-clipboard';
 import { SUBSCRIPTION_TIERS, TIER_ORDER, getTierById, checkCapacity, capacityColor, SubscriptionTier } from '@/lib/subscription-tiers';
 import { createSchoolAdminAccount } from '@/lib/school-auth';
-import { getApiUrl } from '@/lib/query-client';
+import { apiJson, getAuthToken, setAuthToken } from '@/lib/api';
 
 function genId() {
   return Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
@@ -127,13 +127,15 @@ const pg = StyleSheet.create({
   dotFilled: { backgroundColor: '#c9952a' },
 });
 
-function PasswordGate({ correctPassword, onUnlock }: { correctPassword: string; onUnlock: () => void }) {
+function PasswordGate({ onUnlock }: { onUnlock: (token: string, mustChange: boolean) => void }) {
   const insets  = useSafeAreaInsets();
   const topPad  = Platform.OS === 'web' ? 67 : insets.top;
   const [pass,    setPass]    = useState('');
   const [show,    setShow]    = useState(false);
   const [error,   setError]   = useState(false);
   const [shaking, setShaking] = useState(false);
+  const [busy,    setBusy]    = useState(false);
+  const [errMsg,  setErrMsg]  = useState('كلمة مرور خاطئة — حاول مجدداً');
   const shakeAnim = useRef(new Animated.Value(0)).current;
 
   const shake = () => {
@@ -147,11 +149,19 @@ function PasswordGate({ correctPassword, onUnlock }: { correctPassword: string; 
     ]).start(() => setShaking(false));
   };
 
-  const handleUnlock = () => {
-    if (pass === correctPassword) {
+  const handleUnlock = async () => {
+    if (!pass || busy) return;
+    setBusy(true);
+    // Verified by the server; on success it returns a short-lived developer token.
+    const r = await apiJson<{ token?: string; mustChangePassword?: boolean }>('/api/auth/developer-unlock', {
+      method: 'POST', json: { password: pass },
+    });
+    setBusy(false);
+    if (r.ok && r.token) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      onUnlock();
+      onUnlock(r.token, !!r.mustChangePassword);
     } else {
+      setErrMsg(r.error ?? 'كلمة مرور خاطئة — حاول مجدداً');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       setError(true);
       setPass('');
@@ -159,8 +169,6 @@ function PasswordGate({ correctPassword, onUnlock }: { correctPassword: string; 
       setTimeout(() => setError(false), 2500);
     }
   };
-
-  const dots = Array.from({ length: Math.min(pass.length, correctPassword.length) });
 
   return (
     <View style={pg.root}>
@@ -177,7 +185,7 @@ function PasswordGate({ correctPassword, onUnlock }: { correctPassword: string; 
         <Text style={pg.subtitle}>هذه المنطقة مقيّدة{'\n'}أدخل كلمة مرور المطوّر للمتابعة</Text>
 
         <View style={pg.dotsRow}>
-          {Array.from({ length: correctPassword.length }).map((_, i) => (
+          {Array.from({ length: Math.max(8, pass.length) }).map((_, i) => (
             <View key={i} style={[pg.dot, i < pass.length && pg.dotFilled]} />
           ))}
         </View>
@@ -201,12 +209,12 @@ function PasswordGate({ correctPassword, onUnlock }: { correctPassword: string; 
           </View>
         </Animated.View>
 
-        {error && <Text style={pg.errTxt}>كلمة مرور خاطئة — حاول مجدداً</Text>}
+        {error && <Text style={pg.errTxt}>{errMsg}</Text>}
 
         <Pressable style={pg.unlockBtn} onPress={handleUnlock}>
           <LinearGradient colors={['#c9952a', '#a87820', '#c9952a']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={pg.unlockGrad}>
             <MaterialCommunityIcons name="lock-open" size={18} color="#fff" />
-            <Text style={pg.unlockTxt}>فتح اللوحة</Text>
+            <Text style={pg.unlockTxt}>{busy ? 'جارٍ التحقق…' : 'فتح اللوحة'}</Text>
           </LinearGradient>
         </Pressable>
 
@@ -566,7 +574,7 @@ export default function DeveloperScreen() {
     students, employees, news, meetings, banners, registrationRequests,
     addBanner, updateBanner, removeBanner, resetAllData,
     schoolInfo, setSchoolInfo,
-    appSettings, updateAppSettings,
+    appSettings, updateAppSettings, saveSecuritySettings,
   } = useAppData();
 
   const {
@@ -600,11 +608,9 @@ export default function DeveloperScreen() {
   const fetchSchoolRequests = async () => {
     setRequestsLoading(true);
     try {
-      const base = getApiUrl();
-      const url  = new URL('/api/school-requests', `https://${base}`).toString();
-      const res  = await fetch(url);
-      const json = await res.json();
+      const json = await apiJson<{ data?: SchoolRequest[] }>('/api/school-requests');
       if (json.ok) setSchoolRequests(json.data ?? []);
+      else console.warn('[developer] fetchSchoolRequests:', json.error);
     } catch (e) {
       console.warn('[developer] fetchSchoolRequests error', e);
     } finally {
@@ -614,13 +620,11 @@ export default function DeveloperScreen() {
 
   const updateRequestStatus = async (id: number, status: string, notes?: string) => {
     try {
-      const base = getApiUrl();
-      const url  = new URL(`/api/school-requests/${id}`, `https://${base}`).toString();
-      await fetch(url, {
+      const r = await apiJson(`/api/school-requests/${id}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status, notes, reviewed_by: 'developer' }),
+        json: { status, notes, reviewed_by: 'developer' },
       });
+      if (!r.ok) throw new Error(r.error);
       await fetchSchoolRequests();
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (e) {
@@ -632,9 +636,7 @@ export default function DeveloperScreen() {
     Alert.alert('تأكيد', 'حذف الطلب نهائياً؟', [
       { text: 'إلغاء', style: 'cancel' },
       { text: 'حذف', style: 'destructive', onPress: async () => {
-        const base = getApiUrl();
-        const url  = new URL(`/api/school-requests/${id}`, `https://${base}`).toString();
-        await fetch(url, { method: 'DELETE' });
+        await apiJson(`/api/school-requests/${id}`, { method: 'DELETE' });
         await fetchSchoolRequests();
       }},
     ]);
@@ -662,8 +664,9 @@ export default function DeveloperScreen() {
 
             // 1. Generate school ID and password
             const schoolId = `school_${req.id}_${Date.now().toString(36)}`;
-            const randomSuffix = Math.random().toString(36).substr(2, 4).toUpperCase();
-            const initialPassword = `Nuzum@${new Date().getFullYear()}${randomSuffix}`;
+            const alphabet = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+            const randomSuffix = Array.from({ length: 10 }, () => alphabet[Math.floor(Math.random() * alphabet.length)]).join('');
+            const initialPassword = `Nz@${randomSuffix}`;
 
             // 2. Calculate subscription dates
             const tierDef = getTierById(req.requested_tier as SubscriptionTier ?? 'trial');
@@ -702,20 +705,17 @@ export default function DeveloperScreen() {
             }
 
             // 6. Persist provisioning data in DB
-            const base = getApiUrl();
-            const url  = new URL(`/api/school-requests/${req.id}`, `https://${base}`).toString();
-            await fetch(url, {
+            // The initial password is shown once in the credentials modal and is NOT stored on the server.
+            await apiJson(`/api/school-requests/${req.id}`, {
               method: 'PATCH',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
+              json: {
                 status:             'approved',
                 notes:              `تم التفعيل. معرّف الروضة: ${schoolId}. ${req.notes ?? ''}`.trim(),
                 reviewed_by:        'developer',
                 subscription_start: startDate,
                 subscription_end:   endDate,
                 approved_school_id: schoolId,
-                initial_password:   initialPassword,
-              }),
+              },
             });
 
             // 7. Refresh requests list
@@ -769,17 +769,30 @@ export default function DeveloperScreen() {
     appVersion:     appSettings.appVersion,
     academicYear:   appSettings.academicYear,
   });
-  const [secDraft, setSecDraft] = useState({
-    adminPassword:          appSettings.adminPassword,
-    developerPassword:      appSettings.developerPassword,
-    defaultTeacherPassword: appSettings.defaultTeacherPassword,
-    defaultParentPassword:  appSettings.defaultParentPassword,
-  });
+  // Password fields are write-only: they start empty and are never read back from the server.
+  const EMPTY_SECRETS = { adminPassword: '', developerPassword: '', defaultTeacherPassword: '', defaultParentPassword: '' };
+  const [secDraft, setSecDraft] = useState(EMPTY_SECRETS);
+  const [savingSec, setSavingSec] = useState(false);
+
+  // Developer elevation is temporary: restore the normal admin token when leaving this screen.
+  const adminTokenRef = useRef<string | null>(null);
+  React.useEffect(() => () => {
+    if (adminTokenRef.current) setAuthToken(adminTokenRef.current).catch(() => {});
+  }, []);
+  const handleUnlocked = async (devToken: string, mustChange: boolean) => {
+    adminTokenRef.current = getAuthToken();
+    await setAuthToken(devToken);
+    setUnlocked(true);
+    if (mustChange) {
+      setOpen(p => ({ ...p, security: true }));
+      Alert.alert('تغيير كلمة مرور المطوّر', 'أنت تستخدم كلمة مرور المطوّر الافتراضية. يرجى تعيين كلمة مرور جديدة قوية من قسم «الأمان وكلمات المرور».');
+    }
+  };
 
   const toggle = (key: SectionKey) => setOpen(prev => ({ ...prev, [key]: !prev[key] }));
 
   if (!unlocked) {
-    return <PasswordGate correctPassword={appSettings.developerPassword} onUnlock={() => setUnlocked(true)} />;
+    return <PasswordGate onUnlock={handleUnlocked} />;
   }
 
   const handleSaveBanner = (data: Omit<Banner, 'id' | 'date'>) => {
@@ -1459,7 +1472,7 @@ export default function DeveloperScreen() {
           <View style={sty.secBody}>
             <View style={sty.securityNote}>
               <MaterialCommunityIcons name="shield-alert" size={16} color="#F59E0B" />
-              <Text style={sty.securityNoteTxt}>هذه الكلمات السرية الافتراضية. كل حساب له كلمته الخاصة من إعدادات المستخدمين.</Text>
+              <Text style={sty.securityNoteTxt}>تُحفظ كلمات المرور مشفّرة على الخادم ولا يمكن عرضها. اترك الحقل فارغاً للإبقاء على القيمة الحالية. كلمات المرور الافتراضية للمعلمات وأولياء الأمور مؤقتة ويُطلب تغييرها عند أول دخول.</Text>
             </View>
             {[
               { field: 'adminPassword',          label: 'كلمة مرور المدير',           icon: 'shield-crown',       color: Colors.primary },
@@ -1476,15 +1489,25 @@ export default function DeveloperScreen() {
                   style={[sty.input, { borderColor: color + '40' }]}
                   value={(secDraft as any)[field]}
                   onChangeText={v => setSecDraft(p => ({ ...p, [field]: v }))}
-                  secureTextEntry placeholder="••••••" placeholderTextColor={Colors.textLight}
+                  secureTextEntry placeholder="كلمة مرور جديدة (6 أحرف على الأقل)" placeholderTextColor={Colors.textLight}
+                  autoCapitalize="none"
                   textAlign="right"
                 />
               </View>
             ))}
-            <Pressable style={[sty.saveGreenBtn, { backgroundColor: '#F59E0B' }]} onPress={() => {
+            <Pressable style={[sty.saveGreenBtn, { backgroundColor: '#F59E0B', opacity: savingSec ? 0.6 : 1 }]} disabled={savingSec} onPress={async () => {
+              const filled = Object.values(secDraft).filter(v => v.trim()).length;
+              if (!filled) { Alert.alert('تنبيه', 'أدخل كلمة مرور جديدة واحدة على الأقل'); return; }
+              if (Object.values(secDraft).some(v => v.trim() && v.trim().length < 6)) {
+                Alert.alert('تنبيه', 'كلمة المرور يجب أن تكون 6 أحرف على الأقل'); return;
+              }
+              setSavingSec(true);
+              const r = await saveSecuritySettings(secDraft);
+              setSavingSec(false);
+              if (!r.ok) { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error); Alert.alert('خطأ', r.error ?? 'تعذّر الحفظ'); return; }
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-              updateAppSettings(secDraft);
-              Alert.alert('تم الحفظ', 'تم تحديث كلمات المرور الافتراضية ✓');
+              setSecDraft(EMPTY_SECRETS);
+              Alert.alert('تم الحفظ', 'تم تحديث كلمات المرور بأمان ✓');
             }}>
               <MaterialCommunityIcons name="shield-check" size={18} color="#fff" />
               <Text style={sty.saveGreenBtnTxt}>حفظ إعدادات الأمان</Text>
@@ -1656,7 +1679,7 @@ export default function DeveloperScreen() {
                 { text: 'إعادة الضبط', style: 'destructive', onPress: () => {
                   Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
                   updateAppSettings(DEFAULT_APP_SETTINGS);
-                  setSecDraft({ adminPassword: DEFAULT_APP_SETTINGS.adminPassword, developerPassword: DEFAULT_APP_SETTINGS.developerPassword, defaultTeacherPassword: DEFAULT_APP_SETTINGS.defaultTeacherPassword, defaultParentPassword: DEFAULT_APP_SETTINGS.defaultParentPassword });
+                  setSecDraft(EMPTY_SECRETS);
                   setDevDraft({ developerName: DEFAULT_APP_SETTINGS.developerName, developerPhone: DEFAULT_APP_SETTINGS.developerPhone, developerEmail: DEFAULT_APP_SETTINGS.developerEmail, appVersion: DEFAULT_APP_SETTINGS.appVersion, academicYear: DEFAULT_APP_SETTINGS.academicYear });
                   Alert.alert('تم', 'تمت إعادة ضبط الإعدادات');
                 }},

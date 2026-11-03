@@ -13,7 +13,8 @@ import { useAppData, RegistrationRequest } from '@/contexts/AppDataContext';
 import { useAuth } from '@/contexts/AuthContext';
 import HexFrame from '@/components/HexFrame';
 import * as Haptics from 'expo-haptics';
-import { getApiUrl } from '@/lib/query-client';
+import { apiFetch } from '@/lib/api';
+import { getActiveSchoolId } from '@/lib/active-school';
 
 const { width: W } = Dimensions.get('window');
 
@@ -412,8 +413,7 @@ export default function GuestHomeScreen() {
   const { data: liveReviews } = useQuery<{ id: string; parentName: string; childName: string; content: string; rating: number }[]>({
     queryKey: ['/api/reviews'],
     queryFn: async () => {
-      const url = new URL('/api/reviews', getApiUrl());
-      const res = await fetch(url.toString());
+      const res = await apiFetch(`/api/reviews?school=${encodeURIComponent(getActiveSchoolId())}`);
       if (!res.ok) throw new Error('failed');
       return res.json();
     },

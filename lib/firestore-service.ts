@@ -2,7 +2,7 @@ import {
   collection, doc, setDoc, getDoc, getDocs,
   onSnapshot, deleteDoc, query, orderBy, limit,
   serverTimestamp, Unsubscribe, DocumentData,
-  writeBatch, where, updateDoc,
+  writeBatch, where, updateDoc, deleteField,
 } from 'firebase/firestore';
 import { getDb, isFirebaseReady } from './firebase';
 import { getActiveSchoolId } from './active-school';
@@ -17,6 +17,20 @@ function docRef(path: string, id: string) {
   return doc(getDb(), 'schools', sid(), path, id);
 }
 
+/**
+ * Passwords never go to Firestore. `deleteField()` also scrubs any password
+ * that older app versions may already have written to existing documents.
+ */
+function safeStudent(s: Student) {
+  const { parentPassword: _p, ...rest } = s;
+  return { ...rest, parentPassword: deleteField() };
+}
+function safeEmployee(e: Employee) {
+  const { password: _p, ...rest } = e;
+  return { ...rest, password: deleteField() };
+}
+const SECRET_SETTINGS = ['adminPassword', 'developerPassword', 'defaultTeacherPassword', 'defaultParentPassword'];
+
 function guard(): boolean {
   if (!isFirebaseReady()) { console.warn('[Firestore] Firebase not ready — skipping sync'); return false; }
   return true;
@@ -30,7 +44,7 @@ function onSnapErr(label: string) {
 
 export async function fsUpsertStudent(student: Student) {
   if (!guard()) return;
-  await setDoc(docRef('students', student.id), { ...student, updatedAt: serverTimestamp() }, { merge: true });
+  await setDoc(docRef('students', student.id), { ...safeStudent(student), updatedAt: serverTimestamp() }, { merge: true });
 }
 
 export async function fsDeleteStudent(id: string) {
@@ -57,7 +71,7 @@ export async function fsFetchStudents(): Promise<Student[]> {
 
 export async function fsUpsertEmployee(emp: Employee) {
   if (!guard()) return;
-  await setDoc(docRef('employees', emp.id), { ...emp, updatedAt: serverTimestamp() }, { merge: true });
+  await setDoc(docRef('employees', emp.id), { ...safeEmployee(emp), updatedAt: serverTimestamp() }, { merge: true });
 }
 
 export async function fsDeleteEmployee(id: string) {
@@ -221,7 +235,9 @@ export function fsListenGalleryPhotos(cb: (photos: GalleryPhoto[]) => void): Uns
 
 export async function fsSaveSettings(data: Record<string, unknown>) {
   if (!guard()) return;
-  await setDoc(doc(getDb(), 'schools', sid()), { ...data, updatedAt: serverTimestamp() }, { merge: true });
+  const clean: Record<string, unknown> = { ...data };
+  for (const f of SECRET_SETTINGS) clean[f] = deleteField();
+  await setDoc(doc(getDb(), 'schools', sid()), { ...clean, updatedAt: serverTimestamp() }, { merge: true });
 }
 
 export function fsListenSettings(cb: (data: DocumentData) => void): Unsubscribe {
@@ -294,7 +310,7 @@ export async function fsBulkUploadStudents(students: Student[]) {
   for (let i = 0; i < students.length; i += batchSize) {
     const batch = writeBatch(getDb());
     students.slice(i, i + batchSize).forEach(s => {
-      batch.set(docRef('students', s.id), { ...s, updatedAt: serverTimestamp() }, { merge: true });
+      batch.set(docRef('students', s.id), { ...safeStudent(s), updatedAt: serverTimestamp() }, { merge: true });
     });
     await batch.commit();
   }
@@ -304,7 +320,7 @@ export async function fsBulkUploadEmployees(employees: Employee[]) {
   if (!guard() || employees.length === 0) return;
   const batch = writeBatch(getDb());
   employees.forEach(e => {
-    batch.set(docRef('employees', e.id), { ...e, updatedAt: serverTimestamp() }, { merge: true });
+    batch.set(docRef('employees', e.id), { ...safeEmployee(e), updatedAt: serverTimestamp() }, { merge: true });
   });
   await batch.commit();
 }

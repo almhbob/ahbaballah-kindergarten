@@ -7,7 +7,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useAppData } from '@/contexts/AppDataContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Colors } from '@/constants/colors';
 import HexFrame from '@/components/HexFrame';
@@ -22,11 +21,11 @@ const ROLES: { id: RegRole; label: string; icon: string; color: string; grad: re
 
 export default function RegisterScreen() {
   const insets = useSafeAreaInsets();
-  const { apiRegister } = useAuth();
-  const { students, updateStudent, employees, updateEmployee } = useAppData();
+  const { activateAccount, logout } = useAuth();
 
   const [role, setRole] = useState<RegRole>('parent');
   const [credential, setCredential] = useState('');
+  const [tempPassword, setTempPassword] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [showPass, setShowPass] = useState(false);
@@ -45,8 +44,12 @@ export default function RegisterScreen() {
       Alert.alert('تنبيه', role === 'parent' ? 'أدخل رقم الهاتف' : 'أدخل البريد الإلكتروني');
       return;
     }
-    if (pass.length < 4) {
-      Alert.alert('تنبيه', 'كلمة المرور يجب أن تكون 4 أحرف على الأقل');
+    if (!tempPassword.trim()) {
+      Alert.alert('تنبيه', 'أدخل كلمة المرور المؤقتة التي استلمتها من إدارة الروضة');
+      return;
+    }
+    if (pass.length < 6) {
+      Alert.alert('تنبيه', 'كلمة المرور يجب أن تكون 6 أحرف على الأقل');
       return;
     }
     if (pass !== conf) {
@@ -56,47 +59,18 @@ export default function RegisterScreen() {
 
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setIsLoading(true);
-    await new Promise(r => setTimeout(r, 700));
 
-    if (role === 'parent') {
-      const stu = students.find(s => s.parentPhone && s.parentPhone.replace(/\s/g, '') === cred.replace(/\s/g, ''));
-      if (!stu) {
-        setIsLoading(false);
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-        Alert.alert('غير مسجّل', 'رقم الهاتف غير موجود في النظام\nيرجى التواصل مع الإدارة لتسجيل بياناتك');
-        return;
-      }
-      updateStudent(stu.id, { parentPassword: pass });
-      const apiRes = await apiRegister({
-        full_name: stu.parentName,
-        phone: cred.replace(/\s/g, ''),
-        role: 'parent',
-        password: pass,
-        linked_id: stu.id,
-      }).catch(() => ({ ok: false, error: 'خطأ في الاتصال' }));
-      if (!apiRes.ok && apiRes.error !== 'هذا الحساب مسجّل مسبقاً، سجّل الدخول مباشرة') {
-        console.warn('[register] API sync failed:', apiRes.error);
-      }
-    } else {
-      const emp = employees.find(e => e.email && e.email.toLowerCase() === cred.toLowerCase());
-      if (!emp) {
-        setIsLoading(false);
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-        Alert.alert('غير مسجّل', 'البريد الإلكتروني غير موجود في النظام\nيرجى التواصل مع الإدارة لإضافة حسابك');
-        return;
-      }
-      updateEmployee(emp.id, { password: pass });
-      const apiRes = await apiRegister({
-        full_name: emp.name,
-        email: cred.toLowerCase(),
-        role: 'teacher',
-        password: pass,
-        linked_id: emp.id,
-      }).catch(() => ({ ok: false, error: 'خطأ في الاتصال' }));
-      if (!apiRes.ok && apiRes.error !== 'هذا الحساب مسجّل مسبقاً، سجّل الدخول مباشرة') {
-        console.warn('[register] API sync failed:', apiRes.error);
-      }
+    // The server checks the temporary password issued by the school before
+    // allowing the account owner to choose their own password.
+    const result = await activateAccount(role, cred, tempPassword.trim(), pass);
+    if (!result.ok) {
+      setIsLoading(false);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert('تعذّر تفعيل الحساب', result.error ?? 'حاول مرة أخرى');
+      return;
     }
+    // Activation signs the user in; send them to the login screen for a clean start.
+    await logout();
 
     setIsLoading(false);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -215,6 +189,21 @@ export default function RegisterScreen() {
             />
           </View>
 
+          <Text style={[s.label, { marginTop: 14 }]}>كلمة المرور المؤقتة (من إدارة الروضة)</Text>
+          <View style={s.fieldBox}>
+            <Ionicons name="key-outline" size={17} color="rgba(255,255,255,0.4)" style={{ marginLeft: 14 }} />
+            <TextInput
+              style={s.input}
+              placeholder="كلمة المرور التي أرسلتها لك الإدارة"
+              placeholderTextColor="rgba(255,255,255,0.28)"
+              value={tempPassword}
+              onChangeText={setTempPassword}
+              secureTextEntry
+              autoCapitalize="none"
+              textAlign="right"
+            />
+          </View>
+
           <Text style={[s.label, { marginTop: 14 }]}>كلمة المرور الجديدة</Text>
           <View style={s.fieldBox}>
             <Pressable onPress={() => setShowPass(!showPass)} style={{ marginLeft: 14 }}>
@@ -222,7 +211,7 @@ export default function RegisterScreen() {
             </Pressable>
             <TextInput
               style={s.input}
-              placeholder="4 أحرف على الأقل"
+              placeholder="6 أحرف على الأقل"
               placeholderTextColor="rgba(255,255,255,0.28)"
               value={password}
               onChangeText={setPassword}

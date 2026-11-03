@@ -1,5 +1,8 @@
 rules_version = '2';
 
+// Tenant isolation: a signed-in user can only reach the school linked to
+// their account in /schoolAccounts/{uid}. Platform operators are listed in
+// /platformAdmins/{uid} (create those documents manually in the Firebase console).
 service cloud.firestore {
   match /databases/{database}/documents {
 
@@ -8,26 +11,73 @@ service cloud.firestore {
     }
 
     function isOwner(uid) {
-      return request.auth != null && request.auth.uid == uid;
+      return isAuthenticated() && request.auth.uid == uid;
     }
 
+    function isPlatformAdmin() {
+      return isAuthenticated()
+        && exists(/databases/$(database)/documents/platformAdmins/$(request.auth.uid));
+    }
+
+    function account() {
+      return get(/databases/$(database)/documents/schoolAccounts/$(request.auth.uid)).data;
+    }
+
+    function isMemberOf(schoolId) {
+      return isAuthenticated()
+        && exists(/databases/$(database)/documents/schoolAccounts/$(request.auth.uid))
+        && account().schoolId == schoolId;
+    }
+
+    function noSecrets() {
+      return !request.resource.data.keys().hasAny([
+        'password', 'parentPassword', 'adminPassword',
+        'developerPassword', 'defaultTeacherPassword', 'defaultParentPassword'
+      ]);
+    }
+
+    // School data (students, employees, messages, …)
     match /schools/{schoolId}/{collection}/{docId} {
-      allow read, write: if isAuthenticated();
+      allow read: if isMemberOf(schoolId) || isPlatformAdmin();
+      allow create, update: if (isMemberOf(schoolId) || isPlatformAdmin()) && noSecrets();
+      allow delete: if isMemberOf(schoolId) || isPlatformAdmin();
     }
 
+    // School settings / branding document
     match /schools/{schoolId} {
-      allow read, write: if isAuthenticated();
+      allow read: if isMemberOf(schoolId) || isPlatformAdmin();
+      allow create, update: if (isMemberOf(schoolId) || isPlatformAdmin()) && noSecrets();
+      allow delete: if isPlatformAdmin();
     }
 
+    // Public directory of schools (name, logo, colours) used by the login screens.
     match /schoolRegistry/{schoolId} {
       allow read: if true;
-      allow write: if isAuthenticated();
+      allow create, delete: if isPlatformAdmin();
+      allow update: if isPlatformAdmin() || isMemberOf(schoolId);
     }
 
+    // Links a Firebase user to one school. A user may only link themselves to a
+    // school whose registry entry names their own (verified) e-mail as admin.
     match /schoolAccounts/{uid} {
+      allow read: if isOwner(uid) || isPlatformAdmin();
+      allow create: if isPlatformAdmin() || (
+        isOwner(uid)
+        && request.resource.data.role == 'admin'
+        && exists(/databases/$(database)/documents/schoolRegistry/$(request.resource.data.schoolId))
+        && get(/databases/$(database)/documents/schoolRegistry/$(request.resource.data.schoolId)).data.adminEmail
+             == request.auth.token.email
+      );
+      // The school link cannot be changed by the user.
+      allow update: if isPlatformAdmin()
+        || (isOwner(uid) && request.resource.data.schoolId == resource.data.schoolId
+            && request.resource.data.role == resource.data.role);
+      allow delete: if isPlatformAdmin();
+    }
+
+    match /platformAdmins/{uid} {
       allow read: if isOwner(uid);
-      allow create: if true;
-      allow update, delete: if isOwner(uid);
+      allow write: if false;
     }
   }
 }

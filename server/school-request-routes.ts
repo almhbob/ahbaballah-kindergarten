@@ -1,10 +1,11 @@
 import { Router } from 'express';
 import pool from './db';
+import { requireDeveloper, rateLimit } from './security';
 
 const router = Router();
 
 // POST /api/school-requests — Submit a new school registration request (public)
-router.post('/', async (req, res) => {
+router.post('/', rateLimit('school-request', 5, 60 * 60 * 1000), async (req, res) => {
   try {
     const {
       school_name, school_type, city, address, license_number,
@@ -16,6 +17,19 @@ router.post('/', async (req, res) => {
 
     if (!school_name || !admin_name || !admin_phone || !admin_email) {
       return res.status(400).json({ ok: false, error: 'البيانات الأساسية مطلوبة' });
+    }
+    const textFields = { school_name, school_type, city, address, license_number, admin_name, admin_phone, admin_email,
+      primary_color, accent_color, slogan, principal_name, school_motto, letterhead_address, stamp_info, requested_tier };
+    for (const [k, v] of Object.entries(textFields)) {
+      if (v !== undefined && v !== null && (typeof v !== 'string' || v.length > 500)) {
+        return res.status(400).json({ ok: false, error: `قيمة غير صالحة: ${k}` });
+      }
+    }
+    if (logo_url != null && (typeof logo_url !== 'string' || logo_url.length > 2_000_000)) {
+      return res.status(400).json({ ok: false, error: 'الشعار غير صالح' });
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(admin_email).trim())) {
+      return res.status(400).json({ ok: false, error: 'البريد الإلكتروني غير صالح' });
     }
 
     const existing = await pool.query(
@@ -41,7 +55,7 @@ router.post('/', async (req, res) => {
         logo_url ?? null, primary_color ?? '#0c1155', accent_color ?? '#c9952a', slogan?.trim() ?? null,
         principal_name?.trim() ?? null, school_motto?.trim() ?? null,
         letterhead_address?.trim() ?? null, stamp_info?.trim() ?? null,
-        requested_tier ?? 'trial', wants_trial ?? true,
+        requested_tier ?? 'trial', wants_trial === false ? false : true,
       ]
     );
 
@@ -52,8 +66,8 @@ router.post('/', async (req, res) => {
   }
 });
 
-// GET /api/school-requests — List all requests (dev only — caller verifies password)
-router.get('/', async (_req, res) => {
+// GET /api/school-requests — List all requests (platform developer only)
+router.get('/', requireDeveloper, async (_req, res) => {
   try {
     const result = await pool.query(
       `SELECT * FROM school_requests ORDER BY
@@ -68,7 +82,7 @@ router.get('/', async (_req, res) => {
 });
 
 // PATCH /api/school-requests/:id — Update status/notes/provision data
-router.patch('/:id', async (req, res) => {
+router.patch('/:id', requireDeveloper, async (req, res) => {
   try {
     const { id } = req.params;
     const {
@@ -107,7 +121,7 @@ router.patch('/:id', async (req, res) => {
 });
 
 // DELETE /api/school-requests/:id
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requireDeveloper, async (req, res) => {
   try {
     await pool.query('DELETE FROM school_requests WHERE id = $1', [req.params.id]);
     return res.json({ ok: true });

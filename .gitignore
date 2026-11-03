@@ -39,3 +39,14 @@ yarn-error.*
 .vercel
 
 .env
+
+# Server runtime / build output
+uploads/
+server_dist/
+static-build/
+nohup.out
+*.log
+
+# Credentials — never commit
+google-play-key.json
+*service-account*.json
